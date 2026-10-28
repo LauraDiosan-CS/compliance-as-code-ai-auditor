@@ -1,4 +1,4 @@
-"""Command line interface: `ccauditor audit|policies|diff-policy|ci|review`."""
+"""Command line interface: `ccauditor audit|policies|diff-policy|ci|review|artifacts|explain`."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from ccauditor.evidence.collector import collect
 from ccauditor.models import AuditReport, Requirement
 from ccauditor.policies.evolution import affected_reports, diff_policies
 from ccauditor.policies.loader import get_requirements, list_builtin_policies, load_policy, load_requirements
-from ccauditor.report.render import to_html, to_json, to_markdown, to_sarif
+from ccauditor.report.render import to_html, to_json, to_markdown, to_sarif, to_sarif_dict
 from ccauditor.report.scoring import build_scorecard
 from ccauditor.review import apply_reviews
 from ccauditor.rules.engine import evaluate_all
@@ -101,6 +101,94 @@ def _emit(text: str, out: Optional[Path]) -> None:
 
 def _load_report(path: Path) -> AuditReport:
     return AuditReport.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _prefixed_sarif(report: AuditReport, prefix: str) -> str:
+    """SARIF whose artifact URIs are relative to the git repository root instead of the audited dir.
+
+    Report paths are relative to the audited directory; code scanning resolves URIs against the
+    repository root, so `prefix` (the audited sub-directory) is prepended and the SRCROOT base dropped.
+    """
+    prefix = prefix.strip().strip("/")
+    if not prefix:
+        return to_sarif(report)
+    data = to_sarif_dict(report)
+    for run in data.get("runs", []):
+        run.pop("originalUriBaseIds", None)
+        for result in run.get("results", []):
+            for loc in result.get("locations", []):
+                art = loc.get("physicalLocation", {}).get("artifactLocation", {})
+                if art.get("uri"):
+                    art["uri"] = f"{prefix}/{art['uri']}"
+                    art.pop("uriBaseId", None)
+    return json.dumps(data, indent=2)
+
+
+def _md_cell(text: Any) -> str:
+    return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+def ci_markdown_summary(
+    current: AuditReport,
+    diff: dict[str, Any] | None,
+    gaps: list[dict[str, Any]],
+    failed: bool,
+    fail_on: str,
+) -> str:
+    """Compact Markdown summary of a `ccauditor ci` run, suitable for a sticky PR comment."""
+    icon = "FAIL" if failed else "PASS"
+    target = current.target
+    try:  # show CI targets relative to the checkout instead of the runner's absolute path
+        target = str(Path(target).resolve().relative_to(Path.cwd().resolve())) or "."
+    except (ValueError, OSError):
+        pass
+    lines = [
+        "<!-- ccauditor-ci -->",
+        f"## Compliance-as-Code audit: **{icon}**",
+        "",
+        f"Target `{target}` - policies {', '.join(f'`{p}`' for p in current.policies)} - "
+        f"mode `{current.mode}` - fail on `{fail_on}` or worse"
+        + (f" - risk tier `{getattr(current.risk.level, 'value', current.risk.level)}`" if current.risk else ""),
+        "",
+    ]
+    if diff is not None:
+        lines.append(
+            f"**Score:** {diff['baseline_score']:.1f} -> {diff['current_score']:.1f} ({diff['score_delta']:+.1f})"
+        )
+        lines.append("")
+        if diff["regressions"]:
+            lines += ["### Regressions", "", "| Severity | Requirement | Change | Lost evidence |", "|---|---|---|---|"]
+            for r in diff["regressions"]:
+                lost = ", ".join(f"`{p}`" for p in r["lost_evidence"]) or "-"
+                lines.append(
+                    f"| {r['severity']} | **{r['requirement_id']}** {_md_cell(r['title'])} | "
+                    f"`{r['from']}` -> `{r['to']}` | {lost} |"
+                )
+            lines.append("")
+        else:
+            lines += ["No compliance regressions against the base branch.", ""]
+        if diff["improvements"]:
+            lines += ["### Improvements", ""]
+            lines += [
+                f"- [{r['severity']}] **{r['requirement_id']}** {_md_cell(r['title'])}: `{r['from']}` -> `{r['to']}`"
+                for r in diff["improvements"]
+            ]
+            lines.append("")
+    else:
+        lines += ["No baseline report: checking open gaps only.", ""]
+        if gaps:
+            lines += ["### Open gaps", "", "| Severity | Requirement |", "|---|---|"]
+            lines += [f"| {g['severity']} | **{g['requirement_id']}** {_md_cell(g['title'])} |" for g in gaps]
+            lines.append("")
+    counts: dict[str, int] = {}
+    for v in current.verdicts:
+        counts[v.status.value] = counts.get(v.status.value, 0) + 1
+    lines.append(
+        f"Current score **{current.overall_score:.1f}/100** over {len(current.verdicts)} requirements ("
+        + ", ".join(f"{k}: {n}" for k, n in sorted(counts.items()))
+        + ")."
+    )
+    return "\n".join(lines) + "\n"
 
 
 # ------------------------------------------------------------------ commands
@@ -189,6 +277,12 @@ def ci_cmd(
     mode: str = typer.Option("deterministic", "--mode", "-m"),
     out: Optional[Path] = typer.Option(None, "--out", "-o", help="Write current report JSON here"),
     sarif: Optional[Path] = typer.Option(None, "--sarif", help="Write SARIF here"),
+    markdown_summary: Optional[Path] = typer.Option(
+        None, "--markdown-summary", help="Write a Markdown CI summary (e.g. for a PR comment) here"
+    ),
+    sarif_prefix: str = typer.Option(
+        "", "--sarif-prefix", help="Prefix SARIF file paths, e.g. the audited sub-directory of the git repo"
+    ),
 ) -> None:
     """Re-audit in CI and exit 1 on regressions (vs baseline) or open gaps at --fail-on severity."""
     severities = severities_at_or_above(fail_on)
@@ -205,9 +299,11 @@ def ci_cmd(
     if out:
         _emit(to_json(current), out)
     if sarif:
-        _emit(to_sarif(current), sarif)
+        _emit(_prefixed_sarif(current, sarif_prefix), sarif)
 
     failed = False
+    diff: dict[str, Any] | None = None
+    gaps: list[dict[str, Any]] = []
     if base:
         diff = compare_reports(base, current, changed)
         typer.echo(f"Score {diff['baseline_score']:.1f} -> {diff['current_score']:.1f} ({diff['score_delta']:+.1f})")
@@ -222,6 +318,8 @@ def ci_cmd(
         for g in gaps:
             typer.echo(f"GAP [{g['severity']}] {g['requirement_id']} {g['title']}")
         failed = bool(gaps)
+    if markdown_summary:
+        _emit(ci_markdown_summary(current, diff, gaps, failed, fail_on), markdown_summary)
     typer.echo("CI result: FAIL" if failed else "CI result: PASS")
     raise typer.Exit(code=1 if failed else 0)
 
@@ -244,6 +342,58 @@ def review_apply_cmd(
     target = out or report.with_name(report.stem + ".reviewed.json")
     _emit(to_json(updated), target)
     typer.echo(f"Applied {len(data)} review(s); overall score {updated.overall_score:.1f}")
+
+
+ARTIFACT_KIND_NAMES = ("technical_documentation", "risk_assessment", "transparency_notice", "model_card")
+
+
+@app.command("artifacts")
+def artifacts_cmd(
+    report: Path = typer.Argument(..., exists=True, dir_okay=False, help="Audit report JSON"),
+    kind: list[str] = typer.Option(
+        [], "--kind", "-k", help=f"Artefact kind (repeatable; default: all): {', '.join(ARTIFACT_KIND_NAMES)}"
+    ),
+    out: Path = typer.Option(Path("artifacts"), "--out", "-o", file_okay=False, help="Output directory"),
+    offline: bool = typer.Option(False, "--offline", help="Use templates only (no LLM calls)"),
+    backend_name: Optional[str] = typer.Option(None, "--backend", help="LLM backend: claude | fake"),
+    model: Optional[str] = typer.Option(None, "--model", help="LLM model alias, e.g. sonnet"),
+) -> None:
+    """Draft missing compliance artefacts (Markdown) from an audit report."""
+    from ccauditor.pipeline import generate_artifacts
+
+    kinds = list(kind) or list(ARTIFACT_KIND_NAMES)
+    unknown = [k for k in kinds if k not in ARTIFACT_KIND_NAMES]
+    if unknown:
+        raise typer.BadParameter(
+            f"unknown kind(s) {', '.join(unknown)}; expected {', '.join(ARTIFACT_KIND_NAMES)}", param_hint="--kind"
+        )
+    backend = None
+    if not offline:
+        from ccauditor.llm.backend import get_backend
+
+        backend = get_backend(backend_name, model)
+        _progress(f"Drafting {len(kinds)} artefact(s) with backend {getattr(backend, 'name', backend_name)}")
+    docs = generate_artifacts(_load_report(report), kinds, backend=backend, model=model)
+    out.mkdir(parents=True, exist_ok=True)
+    for k, text in docs.items():
+        _emit(text if text.endswith("\n") else text + "\n", out / f"{k}.md")
+
+
+@app.command("explain")
+def explain_cmd(
+    report: Path = typer.Argument(..., exists=True, dir_okay=False, help="Audit report JSON"),
+    requirement_id: str = typer.Argument(..., help="Requirement id, e.g. AIA-REC-01"),
+    out: Optional[Path] = typer.Option(None, "--out", "-o", help="Output file (default: stdout)"),
+) -> None:
+    """Explain one verdict: requirement, decision, cited evidence, gaps and remediation."""
+    from ccauditor.pipeline import explain
+
+    try:
+        text = explain(_load_report(report), requirement_id)
+    except KeyError as exc:
+        typer.echo(f"Error: {exc.args[0] if exc.args else exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    _emit(text, out)
 
 
 def main() -> None:  # pragma: no cover

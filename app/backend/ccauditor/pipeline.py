@@ -34,8 +34,11 @@ from .models import (
 )
 
 MODES = ("deterministic", "llm", "hybrid")
-HYBRID_CONFIDENCE_THRESHOLD = 0.75  # deterministic verdicts below this go to the LLM judge
+# Deterministic verdicts below this confidence go to the LLM judge. 0.675 = median of the leave-one-app-out
+# choices on the benchmark (app/benchmark/threshold_sweep.py); ~60% of applicable items reach the LLM.
+HYBRID_CONFIDENCE_THRESHOLD = 0.675
 BORDERLINE_CONFIDENCE = 0.6  # LLM-involved verdicts below this -> NEEDS_REVIEW
+ARBITRATION_MARGIN = 0.15  # rules vs LLM hard disagreement: the side this much more confident wins, else NR
 
 Progress = Callable[[str], None] | None
 
@@ -102,13 +105,18 @@ def not_applicable_verdict(req: Requirement, risk: RiskAssessment) -> Verdict:
     )
 
 
-def needs_llm(req: Requirement, det: Verdict | None) -> bool:
-    """Hybrid routing: send to the LLM judge when rules are inconclusive, weak or absent."""
+def needs_llm(req: Requirement, det: Verdict | None, threshold: float | None = None) -> bool:
+    """Hybrid routing: send to the LLM judge when rules are inconclusive, weak or absent.
+
+    The rule engine grades its confidence (single match, documentation-only claim, regex miss and
+    "absent" checks are weak), so the threshold decides how much is double-checked by the LLM.
+    """
+    threshold = HYBRID_CONFIDENCE_THRESHOLD if threshold is None else threshold
     if det is None:
         return True
     if det.status in (Status.NEEDS_REVIEW, Status.PARTIAL):
         return True
-    if det.confidence < HYBRID_CONFIDENCE_THRESHOLD:
+    if det.confidence < threshold:
         return True
     if req.llm_guidance and not req.checks:
         return True
@@ -126,6 +134,23 @@ def combine(det: Verdict | None, llm: Verdict) -> Verdict:
     ids = list(dict.fromkeys([*llm.evidence_ids, *det.evidence_ids]))
     gaps = list(dict.fromkeys([*llm.gaps, *det.gaps]))
     if _disagree(det.status, llm.status):
+        winner = None
+        if llm.confidence - det.confidence >= ARBITRATION_MARGIN:
+            winner, loser, wname, lname = llm, det, "LLM judge", "rule engine"
+        elif det.confidence - llm.confidence >= ARBITRATION_MARGIN:
+            winner, loser, wname, lname = det, llm, "rule engine", "LLM judge"
+        if winner is not None:
+            return Verdict(
+                requirement_id=llm.requirement_id, status=winner.status,
+                confidence=round(max(0.0, winner.confidence - 0.1), 3),
+                rationale=(f"Rule engine and LLM judge disagree; the {wname} is markedly more confident "
+                           f"({winner.confidence:.2f} vs {loser.confidence:.2f}) and is followed.\n"
+                           f"LLM judge ({llm.status.value}): {llm.rationale}\n"
+                           f"Rule engine ({det.status.value}): {det.rationale}"),
+                evidence_ids=list(dict.fromkeys([*winner.evidence_ids, *loser.evidence_ids])),
+                gaps=gaps, remediation=llm.remediation or det.remediation,
+                method="hybrid", verified=llm.verified,
+            )
         return Verdict(
             requirement_id=llm.requirement_id, status=Status.NEEDS_REVIEW,
             confidence=round(min(0.5, det.confidence, llm.confidence), 3),
@@ -160,6 +185,16 @@ def apply_borderline(v: Verdict) -> Verdict:
 
 
 # ------------------------------------------------------------------ main entry point
+
+
+class _NoVerifier:
+    """Pass-through stand-in used for the 'no Verifier' ablation."""
+
+    def check(self, verdict: Verdict, *_a, **_k) -> Verdict:
+        return verdict
+
+    def run(self, _req: Requirement, verdict: Verdict, *_a, **_k) -> Verdict:
+        return verdict
 
 
 def _say(progress: Progress, msg: str) -> None:
@@ -214,7 +249,10 @@ def run_audit(
     progress: Progress = None,
     verify_with_llm: bool = False,
     index: EvidenceIndex | None = None,
+    use_verifier: bool = True,
+    hybrid_threshold: float | None = None,
 ) -> AuditReport:
+    """Run one audit. ``use_verifier=False`` disables the Verifier entirely (ablation only)."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
     t_start = time.perf_counter()
@@ -267,6 +305,8 @@ def run_audit(
     det_verdicts: dict[str, Verdict] = {}
     to_judge: list[Requirement] = []
     verifier = Verifier(backend if use_llm else None, use_llm=verify_with_llm and use_llm, model=model)
+    if not use_verifier:
+        verifier = _NoVerifier()
     for req in reqs:
         if not applies(req, risk):
             verdicts[req.id] = not_applicable_verdict(req, risk)
@@ -280,7 +320,7 @@ def run_audit(
                               rationale=f"Rule engine error: {e}", method="deterministic")
             det = verifier.check(det, by_id, require_evidence=False)  # rule citations must exist in the index
             det_verdicts[req.id] = det
-        if mode == "llm" or (mode == "hybrid" and needs_llm(req, det)):
+        if mode == "llm" or (mode == "hybrid" and needs_llm(req, det, hybrid_threshold)):
             to_judge.append(req)
         else:
             verdicts[req.id] = det  # type: ignore[assignment]
@@ -340,6 +380,14 @@ def run_audit(
         "output_tokens": llm_stats.get("output_tokens", 0),
         "cost_usd": llm_stats.get("cost_usd", 0.0),
         "llm_latency_s": llm_stats.get("latency_s", 0.0),
+        "llm_cached_cost_usd": llm_stats.get("cached_cost_usd", 0.0),
+        "llm_cached_latency_s": llm_stats.get("cached_latency_s", 0.0),
+        "llm_cached_input_tokens": llm_stats.get("cached_input_tokens", 0),
+        "llm_cached_output_tokens": llm_stats.get("cached_output_tokens", 0),
+        "use_verifier": use_verifier,
+        "hybrid_threshold": (HYBRID_CONFIDENCE_THRESHOLD if hybrid_threshold is None else hybrid_threshold)
+        if mode == "hybrid" else None,
+        "verify_with_llm": bool(verify_with_llm and use_llm),
         "n_requirements": len(reqs),
         "n_llm_judged": len(to_judge),
         "n_needs_review": sum(v.status == Status.NEEDS_REVIEW for v in ordered),

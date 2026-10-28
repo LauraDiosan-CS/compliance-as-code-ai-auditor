@@ -39,7 +39,7 @@ CHECK = RuleCheck(type="pattern", pattern="x")
         (R(checks=[CHECK]), V(Status.NON_COMPLIANT, 0.8), False),
         (R(checks=[CHECK]), V(Status.NEEDS_REVIEW, 0.2), True),
         (R(checks=[CHECK]), V(Status.PARTIAL, 0.9), True),
-        (R(checks=[CHECK]), V(Status.COMPLIANT, 0.7), True),  # weak rule confidence
+        (R(checks=[CHECK]), V(Status.COMPLIANT, 0.6), True),  # weak rule confidence
         (R(guidance="look for X"), V(Status.COMPLIANT, 0.9), True),  # guidance, no checks
         (R(checks=[CHECK], guidance="look for X"), V(Status.COMPLIANT, 0.9), False),
         (R(), None, True),
@@ -56,6 +56,23 @@ def test_disagreement_goes_to_review_with_both_opinions():
     assert out.status == Status.NEEDS_REVIEW and out.method == "hybrid"
     assert "Rule engine (compliant" in out.rationale and "LLM judge (non_compliant" in out.rationale
     assert out.evidence_ids == ["b", "a"] and out.confidence <= 0.5
+
+
+def test_hard_disagreement_follows_markedly_more_confident_side():
+    det = V(Status.COMPLIANT, 0.6, ids=["a"])
+    llm = V(Status.NON_COMPLIANT, 0.85, ids=["b"], method="hybrid")
+    out = pipeline.combine(det, llm)
+    assert out.status == Status.NON_COMPLIANT and out.confidence == pytest.approx(0.75)
+    assert "markedly more confident" in out.rationale and out.evidence_ids == ["b", "a"]
+    out = pipeline.combine(V(Status.NON_COMPLIANT, 0.9), V(Status.COMPLIANT, 0.6, method="hybrid"))
+    assert out.status == Status.NON_COMPLIANT
+
+
+def test_routing_threshold_parameter():
+    req = R(checks=[CHECK])
+    det = V(Status.COMPLIANT, 0.8)
+    assert not pipeline.needs_llm(req, det, threshold=0.75)
+    assert pipeline.needs_llm(req, det, threshold=0.85)
 
 
 def test_agreement_boosts_confidence_and_llm_wins_soft_disagreement():
@@ -153,13 +170,17 @@ def test_run_audit_hybrid_end_to_end(tiny_repo, monkeypatch):
 
     def weak_doc_rule(req, root, index):  # weak rule verdict -> routed to the LLM, which disagrees
         v = real(req, root, index)
-        return v.model_copy(update={"confidence": 0.7}) if req.id == "DOC-01" else v
+        if req.id == "DOC-01":  # close confidences (0.72 vs 0.85) -> no clear winner -> human review
+            return v.model_copy(update={"confidence": 0.72})
+        if req.id == "REC-01":  # strong rule verdict -> settled without the LLM
+            return v.model_copy(update={"confidence": 0.9})
+        return v
 
     monkeypatch.setattr(pipeline, "_evaluate_requirement", weak_doc_rule)
     fb = FakeBackend(make_responder())
     msgs = []
     rep = pipeline.run_audit(str(tiny_repo), ["t"], mode="hybrid", backend=fb,
-                             requirements_override=_requirements(), progress=msgs.append)
+                             requirements_override=_requirements(), progress=msgs.append, hybrid_threshold=0.75)
     by = {v.requirement_id: v for v in rep.verdicts}
     assert rep.risk.level == RiskLevel.HIGH and rep.risk.evidence_ids
     assert by["REC-01"].status == Status.COMPLIANT and by["REC-01"].method == "deterministic"

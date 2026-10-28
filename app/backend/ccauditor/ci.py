@@ -27,8 +27,12 @@ def severities_at_or_above(level: str) -> tuple[str, ...]:
 
 
 def changed_files(repo_root: str | Path, base_ref: str) -> list[str]:
-    """Files changed between base_ref and the working tree (git diff --name-only)."""
-    cmd = ["git", "-C", str(repo_root), "diff", "--name-only", base_ref]
+    """Files changed between base_ref and the working tree (git diff --name-only).
+
+    Paths are relative to ``repo_root`` (``--relative``), so they match evidence paths even when the
+    audited directory is a sub-folder of the git repository (e.g. a monorepo app in CI).
+    """
+    cmd = ["git", "-C", str(repo_root), "diff", "--name-only", "--relative", base_ref]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     if proc.returncode != 0:
         raise RuntimeError(f"git diff failed: {proc.stderr.strip()}")

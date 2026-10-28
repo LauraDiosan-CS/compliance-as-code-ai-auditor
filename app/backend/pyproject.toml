@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+eval = ["pandas>=2", "matplotlib>=3.8", "scikit-learn>=1.4", "nbformat>=5", "nbconvert>=7", "ipykernel>=6"]
 
 [project.scripts]
 ccauditor = "ccauditor.cli:app"

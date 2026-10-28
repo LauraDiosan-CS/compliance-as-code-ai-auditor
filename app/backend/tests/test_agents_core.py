@@ -167,6 +167,21 @@ def test_heuristic_risk(text, level):
         assert r.triggers and r.evidence_ids == ["id1"]
 
 
+def test_heuristic_risk_ignores_negated_and_single_weak_signals():
+    neg = "SpamShield filters e-mail. It does not interact with people as a chatbot and does not generate content."
+    r = heuristic_classify(idx(ev(1, path="README.md", kind=EvidenceKind.DOC, snippet=neg)))
+    assert r.level == RiskLevel.MINIMAL and "Negated" in r.rationale
+    # one passing mention in a non-intent doc is a weak indicator only
+    r = heuristic_classify(idx(ev(1, path="docs/ops.md", kind=EvidenceKind.DOC, snippet="Ops chatbot runbook."),
+                               ev(2, path="README.md", kind=EvidenceKind.DOC, snippet="Sorts holiday photos.")))
+    assert r.level == RiskLevel.MINIMAL and r.triggers
+    # LLM SDK calls in code alone do not make a system 'limited' (no user-facing generation evident)
+    code = [ev(i, path=f"src/m{i}.py", kind=EvidenceKind.CODE, snippet="client.chat.completions.create(...)")
+            for i in range(1, 5)]
+    r = heuristic_classify(idx(*code, ev(9, path="README.md", kind=EvidenceKind.DOC, snippet="Internal batch tool.")))
+    assert r.level == RiskLevel.MINIMAL
+
+
 def test_heuristic_risk_no_docs_is_unknown():
     assert heuristic_classify(idx(ev(1, snippet="x = 1"))).level == RiskLevel.UNKNOWN
 

@@ -3,6 +3,15 @@
 Each check yields "pass", "fail" or "unknown". Aggregation per requirement:
 all pass -> COMPLIANT, none pass -> NON_COMPLIANT, mixed -> PARTIAL,
 no checks / only unknown -> NEEDS_REVIEW. Unknown checks are ignored when others resolved.
+
+Pattern checks run on comment-masked text (comments, docstrings and TODO/FIXME/TBD lines are blanked,
+see ``rules.comments``), and "present" checks ignore switched-off feature flags (``x_allowed = False``).
+
+Confidence is graded per check ("strength") rather than fixed per status: many matches across files in
+code/config is strong evidence; a single match, a match only in documentation for a technical check
+(a claim, not an implementation), a regex that simply did not match (indirect evidence may exist) or an
+"absent" check that passed (absence of a pattern) are weak. The hybrid orchestrator routes weak verdicts
+to the LLM judge.
 """
 
 from __future__ import annotations
@@ -20,6 +29,7 @@ from typing import Any, Literal
 import yaml
 
 from ccauditor.evidence.files import iter_repo_files, read_text
+from ccauditor.rules.comments import comment_kind, is_disabled_flag_line, mask_non_code
 from ccauditor.models import (
     Evidence,
     EvidenceIndex,
@@ -33,6 +43,7 @@ from ccauditor.models import (
 
 Outcome = Literal["pass", "fail", "unknown"]
 MAX_EVIDENCE_PER_CHECK = 5
+# Status-level defaults (used for N/A, partial, needs_review and checks without a graded strength)
 CONFIDENCE = {
     Status.COMPLIANT: 0.9,
     Status.NON_COMPLIANT: 0.8,
@@ -40,6 +51,24 @@ CONFIDENCE = {
     Status.NEEDS_REVIEW: 0.2,
     Status.NOT_APPLICABLE: 0.9,
 }
+DOC_KINDS = {EvidenceKind.DOC, EvidenceKind.MODEL_CARD}
+TECH_KINDS = {EvidenceKind.CODE, EvidenceKind.CONFIG, EvidenceKind.IAC}
+
+# graded strengths (probability-like: how much one check outcome should be trusted on its own)
+S_PRESENT_MANY = 0.9        # cap for many hits across files
+S_PRESENT_ONE = 0.65        # a single matching line
+S_PRESENT_DOC_CLAIM = 0.55  # technical check satisfied only by documentation text
+S_PRESENT_COMMENT = 0.55    # satisfied only by an explanatory code comment / docstring (a claim)
+S_ABSENT_FOUND = 0.8        # forbidden pattern found in real (non-comment) code
+S_ABSENT_CLEAN = 0.6        # forbidden pattern not found (absence of evidence)
+S_MISSING = 0.6             # required pattern not found (regexes miss indirect evidence)
+S_MISSING_ONLY_COMMENTED = 0.75  # required pattern appears only in comments / TODOs: intent, not implementation
+S_MISSING_NO_FILES = 0.8    # nothing of the required kind exists at all
+S_FILE_FOUND = 0.7
+S_FILE_MISSING = 0.65
+S_YAML_FOUND = 0.85
+S_YAML_MISSING = 0.65
+S_REGO = 0.9
 
 
 @dataclass
@@ -48,6 +77,7 @@ class CheckResult:
     outcome: Outcome
     message: str
     evidence_ids: list[str] = field(default_factory=list)
+    strength: float | None = None  # confidence in this outcome (None -> status default)
 
 
 class RepoView:
@@ -57,6 +87,7 @@ class RepoView:
         self.root = Path(repo_root).resolve()
         self.index = index
         self._text: dict[str, str] = {}
+        self._masked: dict[str, str] = {}
         self.kind_of: dict[str, EvidenceKind] = {}
         self._chunks: dict[str, list[Evidence]] = {}
         for e in index.items:
@@ -81,6 +112,12 @@ class RepoView:
         if path not in self._text:
             self._text[path] = read_text(self.root / path)
         return self._text[path]
+
+    def masked(self, path: str) -> str:
+        """File text with comments, docstrings and TODO lines blanked (line numbers preserved)."""
+        if path not in self._masked:
+            self._masked[path] = mask_non_code(path, self.text(path))
+        return self._masked[path]
 
     def select(self, globs: list[str], kinds: list[EvidenceKind]) -> list[str]:
         paths = self.indexed_paths
@@ -141,6 +178,17 @@ def _describe(check: RuleCheck) -> str:
 # ------------------------------------------------------------------ individual checks
 
 
+def _present_strength(hits: list[tuple[str, int]], view: RepoView, check: RuleCheck) -> float:
+    files = {p for p, _ in hits}
+    kinds = {view.kind_of.get(p) for p in files}
+    technical_scope = not check.kinds or any(EvidenceKind(k) in TECH_KINDS for k in check.kinds)
+    if technical_scope and kinds and kinds <= DOC_KINDS:
+        return S_PRESENT_DOC_CLAIM
+    lines = len(set(hits))
+    s = S_PRESENT_ONE + 0.08 * (min(lines, 4) - 1) + (0.05 if len(files) > 1 else 0.0)
+    return round(min(S_PRESENT_MANY, s), 3)
+
+
 def _check_pattern(check: RuleCheck, view: RepoView) -> CheckResult:
     desc = _describe(check)
     if not check.pattern:
@@ -150,12 +198,29 @@ def _check_pattern(check: RuleCheck, view: RepoView) -> CheckResult:
     except re.error as exc:
         return CheckResult(check, "unknown", f"{desc}: invalid regex ({exc})")
     hits: list[tuple[str, int]] = []
-    for path in view.select(check.globs, check.kinds):
-        text = view.text(path)
-        for m in rx.finditer(text):
-            hits.append((path, text.count("\n", 0, m.start()) + 1))
-            if len(hits) >= 50:
-                break
+    ignored: list[tuple[str, int, str]] = []  # (path, line, reason)
+    candidates = view.select(check.globs, check.kinds)
+    for path in candidates:
+        raw = view.text(path)
+        masked = view.masked(path)
+        lines = raw.splitlines()
+        real_lines: set[int] = set()
+        for m in rx.finditer(masked):  # matches in actual code / prose
+            line = masked.count("\n", 0, m.start()) + 1
+            if check.expect == "present" and 0 < line <= len(lines) and is_disabled_flag_line(lines[line - 1]):
+                ignored.append((path, line, "disabled flag"))
+                continue
+            real_lines.add(line)
+            if len(hits) < 50:
+                hits.append((path, line))
+        if masked != raw:  # matches that exist only in comments / docstrings / TODO lines
+            for m in rx.finditer(raw):
+                line = raw.count("\n", 0, m.start()) + 1
+                if line in real_lines or len(ignored) >= 20:
+                    continue
+                kind = comment_kind(lines[line - 1]) if 0 < line <= len(lines) else "todo"
+                ignored.append((path, line, {"todo": "TODO", "code": "commented-out code",
+                                             "prose": "comment"}[kind]))
     ev: list[str] = []
     for path, line in hits:
         eid = view.evidence_at(path, line)
@@ -164,13 +229,31 @@ def _check_pattern(check: RuleCheck, view: RepoView) -> CheckResult:
         if len(ev) >= MAX_EVIDENCE_PER_CHECK:
             break
     where = ", ".join(sorted({f"{p}:{ln}" for p, ln in hits[:5]}))
+    note = ""
+    if ignored:
+        note = " (ignored: " + ", ".join(f"{p}:{ln} [{why}]" for p, ln, why in ignored[:3]) + ")"
     if check.expect == "present":
         if hits:
-            return CheckResult(check, "pass", f"{desc}: found at {where}", ev)
-        return CheckResult(check, "fail", f"{desc}: no match found")
+            s = _present_strength(hits, view, check)
+            claim = " - documentation only (claim, not implementation)" if s == S_PRESENT_DOC_CLAIM else ""
+            return CheckResult(check, "pass", f"{desc}: found at {where}{claim}{note}", ev, s)
+        if not candidates:
+            return CheckResult(check, "fail", f"{desc}: no file of the required kind exists", [], S_MISSING_NO_FILES)
+        prose = [(p, ln) for p, ln, why in ignored if why == "comment"]
+        if prose:  # explanatory comments / docstrings describe behaviour: a weak claim, not proof
+            ev_c = list(dict.fromkeys(eid for p, ln in prose[:MAX_EVIDENCE_PER_CHECK]
+                                      if (eid := view.evidence_at(p, ln))))
+            where_c = ", ".join(sorted({f"{p}:{ln}" for p, ln in prose[:5]}))
+            return CheckResult(check, "pass", f"{desc}: only in explanatory comments/docstrings at {where_c} "
+                               f"(claim, verify the code){note}", ev_c, S_PRESENT_COMMENT)
+        if ignored:
+            ign_ev = [eid for p, ln, _ in ignored[:MAX_EVIDENCE_PER_CHECK] if (eid := view.evidence_at(p, ln))]
+            return CheckResult(check, "fail", f"{desc}: only commented-out / TODO / disabled matches{note}",
+                               list(dict.fromkeys(ign_ev)), S_MISSING_ONLY_COMMENTED)
+        return CheckResult(check, "fail", f"{desc}: no match found", [], S_MISSING)
     if hits:
-        return CheckResult(check, "fail", f"{desc}: forbidden pattern found at {where}", ev)
-    return CheckResult(check, "pass", f"{desc}: confirmed absent")
+        return CheckResult(check, "fail", f"{desc}: forbidden pattern found at {where}", ev, S_ABSENT_FOUND)
+    return CheckResult(check, "pass", f"{desc}: confirmed absent{note}", [], S_ABSENT_CLEAN)
 
 
 def _check_file_exists(check: RuleCheck, view: RepoView) -> CheckResult:
@@ -184,11 +267,11 @@ def _check_file_exists(check: RuleCheck, view: RepoView) -> CheckResult:
     ev = [eid for p in matches[:MAX_EVIDENCE_PER_CHECK] if (eid := view.first_chunk(p))]
     if check.expect == "present":
         if matches:
-            return CheckResult(check, "pass", f"{desc}: found {', '.join(matches[:5])}", ev)
-        return CheckResult(check, "fail", f"{desc}: no matching file")
+            return CheckResult(check, "pass", f"{desc}: found {', '.join(matches[:5])}", ev, S_FILE_FOUND)
+        return CheckResult(check, "fail", f"{desc}: no matching file", [], S_FILE_MISSING)
     if matches:
-        return CheckResult(check, "fail", f"{desc}: unexpected file(s) {', '.join(matches[:5])}", ev)
-    return CheckResult(check, "pass", f"{desc}: confirmed absent")
+        return CheckResult(check, "fail", f"{desc}: unexpected file(s) {', '.join(matches[:5])}", ev, S_FILE_FOUND)
+    return CheckResult(check, "pass", f"{desc}: confirmed absent", [], S_FILE_MISSING)
 
 
 _MISSING = object()
@@ -261,11 +344,12 @@ def _check_yaml_path(check: RuleCheck, view: RepoView) -> CheckResult:
     where = ", ".join(sorted({p for p, _ in found})[:5])
     if check.expect == "present":
         if found:
-            return CheckResult(check, "pass", f"{desc}: found in {where}", ev)
-        return CheckResult(check, "fail", f"{desc}: not found in {len(candidates)} candidate file(s)")
+            return CheckResult(check, "pass", f"{desc}: found in {where}", ev, S_YAML_FOUND)
+        return CheckResult(check, "fail", f"{desc}: not found in {len(candidates)} candidate file(s)", [],
+                           S_YAML_MISSING)
     if found:
-        return CheckResult(check, "fail", f"{desc}: present in {where}", ev)
-    return CheckResult(check, "pass", f"{desc}: confirmed absent")
+        return CheckResult(check, "fail", f"{desc}: present in {where}", ev, S_YAML_FOUND)
+    return CheckResult(check, "pass", f"{desc}: confirmed absent", [], S_YAML_MISSING)
 
 
 def _check_rego(check: RuleCheck, view: RepoView) -> CheckResult:
@@ -299,7 +383,7 @@ def _check_rego(check: RuleCheck, view: RepoView) -> CheckResult:
     allowed = value is True
     if check.expect == "absent":
         allowed = not allowed
-    return CheckResult(check, "pass" if allowed else "fail", f"{desc}: OPA returned allow={value}")
+    return CheckResult(check, "pass" if allowed else "fail", f"{desc}: OPA returned allow={value}", [], S_REGO)
 
 
 _CHECKERS = {
@@ -315,6 +399,25 @@ def run_check(check: RuleCheck, view: RepoView) -> CheckResult:
 
 
 # ------------------------------------------------------------------ aggregation
+
+
+def graded_confidence(status: Status, results: list[CheckResult]) -> float:
+    """Confidence of the aggregated verdict from the strengths of the checks that decided it.
+
+    compliant -> mean strength of passing checks; non_compliant -> mean strength of failing checks;
+    +0.05 when two or more independent checks agree. partial / needs_review keep their status default.
+    """
+    if status == Status.COMPLIANT:
+        decisive = [r for r in results if r.outcome == "pass"]
+    elif status == Status.NON_COMPLIANT:
+        decisive = [r for r in results if r.outcome == "fail"]
+    else:
+        return CONFIDENCE[status]
+    vals = [r.strength if r.strength is not None else CONFIDENCE[status] for r in decisive]
+    if not vals:
+        return CONFIDENCE[status]
+    conf = sum(vals) / len(vals) + (0.05 if len(vals) >= 2 else 0.0)
+    return round(min(0.95, conf), 3)
 
 
 def aggregate(results: list[CheckResult]) -> Status:
@@ -359,7 +462,8 @@ def evaluate_requirement(
     if not results:
         rationale = "No deterministic checks defined for this requirement; human or LLM review needed."
     else:
-        lines = [f"- [{r.outcome.upper()}] {r.message}" for r in results]
+        lines = [f"- [{r.outcome.upper()}{'' if r.strength is None else f' {r.strength:.2f}'}] {r.message}"
+                 for r in results]
         n_pass = sum(r.outcome == "pass" for r in results)
         n_unknown = sum(r.outcome == "unknown" for r in results)
         rationale = f"{n_pass}/{len(results)} deterministic checks passed"
@@ -377,7 +481,7 @@ def evaluate_requirement(
     return Verdict(
         requirement_id=req.id,
         status=status,
-        confidence=CONFIDENCE[status],
+        confidence=graded_confidence(status, results),
         rationale=rationale,
         evidence_ids=evidence_ids,
         gaps=gaps,

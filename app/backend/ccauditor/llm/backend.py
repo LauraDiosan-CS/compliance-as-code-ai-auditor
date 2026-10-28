@@ -42,11 +42,22 @@ class Usage:
     output_tokens: int = 0
     cost_usd: float = 0.0
     latency_s: float = 0.0  # summed wall-clock of real calls
+    # what cache hits would have cost if they had been real calls (from the cache entry metadata)
+    cached_cost_usd: float = 0.0
+    cached_latency_s: float = 0.0
+    cached_input_tokens: int = 0
+    cached_output_tokens: int = 0
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def add(self, *, calls: int = 0, cache_hits: int = 0, failures: int = 0, input_tokens: int = 0,
-            output_tokens: int = 0, cost_usd: float = 0.0, latency_s: float = 0.0) -> None:
+            output_tokens: int = 0, cost_usd: float = 0.0, latency_s: float = 0.0,
+            cached_cost_usd: float = 0.0, cached_latency_s: float = 0.0, cached_input_tokens: int = 0,
+            cached_output_tokens: int = 0) -> None:
         with self._lock:
+            self.cached_cost_usd += cached_cost_usd
+            self.cached_latency_s += cached_latency_s
+            self.cached_input_tokens += cached_input_tokens
+            self.cached_output_tokens += cached_output_tokens
             self.calls += calls
             self.cache_hits += cache_hits
             self.failures += failures
@@ -65,6 +76,10 @@ class Usage:
                 "output_tokens": self.output_tokens,
                 "cost_usd": round(self.cost_usd, 6),
                 "latency_s": round(self.latency_s, 3),
+                "cached_cost_usd": round(self.cached_cost_usd, 6),
+                "cached_latency_s": round(self.cached_latency_s, 3),
+                "cached_input_tokens": self.cached_input_tokens,
+                "cached_output_tokens": self.cached_output_tokens,
             }
 
 
@@ -231,10 +246,17 @@ class DiskCache:
         return self.root / key[:2] / f"{key}.json"
 
     def get(self, key: str) -> dict | None:
+        entry = self.get_entry(key)
+        return entry["response"] if entry else None
+
+    def get_entry(self, key: str) -> dict | None:
+        """Full cache entry {"response": ..., "meta": {...}} or None."""
         p = self._path(key)
         try:
-            return json.loads(p.read_text("utf-8"))["response"]
-        except (OSError, ValueError, KeyError):
+            entry = json.loads(p.read_text("utf-8"))
+            entry["response"]
+            return entry
+        except (OSError, ValueError, KeyError, TypeError):
             return None
 
     def put(self, key: str, response: dict, meta: dict | None = None) -> None:
@@ -325,14 +347,15 @@ class ClaudeCodeBackend:
             raise LLMError(f"claude CLI returned non-JSON (rc={proc.returncode}): "
                            f"{(proc.stdout or proc.stderr)[:300]}")
         u = env_obj.get("usage") or {}
-        self.usage.add(
-            calls=1,
-            input_tokens=int(u.get("input_tokens", 0)) + int(u.get("cache_creation_input_tokens", 0))
+        call_usage = {
+            "input_tokens": int(u.get("input_tokens", 0)) + int(u.get("cache_creation_input_tokens", 0))
             + int(u.get("cache_read_input_tokens", 0)),
-            output_tokens=int(u.get("output_tokens", 0)),
-            cost_usd=float(env_obj.get("total_cost_usd") or 0.0),
-            latency_s=dt,
-        )
+            "output_tokens": int(u.get("output_tokens", 0)),
+            "cost_usd": float(env_obj.get("total_cost_usd") or 0.0),
+            "latency_s": dt,
+        }
+        self.usage.add(calls=1, **call_usage)
+        env_obj["_call_usage"] = call_usage
         if env_obj.get("is_error") or proc.returncode != 0:
             raise LLMError(f"claude CLI error: {str(env_obj.get('result') or env_obj.get('subtype'))[:300]}")
         return env_obj, env_obj.get("result") or ""
@@ -343,15 +366,22 @@ class ClaudeCodeBackend:
         model = model or self.model
         key = DiskCache.key(model, system, prompt, schema) if self.cache else None
         if key:
-            hit = self.cache.get(key)
-            if hit is not None:
-                self.usage.add(cache_hits=1)
-                return hit
+            entry = self.cache.get_entry(key)
+            if entry is not None:
+                meta = entry.get("meta") or {}
+                self.usage.add(cache_hits=1, cached_cost_usd=float(meta.get("cost_usd") or 0.0),
+                               cached_latency_s=float(meta.get("latency_s") or 0.0),
+                               cached_input_tokens=int(meta.get("input_tokens") or 0),
+                               cached_output_tokens=int(meta.get("output_tokens") or 0))
+                return entry["response"]
         last_err: Exception | None = None
         cur_prompt = prompt
+        spent = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "latency_s": 0.0}
         for _attempt in range(self.max_retries + 1):
             try:
                 env_obj, text = self._invoke(system, cur_prompt, model, schema)
+                for k, v in (env_obj.get("_call_usage") or {}).items():
+                    spent[k] += v
             except subprocess.TimeoutExpired as e:
                 self.usage.add(failures=1, latency_s=self.timeout)
                 last_err = e
@@ -371,7 +401,7 @@ class ClaudeCodeBackend:
                 cur_prompt = prompt + NUDGE.format(error=str(e)[:200])
                 continue
             if key:
-                self.cache.put(key, obj, {"model": model})
+                self.cache.put(key, obj, {"model": model, **{k: round(v, 6) for k, v in spent.items()}})
             return obj
         raise LLMError(f"LLM failed after {self.max_retries + 1} attempts: {last_err}")
 

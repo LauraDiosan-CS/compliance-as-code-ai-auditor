@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 from typing import Any, Literal
@@ -28,6 +29,16 @@ from ccauditor.review import Review, apply_reviews
 SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
                   or os.environ.get("CCAUDITOR_SERVERLESS"))
 DEFAULT_MODE: Literal["deterministic", "llm", "hybrid"] = "deterministic" if SERVERLESS else "hybrid"
+# Serverless hosts (Vercel) have no logged-in Claude Code CLI, so LLM modes are downgraded to the
+# deterministic rule engine unless CCAUDITOR_ALLOW_LLM=1 is set explicitly.
+ALLOW_LLM = os.environ.get("CCAUDITOR_ALLOW_LLM") == "1" or not SERVERLESS
+
+
+def effective_mode(requested: str | None) -> Literal["deterministic", "llm", "hybrid"]:
+    mode = requested or DEFAULT_MODE
+    return mode if ALLOW_LLM else "deterministic"  # type: ignore[return-value]
+
+
 _REPO_URL = re.compile(r"^https://[\w.-]+(:\d+)?/[\w./~%+-]+?(\.git)?/?$")
 
 app = FastAPI(title="Compliance-as-Code AI Auditor", version=__version__)
@@ -68,7 +79,8 @@ class ReviewRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    return {"status": "ok", "version": __version__, "default_mode": DEFAULT_MODE, "serverless": SERVERLESS}
+    return {"status": "ok", "version": __version__, "default_mode": DEFAULT_MODE, "serverless": SERVERLESS,
+            "llm_enabled": ALLOW_LLM}
 
 
 @app.get("/policies")
@@ -92,11 +104,77 @@ def policy_detail(policy_id: str) -> dict[str, Any]:
     }
 
 
+_GITHUB_URL = re.compile(r"^https://(www\.)?github\.com/([\w.-]+)/([\w.-]+?)(\.git)?/?$")
+MAX_TARBALL_BYTES = int(os.environ.get("CCAUDITOR_MAX_TARBALL_MB", "200")) * 1024 * 1024
+
+
+def _github_tarball_url(url: str) -> str | None:
+    """https://github.com/<owner>/<repo>[.git] -> codeload tarball URL of the default branch HEAD."""
+    m = _GITHUB_URL.match(url)
+    if not m:
+        return None
+    return f"https://codeload.github.com/{m.group(2)}/{m.group(3)}/tar.gz/HEAD"
+
+
+def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
+    """Extract regular files/dirs only, refusing absolute paths, '..' and links outside dest."""
+    dest = dest.resolve()
+    members = []
+    for m in tar.getmembers():
+        if not (m.isfile() or m.isdir()):
+            continue  # skip symlinks, hardlinks, devices
+        target = (dest / m.name).resolve()
+        if target != dest and dest not in target.parents:
+            continue
+        members.append(m)
+    if hasattr(tarfile, "data_filter"):
+        tar.extractall(dest, members=members, filter="data")
+    else:  # pragma: no cover - Python < 3.11.4
+        tar.extractall(dest, members=members)
+
+
+def _download_tarball(url: str, dest: Path) -> None:
+    """Fallback for hosts without git (e.g. Vercel functions): fetch the GitHub tarball and unpack it."""
+    import httpx
+
+    tar_url = _github_tarball_url(url)
+    if tar_url is None:
+        raise HTTPException(400, "git is not available on this server; only https://github.com/<owner>/<repo> "
+                                 "URLs can be audited (downloaded as a tarball)")
+    archive = dest.parent / "repo.tar.gz"
+    size = 0
+    try:
+        with httpx.stream("GET", tar_url, follow_redirects=True, timeout=60) as resp:
+            if resp.status_code != 200:
+                raise HTTPException(400, f"could not download {tar_url}: HTTP {resp.status_code}")
+            with archive.open("wb") as fh:
+                for chunk in resp.iter_bytes():
+                    size += len(chunk)
+                    if size > MAX_TARBALL_BYTES:
+                        raise HTTPException(413, "repository archive is too large")
+                    fh.write(chunk)
+    except httpx.HTTPError as exc:
+        raise HTTPException(400, f"could not download {tar_url}: {exc}") from exc
+    unpack = dest.parent / "unpack"
+    unpack.mkdir(parents=True, exist_ok=True)
+    try:
+        with tarfile.open(archive, "r:gz") as tar:
+            _safe_extract(tar, unpack)
+    except tarfile.TarError as exc:
+        raise HTTPException(400, f"invalid repository archive: {exc}") from exc
+    finally:
+        archive.unlink(missing_ok=True)
+    roots = [p for p in unpack.iterdir() if p.is_dir()]
+    # codeload archives contain a single top-level "<repo>-<sha>/" directory
+    (roots[0] if len(roots) == 1 else unpack).rename(dest)
+
+
 def _clone(url: str, dest: Path) -> None:
     if not _REPO_URL.match(url):
         raise HTTPException(400, "repo_url must be a public https git URL")
-    if not shutil.which("git"):
-        raise HTTPException(500, "git is not available on this server")
+    if not shutil.which("git") or os.environ.get("CCAUDITOR_FETCH") == "tarball":
+        _download_tarball(url, dest)
+        return
     proc = subprocess.run(
         ["git", "clone", "--depth", "1", "--single-branch", "--", url, str(dest)],
         capture_output=True, text=True, timeout=120,
@@ -112,7 +190,7 @@ def audit(req: AuditRequest) -> AuditReport:
 
     if not (req.repo_url or req.repo_path):
         raise HTTPException(400, "Provide repo_url or repo_path")
-    mode = req.mode or DEFAULT_MODE
+    mode = effective_mode(req.mode)
     run_audit = resolve_run_audit()
     tmp: str | None = None
     try:

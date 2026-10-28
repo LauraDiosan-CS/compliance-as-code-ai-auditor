@@ -76,30 +76,90 @@ _ORDER = [RiskLevel.PROHIBITED, RiskLevel.HIGH, RiskLevel.LIMITED, RiskLevel.MIN
 DOC_KINDS = {EvidenceKind.DOC, EvidenceKind.MODEL_CARD}
 
 
+NEGATION = re.compile(
+    r"\b(not|no|never|neither|nor|without|cannot|isn't|doesn't|does not|is not|are not|won't|out of scope|"
+    r"excluded?|prohibited|forbidden|instead of|rather than)\b",
+    re.IGNORECASE,
+)
+INTENT_PATH = re.compile(r"readme|model[_-]?card|intended|purpose|overview|about|instructions|technical[_-]doc",
+                         re.IGNORECASE)
+DOC_WEIGHT = 1.0      # a documentation / model-card statement of what the system does
+INTENT_BONUS = 1.0    # ... in the system's self-description (README, model card, intended-purpose docs): decisive alone
+CODE_WEIGHT = 0.5     # a code-level signal (e.g. an LLM SDK call) - corroborating, not conclusive alone
+MAX_CODE_SCORE = 1.0  # code alone can never reach the threshold of a tier
+TIER_THRESHOLD = 2.0  # >= 2 independent signals (or one intent statement + one corroborating signal)
+
+
+def _negated(text: str, start: int) -> bool:
+    """True if the match is negated in its sentence ('does not interact with people as a chatbot')."""
+    lo = max(text.rfind(".", 0, start), text.rfind("\n\n", 0, start), text.rfind(";", 0, start), start - 120)
+    return bool(NEGATION.search(text[lo + 1:start]))
+
+
 def heuristic_classify(index: EvidenceIndex | list[Evidence]) -> RiskAssessment:
-    """Deterministic keyword classification over docs/model cards (and some code signals)."""
+    """Deterministic, weighted keyword classification.
+
+    Each trigger match is a *signal*: a statement in documentation / model cards weighs 1.0 (+1.0 in the
+    system's self-description: README, model card, intended-purpose docs), a code-level match weighs 0.5
+    (and code alone contributes at most 1.0). Matches negated in their sentence ("this is not a chatbot",
+    "emotion recognition is not supported") are discarded. A tier is assigned only when its signals sum to
+    >= 2.0: an explicit statement in the self-description, or at least two independent signals; weaker
+    indicators are reported but do not set the tier.
+    """
     items = index.items if isinstance(index, EvidenceIndex) else list(index)
     hits: dict[str, list[str]] = {}
     level_of: dict[str, RiskLevel] = {}
+    doc_score: dict[str, float] = {}
+    code_score: dict[str, float] = {}
+    negated: dict[str, int] = {}
     for trig in TRIGGERS:
         rx = re.compile(trig.pattern, re.IGNORECASE)
         for ev in items:
-            if ev.kind not in DOC_KINDS and not trig.code_ok:
+            is_doc = ev.kind in DOC_KINDS
+            if not is_doc and not trig.code_ok:
                 continue
-            if rx.search(ev.snippet) or (ev.kind in DOC_KINDS and rx.search(ev.path.replace("_", " "))):
-                ids = hits.setdefault(trig.label, [])
-                if ev.id not in ids and len(ids) < 3:
-                    ids.append(ev.id)
-                level_of[trig.label] = trig.level
-    if not hits:
+            ms = [m for m in rx.finditer(ev.snippet)]
+            ok = [m for m in ms if not (is_doc and _negated(ev.snippet, m.start()))]
+            if ms and not ok:
+                negated[trig.label] = negated.get(trig.label, 0) + 1
+            path_hit = is_doc and rx.search(ev.path.replace("_", " "))
+            if not ok and not path_hit:
+                continue
+            level_of[trig.label] = trig.level
+            ids = hits.setdefault(trig.label, [])
+            if ev.id not in ids and len(ids) < 3:
+                ids.append(ev.id)
+            if is_doc:
+                w = DOC_WEIGHT + (INTENT_BONUS if INTENT_PATH.search(ev.path) else 0.0)
+                doc_score[trig.label] = doc_score.get(trig.label, 0.0) + w
+            else:
+                code_score[trig.label] = code_score.get(trig.label, 0.0) + CODE_WEIGHT
+
+    def tier_score(level: RiskLevel) -> float:
+        labs = [lab for lab, lv in level_of.items() if lv == level]
+        d = sum(doc_score.get(lab, 0.0) for lab in labs)
+        c = min(MAX_CODE_SCORE, sum(code_score.get(lab, 0.0) for lab in labs))
+        return d + c
+
+    scores = {lv: tier_score(lv) for lv in _ORDER[:3]}
+    level = next((lv for lv in _ORDER[:3] if scores[lv] >= TIER_THRESHOLD), None)
+    neg_note = (" Negated mentions ignored: " + "; ".join(f"{k} ({v})" for k, v in negated.items()) + "."
+                if negated else "")
+    if level is None:
         has_docs = any(ev.kind in DOC_KINDS for ev in items)
+        weak = [lab for lab in level_of]
+        rationale = ("No prohibited-practice, Annex III or Art. 50 indicator reaches the evidence threshold "
+                     "(>= 2 signals)." if has_docs else
+                     "No documentation found; risk level cannot be determined heuristically.")
+        if weak:
+            rationale += " Weak indicators: " + "; ".join(weak) + "."
         return RiskAssessment(
             level=RiskLevel.MINIMAL if has_docs else RiskLevel.UNKNOWN,
-            rationale=("No prohibited-practice, Annex III or Art. 50 indicators found in documentation."
-                       if has_docs else "No documentation found; risk level cannot be determined heuristically."),
-            confidence=0.5 if has_docs else 0.2,
+            rationale=rationale + neg_note,
+            triggers=weak,
+            evidence_ids=[i for lab in weak for i in hits[lab]][:4],
+            confidence=(0.45 if weak else 0.55) if has_docs else 0.2,
         )
-    level = next(lv for lv in _ORDER if lv in level_of.values())
     triggers = [lab for lab, lv in level_of.items() if lv == level]
     others = [lab for lab, lv in level_of.items() if lv != level]
     ev_ids: list[str] = []
@@ -107,13 +167,13 @@ def heuristic_classify(index: EvidenceIndex | list[Evidence]) -> RiskAssessment:
         for i in hits[lab]:
             if i not in ev_ids:
                 ev_ids.append(i)
-    n = sum(len(hits[lab]) for lab in triggers)
-    conf = {RiskLevel.PROHIBITED: 0.55, RiskLevel.HIGH: 0.6, RiskLevel.LIMITED: 0.6}.get(level, 0.5)
-    conf = min(0.85, conf + 0.05 * (n - 1))
-    rationale = f"Keyword pre-classifier: {level.value} because of " + "; ".join(triggers) + "."
+    base = {RiskLevel.PROHIBITED: 0.55, RiskLevel.HIGH: 0.6, RiskLevel.LIMITED: 0.6}.get(level, 0.5)
+    conf = min(0.85, base + 0.05 * (scores[level] - TIER_THRESHOLD))
+    rationale = (f"Keyword pre-classifier: {level.value} because of " + "; ".join(triggers)
+                 + f" (signal score {scores[level]:.1f}).")
     if others:
         rationale += " Other indicators: " + "; ".join(others) + "."
-    return RiskAssessment(level=level, rationale=rationale, triggers=triggers + others,
+    return RiskAssessment(level=level, rationale=rationale + neg_note, triggers=triggers + others,
                           evidence_ids=ev_ids[:8], confidence=round(conf, 2))
 
 

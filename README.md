@@ -1,6 +1,8 @@
 # Compliance-as-Code AI Auditor
 
-Applied Machine Learning 2026-2027, topic #5. **Team:** Bâlc Felicia, Drăghici Eduard, Gog Raluca.
+Advanced Machine Learning 2026-2027 (UBB Cluj-Napoca, Faculty of Mathematics and Computer Science), topic #5.
+
+**Team:** Bâlc Felicia · Drăghici Eduard · Gog Raluca
 
 The auditor takes a **policy or regulation** (EU AI Act, GDPR, an internal Responsible-AI policy) and an
 **application repository**, and produces an auditable compliance report that links **every requirement**

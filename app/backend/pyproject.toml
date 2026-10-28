@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ccauditor"
 version = "0.1.0"
+authors = [{ name = "Bâlc Felicia" }, { name = "Drăghici Eduard" }, { name = "Gog Raluca" }]
 description = "Compliance-as-Code AI Auditor: maps policy requirements to repository evidence."
 requires-python = ">=3.11"
 dependencies = [

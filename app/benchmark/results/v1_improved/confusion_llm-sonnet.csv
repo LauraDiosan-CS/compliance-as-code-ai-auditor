@@ -1,0 +1,6 @@
+truth\pred,compliant,partial,non_compliant,needs_review,not_applicable
+compliant,89,10,0,1,0
+partial,0,10,4,0,0
+non_compliant,0,0,51,0,0
+needs_review,0,0,0,0,0
+not_applicable,0,0,0,0,60

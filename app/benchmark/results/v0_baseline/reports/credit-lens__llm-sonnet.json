@@ -1,0 +1,3130 @@
+{
+ "id": "cbc203da68b0",
+ "created_at": "2026-10-28T18:05:41.371589Z",
+ "target": "app/benchmark/apps/credit-lens",
+ "policies": [
+  "eu-ai-act",
+  "gdpr",
+  "acme-rai"
+ ],
+ "mode": "llm",
+ "risk": {
+  "level": "high",
+  "rationale": "CreditLens evaluates the creditworthiness of natural persons applying for consumer personal loans. It outputs a probability of default and an approve/decline decision. This is an Annex III point 5(b) use case (credit scoring), so it is high-risk. It is not fraud detection, which would be excluded. It uses no prohibited practices: the DPIA says no special categories of data are used, and there is no social scoring or biometric use. Human oversight exists through underwriter review and appeals, but it doesn't change the tier.",
+  "triggers": [
+   "Annex III 5(b): creditworthiness evaluation / credit scoring of natural persons",
+   "Automated approve/decline decisions on consumer loans"
+  ],
+  "evidence_ids": [
+   "170f5b442556",
+   "9a1368799773",
+   "267d1a695bfe",
+   "2ccfbb1e9e56",
+   "532afdbb56df"
+  ],
+  "confidence": 0.97
+ },
+ "requirements": [
+  {
+   "id": "AIA-RISK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.5(1)"
+   ],
+   "category": "risk_classification",
+   "title": "No prohibited AI practices",
+   "statement": "The system does not implement any practice prohibited by Art. 5(1): subliminal or manipulative techniques, exploitation of vulnerabilities, social scoring, crime prediction based solely on profiling, untargeted scraping of facial images, emotion inference in the workplace or in education, or biometric categorisation inferring sensitive traits.",
+   "applies_to": [
+    "prohibited",
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "no emotion recognition / social scoring / face scraping code",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(emotion[_ ]?(recognition|detection|analysis)|infer_emotion|facial[_ ]expression|social[_ ]?scor|scrape[_ ]?faces?|face[_ ]?scrap)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Look for code or documentation showing the system infers emotions (e.g. from video interviews or voice) of employees/candidates/students, scores people on social behaviour, scrapes facial images, or categorises people by biometrics into sensitive traits. A comment or doc stating that such a feature is NOT implemented is evidence of compliance, not a violation. Mark non_compliant only if a prohibited practice is actually implemented or planned for production.",
+   "evidence_queries": [
+    "emotion recognition facial expression",
+    "social score citizen behaviour",
+    "biometric categorisation face embedding",
+    "scrape faces images",
+    "manipulative dark pattern nudge"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-RISK-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.6(2)",
+    "eu-ai-act/Art.6(3)",
+    "eu-ai-act/Art.6(4)",
+    "eu-ai-act/AnnexIII"
+   ],
+   "category": "risk_classification",
+   "title": "Risk classification documented",
+   "statement": "The provider documents the AI Act risk classification of the system with its rationale: the applicable Annex III area/point if high-risk, the Art. 6(3) assessment if an Annex III system is claimed not to be high-risk, or why the system is limited/minimal risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "risk tier stated in documentation",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(annex\\s+iii|high[- ]risk|limited[- ]risk|minimal[- ]risk)\\b.*(ai act|art(icle)?\\.?\\s*\\d|annex|use case|point)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a README section, ADR or compliance document that states the risk tier AND gives a reason (e.g. \"Annex III point 4(a) recruitment\", \"chatbot, transparency obligations under Art. 50\", \"spam filtering, no Annex III use case\"). A bare marketing claim (\"fully compliant\") is not a classification.",
+   "evidence_queries": [
+    "AI Act risk classification",
+    "high-risk Annex III",
+    "limited risk minimal risk",
+    "intended purpose"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-RISK-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(1)",
+    "eu-ai-act/Art.9(2)",
+    "eu-ai-act/Art.9(5)"
+   ],
+   "category": "other",
+   "title": "Risk management system documented",
+   "statement": "A risk management process is documented for the high-risk system: known and reasonably foreseeable risks to health, safety and fundamental rights are identified and evaluated, and targeted mitigation measures with residual-risk acceptance are recorded and kept up to date.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a risk assessment / risk register document exists",
+     "globs": [
+      "**/*risk-assessment*",
+      "**/*risk_assessment*",
+      "**/*risk-register*",
+      "**/*risk_register*",
+      "**/RISK*.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a risk register / risk assessment / model risk management document listing concrete risks (e.g. discrimination, automation bias, data drift), their likelihood/impact and mitigations. A single sentence like \"risks are low\" is not sufficient (partial at most).",
+   "evidence_queries": [
+    "risk assessment",
+    "risk register",
+    "foreseeable misuse",
+    "mitigation residual risk"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)"
+   ],
+   "category": "data_governance",
+   "title": "Training data documented (datasheet)",
+   "statement": "Training, validation and test data sets are documented: origin and collection process, original purpose for personal data, preparation steps (labelling, cleaning, enrichment), assumptions, and the availability/quantity/suitability of the data.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a datasheet / data card exists",
+     "globs": [
+      "**/DATASHEET*",
+      "**/datasheet*",
+      "**/DATA_CARD*",
+      "**/data_card*",
+      "**/data-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a datasheet / data card / training-data document. Code that loads a CSV is not documentation. Partial if only some of origin, preparation and splits are described.",
+   "evidence_queries": [
+    "datasheet training data",
+    "data collection origin",
+    "labelling cleaning preprocessing",
+    "train validation test split"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)",
+    "eu-ai-act/Art.10(4)"
+   ],
+   "category": "data_governance",
+   "title": "Bias examination and mitigation of data sets",
+   "statement": "The data sets have been examined for possible biases likely to lead to discrimination (including representativeness for the persons and setting the system is used on), and measures to detect, prevent and mitigate the identified biases are documented with results.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires an actual bias/fairness analysis with results (metrics per group, findings, mitigations). A plan (\"bias audit planned\"), a TODO, or merely excluding protected attributes from the features does NOT satisfy this requirement on its own (proxies may remain). Judge from documents and evaluation code/reports.",
+   "evidence_queries": [
+    "bias evaluation fairness",
+    "disparate impact demographic parity",
+    "protected attributes gender age",
+    "representativeness of data"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.11(1)",
+    "eu-ai-act/AnnexIV(1)",
+    "eu-ai-act/AnnexIV(2)"
+   ],
+   "category": "technical_documentation",
+   "title": "Technical documentation (Annex IV)",
+   "statement": "Technical documentation covering the Annex IV elements exists before deployment: general description and intended purpose, versions, how the system interacts with other software, development methods, design specifications and key design choices, system architecture, and validation/testing procedures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "technical documentation file exists",
+     "globs": [
+      "**/*technical-documentation*",
+      "**/*technical_documentation*",
+      "**/TECHNICAL_DOC*",
+      "**/annex-iv*",
+      "**/annex_iv*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a document (or set of docs) covers most Annex IV(1)-(2) elements. An architecture overview plus a model card without development/validation information is partial.",
+   "evidence_queries": [
+    "technical documentation",
+    "system architecture components",
+    "design choices rationale",
+    "validation and testing procedures"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/AnnexIV(3)",
+    "eu-ai-act/Art.11(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for the deployed model",
+   "statement": "A model card documents the deployed model: intended use and out-of-scope uses, version, training data summary, evaluation results, capabilities and known limitations.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md",
+      "**/model-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that a model card exists and covers intended use, limitations and evaluation results.",
+   "evidence_queries": [
+    "model card",
+    "intended use limitations",
+    "model version evaluation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-DOC-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(2)",
+    "eu-ai-act/Art.13(3)"
+   ],
+   "category": "transparency",
+   "title": "Instructions for use for deployers",
+   "statement": "Instructions for use are provided to deployers and contain at least: provider identity and contact, intended purpose, level of accuracy and its metrics, known limitations and foreseeable misuse risks, human oversight measures, and how to collect and interpret the logs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "instructions for use document exists",
+     "globs": [
+      "**/*instructions-for-use*",
+      "**/*instructions_for_use*",
+      "**/INSTRUCTIONS*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "instructions mention accuracy metrics",
+     "globs": [
+      "**/*instructions*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": "(accuracy|auc|precision|recall|f1)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if the instructions contain all the listed elements. If a guide exists but misses accuracy metrics, limitations or log interpretation, the status is partial. Sections marked TBD count as missing.",
+   "evidence_queries": [
+    "instructions for use",
+    "user guide deployer",
+    "provider contact",
+    "how to interpret the score"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(1)",
+    "eu-ai-act/Art.13(3)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "transparency",
+   "title": "Interpretable outputs for deployers",
+   "statement": "The system provides information that lets deployers interpret each output (e.g. main reasons, feature contributions, reason codes or confidence) rather than a bare score.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that returns explanations/reason codes alongside the score and shows them to the human reviewer. A global feature-importance chart in a notebook alone is partial.",
+   "evidence_queries": [
+    "explanation reasons",
+    "shap feature importance",
+    "reason codes",
+    "confidence score explanation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-TRA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(1)",
+    "eu-ai-act/Art.50(5)"
+   ],
+   "category": "transparency",
+   "title": "Disclosure of interaction with an AI system",
+   "statement": "Natural persons interacting directly with the AI system (e.g. a chatbot) are informed, clearly and at the latest at the first interaction, that they are interacting with an AI system.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for user-facing UI strings (React/HTML templates, chat greeting) that tell users they talk to an AI, shown at the start of the conversation. A statement buried in terms of service is not sufficient.",
+   "evidence_queries": [
+    "you are chatting with an AI",
+    "AI assistant disclosure banner",
+    "virtual assistant notice"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(2)"
+   ],
+   "category": "transparency",
+   "title": "Marking of AI-generated content",
+   "statement": "Synthetic text, image, audio or video generated by the system is marked as AI-generated in a machine-readable format (and labelled for the recipient where it is published or delivered).",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that adds an AI-generated flag/header/metadata or visible label to each generated message. A TODO or ticket reference to add labelling later means non_compliant. A disclosure that the user talks to an AI (Art. 50(1)) is a different obligation and does not mark the content.",
+   "evidence_queries": [
+    "AI-generated label",
+    "watermark content credential c2pa",
+    "response metadata generated"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-WRK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.26(7)",
+    "eu-ai-act/Art.26(11)"
+   ],
+   "category": "transparency",
+   "title": "Affected persons informed about high-risk AI use",
+   "statement": "Natural persons subject to decisions made or assisted by the high-risk AI system (candidates, applicants, workers) are informed that such a system is used on them.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "code"
+     ],
+     "pattern": "(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a candidate/applicant notice, privacy notice or e-mail template that tells the person an AI system is used to assess them. Recruiter-facing UI text does not inform the candidate.",
+   "evidence_queries": [
+    "candidate notice automated screening",
+    "applicant information AI used",
+    "privacy notice automated decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-REC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.12(1)",
+    "eu-ai-act/Art.12(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Automatic logging of AI decisions",
+   "statement": "The system automatically records an event for each decision/output over its lifetime, with timestamp, input reference, output, model version and (where applicable) the human reviewer, enabling traceability and post-market monitoring.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that writes a structured record for every prediction (custom journal/audit classes count). Commented-out logging calls, TODOs or debug prints do not count. Logging only errors is not decision logging.",
+   "evidence_queries": [
+    "audit log decision",
+    "log prediction model version",
+    "journal record decision",
+    "append-only event store"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-REC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.19(1)",
+    "eu-ai-act/Art.26(6)"
+   ],
+   "category": "record_keeping",
+   "title": "Logs retained for at least six months",
+   "statement": "Automatically generated decision logs are retained for a period appropriate to the intended purpose and of at least six months (>= 180 days).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(log|journal|audit)\\w*[\\s\\S]{0,120}?(retention_days|retention_in_days|retentiondays)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the effective retention of the decision/audit logs (config, Terraform log group, lifecycle rules). Compliant only if >= 180 days. If logs exist but retention is shorter or unbounded deletion is configured, non_compliant. If no logs exist at all, non_compliant.",
+   "evidence_queries": [
+    "log retention days",
+    "retention_in_days cloudwatch",
+    "decision log retention"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(1)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Human can override or disregard the AI output",
+   "statement": "Natural persons overseeing the system can decide not to use, disregard, override or reverse an individual output of the system, and the override is recorded.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(override|manual[_ ]review|human[_ ]review|reviewer)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented mechanism (API endpoint, UI action, workflow state) letting a human change the outcome. A flag set to False, a README promise without code, or an override limited to admins for model config does not count.",
+   "evidence_queries": [
+    "override decision reviewer",
+    "manual review",
+    "appeal contest decision",
+    "reverse outcome"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-HUM-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Stop / interrupt mechanism",
+   "statement": "Operators can interrupt the system (a 'stop' button, kill switch or similar procedure) so that it halts in a safe state, e.g. automated processing is suspended and cases fall back to manual handling.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config"
+     ],
+     "pattern": "(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept any implemented switch (feature flag, admin endpoint, config) that stops automated decisions and routes work to humans. Infrastructure scaling to zero without a documented procedure is partial.",
+   "evidence_queries": [
+    "kill switch",
+    "disable model feature flag",
+    "suspend automated processing",
+    "stop button halt"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)",
+    "eu-ai-act/Art.26(2)"
+   ],
+   "category": "human_oversight",
+   "title": "No adverse decision solely on the AI output",
+   "statement": "Decisions adverse to natural persons (e.g. rejection, decline) are not taken automatically on the basis of the AI output alone; a competent human reviews and confirms them, mitigating automation bias.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "auto[_-]?reject",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace the decision flow in code. If any adverse outcome is set without a human step (e.g. score below threshold -> rejected), it is non_compliant; if only a subset of cases gets human review (e.g. above an amount threshold), partial.",
+   "evidence_queries": [
+    "auto reject threshold",
+    "automatic decline",
+    "human confirmation required",
+    "final decision recruiter underwriter"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-ACC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(1)",
+    "eu-ai-act/Art.15(3)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Accuracy levels and metrics declared",
+   "statement": "The levels of accuracy and the relevant accuracy metrics (e.g. AUC, precision/recall, error rates) are declared in the documentation accompanying the system (instructions for use and/or model card).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\\n]{0,30}\\d\\.\\d+",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Metrics must be declared in documentation shipped with the system, with values. A training script that prints accuracy is not a declaration.",
+   "evidence_queries": [
+    "accuracy auc precision recall",
+    "evaluation results metrics",
+    "performance holdout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-ACC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(4)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Resilience to errors (fallback / fail-safe)",
+   "statement": "The system handles errors, faults and model unavailability safely (e.g. timeouts and exceptions lead to a fail-safe outcome such as routing to manual handling, never to an automatic adverse decision).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for explicit error handling around model inference with a safe fallback. Generic web framework error pages are not sufficient.",
+   "evidence_queries": [
+    "fallback manual queue",
+    "fail-safe error handling",
+    "model unavailable timeout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Input validation against malformed or adversarial inputs",
+   "statement": "Inputs to the model are validated (schema, types, ranges, size limits, file types) before inference to resist malformed or adversarial inputs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(BaseModel|Field\\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for schema validation (pydantic/zod/marshmallow), constraints and upload limits on the inference path. Reading raw request bodies directly into the model is non_compliant.",
+   "evidence_queries": [
+    "input validation schema",
+    "pydantic constraints",
+    "max file size content type"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Protection of model endpoints against unauthorised use",
+   "statement": "Inference and model-management endpoints are protected against unauthorised third parties (authentication and authorisation), so that the system's use, outputs or performance cannot be altered by exploiting vulnerabilities.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(Depends\\(\\s*(get_current|verify|require)\\w*|login_required|requires?_role|verify_token|jwt|oauth2)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Every inference and admin route must require authentication; admin/model routes need authorisation. Partial if some sensitive routes are unauthenticated.",
+   "evidence_queries": [
+    "authentication token",
+    "require role admin",
+    "oauth2 jwt api key"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-QMS-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.17(1)",
+    "eu-ai-act/Art.9(2)"
+   ],
+   "category": "other",
+   "title": "Quality management and post-market monitoring procedures",
+   "statement": "Documented procedures cover change management of the model/system, validation before release, post-market monitoring of performance in production (e.g. drift), and serious-incident reporting.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(post[- ]market monitoring|change management|quality management)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "incident",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if the repository documents change management, pre-release validation, production monitoring AND incident reporting; partial if only some are covered.",
+   "evidence_queries": [
+    "release process change management",
+    "post-market monitoring drift",
+    "incident reporting procedure",
+    "quality management"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-QMS-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(6)",
+    "eu-ai-act/Art.9(8)",
+    "eu-ai-act/Art.17(1)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Testing against predefined metrics before release",
+   "statement": "The system is tested before release against prior defined metrics and thresholds appropriate to its intended purpose (e.g. an automated quality gate failing the build below a minimum AUC).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": "assert\\w*\\s*\\(?.*(auc|accuracy|precision|recall|f1|gini)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Smoke tests that only check an HTTP 200 are not model validation; require assertions against metric thresholds on held-out data.",
+   "evidence_queries": [
+    "test model quality threshold",
+    "assert auc greater than",
+    "evaluation gate ci"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-LAW-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.6(1)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "other",
+   "title": "Lawful basis documented for each processing purpose",
+   "statement": "Each purpose for which personal data is processed has a documented lawful basis under Art. 6(1) (consent, contract, legal obligation, vital interests, public task or legitimate interests), and consent is collected and recorded where it is the basis relied on.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "config"
+     ],
+     "pattern": "(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a privacy notice, record of processing or DPIA naming the lawful basis per purpose. A README claim \"fully GDPR compliant\" is not evidence of a lawful basis.",
+   "evidence_queries": [
+    "lawful basis legal basis",
+    "legitimate interest",
+    "consent",
+    "Art. 6(1)"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-TRN-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "transparency",
+   "title": "Privacy notice provided to data subjects",
+   "statement": "Data subjects receive a privacy notice at collection stating the controller and contact details, purposes and lawful basis, recipients, retention period, and their rights (access, rectification, erasure, objection, complaint).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*privacy*",
+      "**/*PRIVACY*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(right to (erasure|access|object|rectification)|your rights)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if a notice covering controller, purposes, legal basis, retention and rights exists and is shown/linked to data subjects. Partial if key items (e.g. retention or rights) are missing.",
+   "evidence_queries": [
+    "privacy notice",
+    "your rights erasure access",
+    "data controller contact",
+    "how long we keep your data"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-RET-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.5(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "data_retention",
+   "title": "Storage limitation enforced",
+   "statement": "Personal data is kept no longer than necessary for its purpose: a retention period proportionate to the purpose is defined for each data category and enforced automatically (TTL, purge job, lifecycle rule).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check both that a retention period is defined AND enforced in code/IaC, and that it is proportionate (e.g. keeping raw support chats for years without justification is excessive; keeping data \"forever\" is non_compliant). Defined and enforced but disproportionate -> partial.",
+   "evidence_queries": [
+    "retention period days",
+    "purge job delete older than",
+    "lifecycle expiration ttl"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ERA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.17(1)"
+   ],
+   "category": "data_retention",
+   "title": "Right to erasure implemented",
+   "statement": "A mechanism exists to erase a data subject's personal data on request without undue delay (endpoint, admin job or documented procedure covering all stores, including derived data).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented deletion path for a single data subject. Automatic expiry of all data after N days is not an on-request erasure mechanism (partial at most).",
+   "evidence_queries": [
+    "delete user data erasure",
+    "right to be forgotten",
+    "data subject request"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ADM-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.22(1)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "human_oversight",
+   "title": "Safeguards for solely automated decisions",
+   "statement": "Decisions producing legal or similarly significant effects are not based solely on automated processing, or, where an Art. 22(2) exception applies, the data subject can obtain human intervention, express their point of view and contest the decision.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Compliant if no significant decision is fully automated, OR if automated decisions come with an implemented contest/appeal path leading to human review. Non_compliant if decisions are fully automated with no recourse.",
+   "evidence_queries": [
+    "contest decision appeal",
+    "human intervention review",
+    "automated rejection"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "GDPR-ADM-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(2)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "transparency",
+   "title": "Meaningful information about the logic involved",
+   "statement": "Data subjects are informed of the existence of automated decision-making/profiling and receive meaningful information about the logic involved and its envisaged consequences.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an applicant/candidate-facing explanation of the main factors used and the consequences. Internal model documentation does not inform data subjects.",
+   "evidence_queries": [
+    "logic involved automated decision",
+    "how the score is calculated",
+    "factors that influence the decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-PBD-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.25(1)",
+    "gdpr/Art.25(2)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "data_governance",
+   "title": "Data minimisation and privacy by design",
+   "statement": "Only personal data necessary for the purpose is collected and used (no unnecessary sensitive or protected attributes as model features), and privacy-by-design measures such as pseudonymisation or redaction are applied before processing or sharing with third parties.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect model features and data flows. Using gender/age/nationality as features, or sending raw personal data to a third-party LLM without redaction, is non_compliant. Look for explicit redaction/pseudonymisation code.",
+   "evidence_queries": [
+    "pseudonymisation redaction",
+    "features gender age nationality",
+    "data minimisation drop columns",
+    "mask PII before sending"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)"
+   ],
+   "category": "security",
+   "title": "Encryption of personal data at rest and in transit",
+   "statement": "Personal data is encrypted at rest (databases, object storage, volumes, backups) and in transit (TLS) as appropriate to the risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "encryption at rest configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms_key|sse_algorithm|server_side_encryption|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true|aws:kms)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "TLS configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https|ssl_certificate|cert-manager)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at-rest and in-transit encryption must be evidenced for all stores holding personal data. Only one of the two -> partial. Self-signed dev certificates in docker-compose do not count for production.",
+   "evidence_queries": [
+    "kms encryption at rest",
+    "storage_encrypted",
+    "tls certificate https ingress",
+    "server_side_encryption"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)",
+    "gdpr/Art.32(4)"
+   ],
+   "category": "security",
+   "title": "Access control to personal data",
+   "statement": "Access to personal data and to administrative functions is restricted to authenticated and authorised personnel (authentication, role-based authorisation, least privilege).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that endpoints exposing personal data require authentication and that admin/export routes check roles. Unauthenticated upload/listing endpoints are non_compliant.",
+   "evidence_queries": [
+    "authentication middleware",
+    "role based access admin",
+    "network policy least privilege"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ROPA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.30(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Record of processing activities",
+   "statement": "A record of processing activities is maintained for the system listing purposes, categories of data subjects and personal data, recipients, transfers, retention limits and security measures.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*ropa*",
+      "**/*ROPA*",
+      "**/*processing-record*",
+      "**/*processing_record*",
+      "**/*records-of-processing*",
+      "**/*processing-activities*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a ROPA entry in the repo (markdown/yaml). A DPIA or privacy notice alone is not a ROPA but may be partial if it contains the Art. 30(1) items.",
+   "evidence_queries": [
+    "record of processing activities",
+    "ROPA",
+    "categories of data subjects recipients"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-DPIA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.35(1)",
+    "gdpr/Art.35(3)",
+    "gdpr/Art.35(7)"
+   ],
+   "category": "technical_documentation",
+   "title": "Data protection impact assessment",
+   "statement": "A DPIA has been carried out for the processing (systematic and extensive evaluation of personal aspects based on automated processing) and contains a description of the processing, necessity and proportionality assessment, risk assessment and mitigation measures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*dpia*",
+      "**/*DPIA*",
+      "**/*impact-assessment*",
+      "**/*impact_assessment*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a DPIA document with the Art. 35(7) elements exists.",
+   "evidence_queries": [
+    "DPIA data protection impact assessment",
+    "necessity proportionality",
+    "risks to rights and freedoms"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-01",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-1(1)",
+    "acme-rai/POL-1(2)"
+   ],
+   "category": "transparency",
+   "title": "AI use disclosed in user interfaces",
+   "statement": "Every interface where a person interacts with the AI system or sees an AI-produced score, ranking, classification or text visibly discloses AI involvement; decision-support UIs state that the output is an AI recommendation and who decides.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect UI components, e-mail templates and notification texts. Neutral names like \"Smart Score\" do not disclose AI involvement.",
+   "evidence_queries": [
+    "AI-generated recommendation label",
+    "powered by AI disclosure",
+    "final decision made by",
+    "classified automatically"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-02",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-2(1)",
+    "acme-rai/POL-2(2)"
+   ],
+   "category": "transparency",
+   "title": "AI-generated content labelled",
+   "statement": "AI-generated text/media delivered to customers carries a visible \"AI-generated\" label and, where feasible, a machine-readable marker.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|x-ai-generated)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A banner saying the user chats with an AI is POL-1, not POL-2. Look for per-message labelling or metadata. TODO comments do not count.",
+   "evidence_queries": [
+    "AI-generated badge",
+    "X-AI-Generated header",
+    "generated content label"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-03",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-3(1)",
+    "acme-rai/POL-3(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Prediction logging with 180-day retention",
+   "statement": "Every production prediction/response is logged with timestamp, correlation id, model version, input reference and output, in tamper-resistant storage retained for at least 180 days.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "model_version",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both parts are needed: structured per-prediction logging AND >= 180 days retention. Logging with shorter retention -> partial. No logging -> non_compliant.",
+   "evidence_queries": [
+    "prediction log model version request id",
+    "log retention days",
+    "append-only audit"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-04",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-4(1)",
+    "acme-rai/POL-4(2)"
+   ],
+   "category": "data_retention",
+   "title": "Raw personal-data inputs deleted within 30 days",
+   "statement": "Raw inputs containing personal data (documents, messages, transcripts, payloads) are automatically deleted or anonymised within 30 days, unless a documented legal retention obligation applies.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the retention of each raw-input store. Any raw store kept > 30 days without a documented legal obligation is non_compliant; no automated deletion at all is non_compliant.",
+   "evidence_queries": [
+    "raw input retention 30 days",
+    "transcript retention",
+    "purge uploaded documents",
+    "lifecycle expiration"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-05",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-5(1)",
+    "acme-rai/POL-5(2)"
+   ],
+   "category": "security",
+   "title": "Encryption at rest and TLS in transit",
+   "statement": "Storage of personal data, model artefacts and logs is encrypted at rest, and all service traffic uses TLS 1.2+.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at rest and in transit must be shown; one of the two -> partial.",
+   "evidence_queries": [
+    "kms encrypted storage",
+    "tls ingress certificate",
+    "min tls version"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-06",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-6(1)",
+    "acme-rai/POL-6(2)"
+   ],
+   "category": "security",
+   "title": "Access control on model endpoints",
+   "statement": "Inference and model-management endpoints require authentication (or are declared public and rate-limited), and administrative endpoints enforce role-based authorisation.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Enumerate routes. Any undeclared unauthenticated inference/upload route, or an admin route without a role check, is non_compliant.",
+   "evidence_queries": [
+    "authentication required endpoint",
+    "admin role check",
+    "public endpoints declared"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-07",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-7(1)",
+    "acme-rai/POL-7(2)"
+   ],
+   "category": "human_oversight",
+   "title": "Human approval of adverse decisions",
+   "statement": "Adverse decisions about natural persons (rejection, decline, closure) are approved by a human reviewer who sees the AI output and reasons and can change the outcome, and the approval is logged.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(auto[_-]?reject|auto[_-]?decline)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace adverse outcomes in code. Human approval for only part of the cases (e.g. above an amount threshold) is partial. Automatic rejection is non_compliant.",
+   "evidence_queries": [
+    "reviewer approval reject",
+    "auto decline",
+    "human confirmation required"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "ACME-08",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-8(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for every deployed model",
+   "statement": "Each deployed model (including third-party models) has a model card covering intended and out-of-scope use, version, training data summary, evaluation metrics, limitations and owner.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check presence and completeness of the model card(s) against the listed fields.",
+   "evidence_queries": [
+    "model card",
+    "intended use out of scope",
+    "owner team limitations"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-09",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-9(1)"
+   ],
+   "category": "security",
+   "title": "Rate limiting on AI endpoints",
+   "statement": "AI endpoints reachable from untrusted networks enforce per-client rate limiting configured in code or configuration.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config",
+      "iac"
+     ],
+     "pattern": "(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for rate-limit middleware (express-rate-limit, slowapi), gateway throttling or ingress annotations. Public endpoints without it are non_compliant.",
+   "evidence_queries": [
+    "rate limit",
+    "throttling",
+    "requests per minute"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-10",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-10(1)",
+    "acme-rai/POL-10(2)"
+   ],
+   "category": "other",
+   "title": "AI incident response procedure",
+   "statement": "The repository contains an AI incident response procedure (detection, escalation, reporting) that requires reporting serious incidents to the AI Governance Board within 24 hours.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(ai[- ]incidents?@|incident (response|reporting))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A generic ops runbook without AI incidents or without the 24h governance reporting is partial.",
+   "evidence_queries": [
+    "incident response",
+    "escalation on-call",
+    "ai-incidents report 24 hours"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-11",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-11(1)"
+   ],
+   "category": "data_governance",
+   "title": "Bias and fairness evaluation before release",
+   "statement": "A documented bias and fairness evaluation (metrics and results per protected group, mitigations) exists for the released model and is referenced from the model card.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires actual results. \"Planned\", TODOs or excluding protected features only is non_compliant.",
+   "evidence_queries": [
+    "fairness evaluation report",
+    "disparate impact ratio",
+    "bias audit results per group"
+   ],
+   "severity": "high"
+  }
+ ],
+ "verdicts": [
+  {
+   "requirement_id": "AIA-RISK-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The system is a credit-scoring service for loan applicants (E10, E1). Its inputs are financial and employment data and a bureau score (E4, E8). It uses no biometric, facial, voice or emotion data, and there is no social-behaviour scoring or face scraping (E3 states no special categories are used). The fairness report shows protected attributes are excluded as model inputs (E7). The evidence shows no implemented or planned Art. 5(1) practice. Credit scoring is a high-risk use under Annex III, not a prohibited one. The evidence has no explicit Art. 5 screening statement, and only part of the code is shown.",
+   "evidence_ids": [
+    "170f5b442556",
+    "2ccfbb1e9e56",
+    "f138f7c7fdde",
+    "02a46e5d5fb3",
+    "d537446fbb53",
+    "9a1368799773"
+   ],
+   "gaps": [
+    "No explicit Art. 5(1) prohibited-practices assessment documented",
+    "Excerpts do not cover the whole codebase, so the absence of other prohibited features is inferred"
+   ],
+   "remediation": "Add a short Art. 5 screening section to docs/model-risk-management.md. It should state that the system does no emotion inference, biometric categorisation, social scoring or facial scraping, and does not use manipulative techniques. Optionally add a CI check that blocks such features.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-02",
+   "status": "compliant",
+   "confidence": 0.93,
+   "rationale": "The documentation states the risk tier (high-risk) and gives a reason. E1 section 1 cites Annex III point 5(b), credit scoring of natural persons. E2 repeats this in the README, describes it as creditworthiness evaluation of natural persons, and points to the rationale and risk register in docs/model-risk-management.md. This meets Art. 6(2) and the guidance. An Art. 6(3) assessment is not needed because the system is classified high-risk rather than claimed exempt.",
+   "evidence_ids": [
+    "f9ec98d8ebac",
+    "9a1368799773"
+   ],
+   "gaps": [],
+   "remediation": "No action required. Optionally note the date and owner of the classification, and state that the Art. 6(3) derogation was considered and not applicable because the system profiles natural persons.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-03",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "E1 is a documented model risk register with concrete risks (discrimination, drift, over-reliance, erroneous declines, data breach), mitigations and owners. It also covers change management, validation, post-market monitoring and incident reporting. E4 records residual-risk acceptance (DPO and Head of Lending, 2026-04-14), and E5 shows ongoing fairness monitoring. Gaps remain against Art. 9. E1 gives no likelihood/impact estimation and no per-risk residual-risk acceptance. It doesn't address reasonably foreseeable misuse or the known data limitations in E3/E6 (under-21 applicants, thin-file, self-employed). It also shows no review cadence or version history for the register. The residual-risk acceptance sits in the GDPR DPIA, not the AI Act risk process. The E1 excerpt is also truncated.",
+   "evidence_ids": [
+    "f9ec98d8ebac",
+    "9a1368799773",
+    "2ccfbb1e9e56",
+    "02a46e5d5fb3",
+    "073ca4ff882a",
+    "170f5b442556"
+   ],
+   "gaps": [
+    "No likelihood/severity scoring or risk evaluation method in the register",
+    "No per-risk or overall residual-risk acceptance recorded in the AI Act risk document (only in the DPIA)",
+    "Reasonably foreseeable misuse not analysed",
+    "Known limitations (under-21 and thin-file applicants, under-represented self-employed) not mapped to register risks",
+    "No document version, review cadence or update history for the register",
+    "Risks to health, safety and fundamental rights beyond discrimination (e.g. access to financial services) not explicitly assessed",
+    "No explicit link from post-market monitoring data back to risk re-evaluation"
+   ],
+   "remediation": "Extend docs/model-risk-management.md into an Art. 9 risk management file. Add likelihood and impact ratings for each risk, and add inherent and residual risk levels with a recorded acceptance (name, date) for each risk and for the overall system. Add risks for foreseeable misuse (e.g. use outside the intended scope, or for applicants under 21) and for the known data gaps from MODEL_CARD.md and docs/data/training-data.md. Add a version history, a review schedule (e.g. annual, and on each major model change), and a feedback loop from monitoring and appeals data into the register. Link the DPIA and the fairness reports as inputs.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-01",
+   "status": "compliant",
+   "confidence": 0.82,
+   "rationale": "E1 is a dedicated training-data document. It covers origin and collection (ACME loan book 2018-2023 joined with bureau data), the original purpose and a compatibility assessment, and preparation steps (exclusions, winsorisation, imputation, reject inference). It also covers train/validation/test splits, assumptions (default definition, macro representativeness), and known gaps (young and old applicants, self-employed under-represented). E1 gives the quantity (1.9M applications) and suitability limits. E2 links to the document and notes limitations, and E3/E4 add context on fairness and risk. Design choices and bias examination are only partly covered, but the requirement centres on documenting origin, preparation, assumptions and availability, quantity and suitability, and those are met.",
+   "evidence_ids": [
+    "073ca4ff882a",
+    "170f5b442556",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No formal datasheet template (e.g. Datasheets for Datasets) with labelling process details",
+    "Reject-inference method and its bias effects are described only briefly",
+    "Per-split sizes and statistical properties/representativeness are not quantified",
+    "Data-gap remediation actions are not stated"
+   ],
+   "remediation": "Extend docs/data/training-data.md with per-split row counts and class balance, a representativeness analysis by relevant groups, details of the reject-inference method and its validation, and planned mitigations for the known data gaps (under-21, over-75, self-employed). Link it to the fairness report for the Art. 10(2)(f)-(h) bias examination.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-02",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "The fairness report [E3] is an actual analysis. It gives per-group approval rate, disparate impact, default rate and AUC for gender, age and nationality. It records a finding (age 21-29 DI 0.82, driven by months_at_employer) and a shipped mitigation with monthly monitoring. The data documentation [E1] lists known gaps (few applicants under 21 or over 75, self-employed at 6%), and [E2] notes the model is not validated for under-21s. However, the bias examination is of model outcomes, not of the data sets themselves. There is no representativeness analysis against the target population, no analysis of reject-inference bias, and no documented mitigation for the data gaps. Post-mitigation results are not shown. The non-national group (DI 0.87) and the AUC gap for ages 21-29 (0.78 vs 0.82) are not analysed. The risk register [E4] and DPIA [E5] mainly rely on excluding protected attributes plus a quarterly report, which is not sufficient on its own.",
+   "evidence_ids": [
+    "073ca4ff882a",
+    "170f5b442556",
+    "02a46e5d5fb3",
+    "f9ec98d8ebac",
+    "2ccfbb1e9e56"
+   ],
+   "gaps": [
+    "No dataset-level representativeness analysis (training data vs. the applicant population it will be used on)",
+    "Known data gaps (under 21, over 75, self-employed) have no documented mitigation or remediation",
+    "No bias assessment of reject-inference augmentation or of historical decline bias in the loan book",
+    "No before/after results for the months_at_employer mitigation",
+    "No proxy analysis or root-cause analysis for the non-national and age 21-29 gaps, including the AUC differences",
+    "No analysis of feedback loops where outputs influence future training data",
+    "Fairness report is outcome-level and does not examine the training, validation and test data sets directly"
+   ],
+   "remediation": "Add a dataset bias assessment to docs/data/training-data.md or a separate report. It should compare the group composition of the train, validation and test sets with the target applicant population, covering gender, age band, nationality and self-employment. It should include label and outcome rates per group, and a check of reject-inference effects and proxy features such as months_at_employer. Document the mitigations (reweighting, resampling, feature constraints, applicant-segment limits) with before/after fairness metrics. Plan how to address the under-21, over-75 and self-employed gaps. Assess feedback-loop risk, and add a CI fairness gate in tests/ that reads the per-group metrics.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-01",
+   "status": "partial",
+   "confidence": 0.8,
+   "rationale": "The repo has several documents that cover parts of Annex IV. The model card (E1) gives intended purpose, version, performance and limitations. Training data and preparation are documented (E2), including splits and assumptions. The architecture is sketched (E4), with a deployment manifest (E5). The risk management doc (E3) covers validation, monitoring and change management, and the fairness report (E7) covers bias testing. There is no single Annex IV technical documentation file. Several required elements are missing or only implied: provider name and version history, a description of the forms in which the system is placed on the market, hardware requirements, a user-interface and instructions-for-use description, development methods, design rationale and trade-offs, and computational resources. Validation is only summarised, with no detailed test procedures or logs.",
+   "evidence_ids": [
+    "170f5b442556",
+    "073ca4ff882a",
+    "f9ec98d8ebac",
+    "3031139e2406",
+    "aff6ac56806b",
+    "9a1368799773",
+    "02a46e5d5fb3",
+    "322336058ee2",
+    "d537446fbb53"
+   ],
+   "gaps": [
+    "No consolidated Annex IV technical documentation document or index",
+    "Development methods and steps not described (model selection, hyperparameters, use of third-party tools such as LightGBM)",
+    "Design specifications and rationale missing (general logic, key design choices, optimisation target, trade-offs for Chapter III Section 2)",
+    "Version history and relation to previous versions, and version-update requirements not documented",
+    "Forms of placing on the market and hardware requirements not described",
+    "Instructions for use and user-interface description for deployers (underwriters) not evidenced",
+    "Computational resources used for training and validation not documented",
+    "Detailed validation and testing procedures, logs and test reports not included",
+    "No evidence of a documented process to keep documentation up to date"
+   ],
+   "remediation": "Add a docs/technical-documentation.md structured by Annex IV(1)-(2) (and (3)-(8) as applicable). It should cover: provider and version history; intended purpose; interactions with the origination platform and other software; software versions and update policy; delivery forms (API/container); hardware and compute for training and runtime; a description of the underwriter UI and instructions for use; development methodology (pre-trained or third-party tools, feature selection, tuning); design rationale, optimisation target and trade-offs; and validation and test procedures with results. Link the existing model card, training-data, architecture, fairness and model-risk documents from it. Assign an owner and a review trigger in change management so the documentation stays current.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-02",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "MODEL_CARD.md [E1] exists for the deployed model pd-lgbm-3.1.0. The version matches the deployed code [E4][E11]. The card covers intended use, out-of-scope uses, a training data summary (linked to [E2]), out-of-time evaluation metrics (AUC, Gini, KS, calibration), and limitations (thin-file, under-21). It references a fairness report [E9] with group-level results. Capabilities are described only implicitly, through the type and performance entries, and the card lacks an explicit capabilities section and a last-updated date. These are minor gaps.",
+   "evidence_ids": [
+    "170f5b442556",
+    "073ca4ff882a",
+    "02a46e5d5fb3",
+    "322336058ee2",
+    "d537446fbb53"
+   ],
+   "gaps": [
+    "No explicit capabilities section",
+    "No model card date or last-reviewed field",
+    "Human oversight and input data specifications are not in the card (partly covered in other docs)",
+    "The card does not list the foreseeable unintended outcomes, for example the age 21-29 disparate-impact finding in [E9]"
+   ],
+   "remediation": "Extend MODEL_CARD.md with a Capabilities section, a last-updated date and review owner, input feature specifications, and the known fairness risks (age 21-29 near the 0.80 threshold). Add links to docs/model-risk-management.md for human oversight. Keep the card in the change-management process so it is updated on each retraining.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-03",
+   "status": "partial",
+   "confidence": 0.82,
+   "rationale": "No dedicated deployer instructions-for-use document appears in the evidence. The MODEL_CARD.md (E1) covers some of the required content: an owner contact, intended use, out-of-scope uses, performance metrics (AUC, Gini, KS, calibration) and limitations (thin-file applicants, under-21s). E4 adds some risk and oversight information (underwriter guide, reason codes, 10% double review), and E2 and E11 describe the decision flow and manual review. Several required elements are missing: a formal provider identity with an authorised representative, foreseeable misuse risks, a consolidated description of human oversight measures for deployers, and how to collect and interpret logs. Robustness and cybersecurity metrics are also absent.",
+   "evidence_ids": [
+    "170f5b442556",
+    "9a1368799773",
+    "f9ec98d8ebac",
+    "02a46e5d5fb3",
+    "f138f7c7fdde"
+   ],
+   "gaps": [
+    "No dedicated instructions-for-use document addressed to deployers",
+    "Provider legal identity and authorised representative not stated (only an internal owner email)",
+    "Foreseeable misuse risks not documented for deployers",
+    "Human oversight measures not consolidated (the underwriter guide is referenced but not provided)",
+    "No guidance on how to collect and interpret logs",
+    "Robustness and cybersecurity metrics not given",
+    "Input data specifications and explainability characteristics not documented for deployers"
+   ],
+   "remediation": "Add docs/instructions-for-use.md for deployers, following Art. 13(3). Include: provider legal name, address, contact and authorised representative; intended purpose and out-of-scope uses; accuracy metrics (from MODEL_CARD.md), robustness and cybersecurity; limitations and foreseeable misuse (for example use on mortgages, applicants under 21, thin-file applicants); human oversight measures (manual_review_threshold_eur, kill switch, reason codes, appeals, underwriter guide); input data specifications; and a log section covering where the audit logs are stored, their fields, how to retrieve them, retention, and how to interpret them. Link this document from README.md and MODEL_CARD.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-01",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "The scorer computes per-application TreeSHAP contributions and returns the top positive ones as reason codes (R01\u2013R06) alongside the PD (E3, E9). The README says the API returns the probability of default, a recommendation and adverse-action reason codes (E2). The codes are recorded in the audit trail (E10, E11). Risk MR-3 says reason codes are shown to underwriters (E5), and the applicant notice says declines list the main reasons (E1). This is per-output explanation, not just global feature importance. The remaining weakness is that the underwriter UI is outside the repository, so display to reviewers rests on documentation.",
+   "evidence_ids": [
+    "322336058ee2",
+    "d537446fbb53",
+    "9a1368799773",
+    "f789ac4f68f7",
+    "16c6081b910f",
+    "f9ec98d8ebac",
+    "267d1a695bfe",
+    "3031139e2406"
+   ],
+   "gaps": [
+    "Reviewer-facing display of reason codes (back-office UI) not shown in the repository",
+    "Approvals return empty reason_codes and no numeric contribution values or confidence are exposed",
+    "Reason codes are limited to 6 mapped features (e.g. employment_status has no code)",
+    "No instructions-for-use document describing the explanation method and its limits (Art.13(3)(b)(iv))"
+   ],
+   "remediation": "Add an instructions-for-use document describing how reason codes are derived from TreeSHAP and what their limits are. Expose the top signed contributions or a confidence indicator in the API response for all decisions, including approvals. Document or add tests showing the underwriter interface displays them. Cover all model features in REASON_TEXT, or document why some are excluded.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-02",
+   "status": "not_applicable",
+   "confidence": 0.97,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-03",
+   "status": "not_applicable",
+   "confidence": 0.97,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-WRK-01",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "E3 is an applicant-facing notice saying ACME uses automated decision-making based on a statistical credit-scoring model to assess applications. It covers automatic decisions, the main factors, and the right to contest. This is aimed at applicants, not recruiters, so it informs the affected persons as Art. 26(11) requires. E1 links to it as the applicant information. The wording does not literally say \"AI system\" or \"high-risk\", and the evidence doesn't show how the notice is delivered at application time. Both are minor.",
+   "evidence_ids": [
+    "267d1a695bfe",
+    "9a1368799773"
+   ],
+   "gaps": [
+    "Notice does not explicitly use the term 'AI system' or mention its high-risk classification",
+    "No evidence of how or when the notice is delivered to applicants, for example a link in the application portal or in the decision letter"
+   ],
+   "remediation": "In docs/applicant-notice.md, state explicitly that an AI system is used to assess the application. Document where the notice is shown, for example at application submission in the portal and in decline letters. Add a test or template reference to show it is delivered.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-01",
+   "status": "partial",
+   "confidence": 0.8,
+   "rationale": "Every score path in service/app.py (E9) calls audit_decision (E1). That function writes a structured record with an application ID, an input SHA-256, the PD score, reason codes, model version and the caller. The records are shipped to CloudWatch (E6) and the log sample confirms they are written (E4). Gaps: the record has no explicit timestamp field in code, though the log formatter adds one (E4). Referred and fallback decisions log model_version=None (E4). The appeal path logs only the underwriter's client_id, not the decision made on re-assessment. The CloudWatch log group keeps logs for only 30 days (E6), which is short for lifetime traceability and post-market monitoring. The lifetime-retention evidence (E2, E5) covers application records, not audit logs.",
+   "evidence_ids": [
+    "16c6081b910f",
+    "f789ac4f68f7",
+    "532afdbb56df",
+    "4b265edfdb5a",
+    "322336058ee2"
+   ],
+   "gaps": [
+    "Audit log retention is only 30 days (CloudWatch), which is not the system lifetime",
+    "The human reviewer is logged only for appeals, as caller.client_id, and not for underwriter decisions on referred applications",
+    "Model version is None for referred and fallback decisions",
+    "The timestamp comes only from the logging formatter and is not an explicit field",
+    "The input reference is a hash only, so the logs have no link to the stored payload (raw payloads are deleted after 30 days)",
+    "Appeal logging has no link to the original decision or the new decision, and no model_version"
+   ],
+   "remediation": "Raise aws_cloudwatch_log_group.audit retention_in_days in infra/terraform/main.tf, or archive the logs to S3 for the retention period defined in policy. In service/audit.py, add an explicit UTC timestamp and a stable event ID, and always record the deployed MODEL_VERSION, including for referred decisions. Record the final underwriter decision and reviewer identity for referred cases. Extend audit_appeal_outcome with the original and new decision, the reviewer ID and the model version. Document the log schema and retention in docs.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-02",
+   "status": "non_compliant",
+   "confidence": 0.95,
+   "rationale": "Decision logs exist: service/audit.py writes an audit entry for every credit decision and appeal and ships it to the CloudWatch log group /creditlens/audit (E1, E9, E5). The Terraform for that log group sets retention_in_days = 30 (E2). That is well under the 180-day minimum. The 5-year retention in E3, E4, E6 and E8 applies to application records in S3 under records/, not to the audit logs. The 30-day raw payload expiry is also not an audit log setting.",
+   "evidence_ids": [
+    "16c6081b910f",
+    "4b265edfdb5a",
+    "3031139e2406",
+    "f789ac4f68f7",
+    "f82942cbaf6f",
+    "9c2d81458c4a"
+   ],
+   "gaps": [
+    "CloudWatch audit log group retention is 30 days, below the 180-day minimum",
+    "No documented retention period for the decision/audit logs",
+    "No archive of audit logs (for example S3 export) with a longer retention"
+   ],
+   "remediation": "In infra/terraform/main.tf, set aws_cloudwatch_log_group.audit retention_in_days to at least 180. Consider 365 or more, or a value that matches the 5-year credit-record obligation. Alternatively, export the logs to a KMS-encrypted S3 bucket with a lifecycle expiry of at least 180 days. Add an audit_log_retention_days entry to config/scoring.yaml. Document the audit log retention period and its rationale in docs/dpia.md section 6. Check that the longer retention fits GDPR, because the logs hold only pseudonymous references and hashes.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-01",
+   "status": "partial",
+   "confidence": 0.62,
+   "rationale": "There is a real, implemented override path. `POST /v1/appeals/{ticket}/resolution` is restricted to the underwriter scope and accepts outcomes `reversed_to_approve` and `reversed_to_counteroffer` (E6). Each resolution is recorded with the outcome, a mandatory note and the underwriter's identity (E6, E9). Applications above the threshold, and all applications when the kill switch is on, are routed to underwriters (E2, E3). However, the per-output override can only start from an applicant's appeal (E2, E6, E5). Automatic approvals and declines up to EUR 25,000 take effect without human review. No evidence shows an overseer can proactively disregard or reverse an individual output, and the kill switch is a config flag, not a per-output control.",
+   "evidence_ids": [
+    "532afdbb56df",
+    "f82942cbaf6f",
+    "267d1a695bfe",
+    "9e24be3cf09d",
+    "16c6081b910f",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No overseer-initiated override or reversal of an individual automated decision without an applicant appeal",
+    "Automatic decisions up to the threshold take effect with no human gate",
+    "Kill switch is a config value only. No runtime endpoint or UI toggles it, and it is not a per-output control",
+    "Underwriter reviews of referred applications (underwriting_queue) have no visible endpoint that records the underwriter's decision",
+    "The 10% double review for over-reliance (MR-3) is documented but not implemented in the code shown",
+    "Audit of the appeal resolution is a log line only. It does not link to the original automated decision as a record of the override"
+   ],
+   "remediation": "Add an authenticated endpoint such as `POST /v1/decisions/{application_id}/override`, restricted to the underwriter scope. It should let a reviewer disregard or reverse any automated decision, with a mandatory reason, and write an audit record that references the original decision. Add a resolution endpoint for `underwriting_queue` referrals and record those decisions in the audit log. Expose a runtime kill-switch endpoint with an audit entry. Implement and test the sampled double-review workflow from MR-3. Document the override procedure in an underwriter guide.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-02",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "A kill switch is implemented: `kill_switch` in config/scoring.yaml (E1) is checked in /v1/score (E2, E3). When it is on, every application goes to the underwriting queue and is audit-logged as \"referred\" instead of being decided automatically. This matches the requirement of halting automated decisions and falling back to manual handling. However, it is a static config flag, and the admin endpoint in E10 only changes pd_cutoff. No runtime way for operators to toggle it, and no documented procedure for doing so, appears in the evidence (E5, E8). The model-error fail-safe in E2 also routes cases to humans. The mechanism exists but its operability and documentation are incomplete.",
+   "evidence_ids": [
+    "f82942cbaf6f",
+    "532afdbb56df",
+    "f138f7c7fdde",
+    "9e24be3cf09d",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No admin endpoint or runtime control to toggle kill_switch (it likely needs a config change and redeploy)",
+    "No documented stop/kill-switch runbook: who may activate it, how, and how the underwriting queue is staffed",
+    "No test evidence that the kill switch works",
+    "Kill switch not mentioned in README or model-risk documentation (E5, E8)"
+   ],
+   "remediation": "Add an admin endpoint such as POST /v1/admin/kill-switch, protected by the creditlens:admin scope and audit-logged, so operators can toggle it at runtime. Add a unit test showing that kill_switch=true sends all applications to underwriting_queue. Document a runbook in docs/ (for example docs/kill-switch-runbook.md) covering who can activate it, how to activate it, the capacity of the underwriting queue, and how to resume. Reference the runbook in the README and in the docs/model-risk-management.md risk register.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-03",
+   "status": "partial",
+   "confidence": 0.9,
+   "rationale": "Applications above the EUR 25,000 threshold, kill-switch cases and model errors are routed to an underwriter (E2, E4). For smaller applications, the code sets \"decline\" automatically from the PD cutoff with no human step (E2). The README, DPIA and applicant notice confirm this (E1, E3, E9). The only safeguard is an after-the-fact appeal, where an underwriter can reverse the decision (E2, E5). The 10% double review and underwriter guide in E6 apply to underwriters, not to automatic declines. Human review therefore covers only a subset of adverse cases.",
+   "evidence_ids": [
+    "9a1368799773",
+    "532afdbb56df",
+    "2ccfbb1e9e56",
+    "f82942cbaf6f",
+    "9e24be3cf09d",
+    "f9ec98d8ebac",
+    "267d1a695bfe",
+    "f789ac4f68f7"
+   ],
+   "gaps": [
+    "Declines for amounts up to EUR 25,000 are issued automatically from pd <= cutoff with no human confirmation",
+    "Human involvement for these declines depends on the applicant filing an appeal, so it is reactive",
+    "No sampling or pre-notification review of automatic declines (the 10% double review in E6 covers underwriters only)"
+   ],
+   "remediation": "In service/app.py, change the score() branch so that a below-threshold result is never returned as a final \"decline\". Send these cases to underwriting_queue with the PD and reason codes as a recommendation (for example \"recommend_decline\"), and issue the decline only after an underwriter with the creditlens:underwriter scope confirms it. Automatic approvals can stay automatic. Update config/scoring.yaml, README.md, docs/dpia.md and docs/applicant-notice.md to match. Add a test that asserts no \"decline\" is returned without a recorded human confirmation.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-01",
+   "status": "compliant",
+   "confidence": 0.82,
+   "rationale": "MODEL_CARD.md [E1] declares accuracy metrics with values (ROC-AUC 0.81, Gini 0.62, KS 0.47, calibration error 0.6 pp) on an out-of-time test set. It also states the lower accuracy for thin-file applicants (AUC 0.72). The fairness report [E3] adds per-group AUC values. This is shipped documentation, not just a script printout. The CI gate thresholds in [E2] are only supporting evidence. The model card is the declaration.",
+   "evidence_ids": [
+    "170f5b442556",
+    "02a46e5d5fb3",
+    "5d382419a7f0"
+   ],
+   "gaps": [
+    "No precision/recall or error rates (FPR/FNR) at the operating cutoff declared",
+    "No confidence intervals or test-set size given",
+    "Not clearly stated whether the model card is part of the instructions for use given to deployers",
+    "Metrics are not tied to the pd_cutoff used in production"
+   ],
+   "remediation": "Add to MODEL_CARD.md the test-set size, confidence intervals, and precision/recall or approval/default error rates at the production pd_cutoff. Link the model card from README.md and the deployer instructions for use. Update the card whenever the model is retrained.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-02",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "E7 wraps model inference in try/except and raises ScoringError for any exception. E2 catches ScoringError in the /v1/score endpoint, puts the case on the underwriting queue with reason \"model_error\", writes an audit record, and returns \"referred_to_underwriter\". The code comment states \"fail-safe: never decline because the model is unavailable\", so errors lead to manual handling and not to an automatic adverse decision. E2 also has a kill switch and a threshold that route cases to manual review (config in E10). Minor limits: the evidence shows no timeout handling and no tests of the fallback path. Failures in the queue or audit calls are not visibly handled either.",
+   "evidence_ids": [
+    "532afdbb56df",
+    "322336058ee2",
+    "f82942cbaf6f"
+   ],
+   "gaps": [
+    "No explicit inference timeout handling shown",
+    "No tests demonstrating the fallback path",
+    "Failure of underwriting_queue or audit calls not visibly handled",
+    "Model load failure at import time (Scorer() instantiation) not covered"
+   ],
+   "remediation": "Add an explicit timeout around inference that raises ScoringError. Add unit tests that force ScoringError, a timeout and a queue failure, and assert the result is referred_to_underwriter. Handle model-load failure and queue/audit errors with a fail-safe path. Document the fallback behaviour in docs/model-risk-management.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The /v1/score endpoint in service/app.py (E10) takes a pydantic LoanApplication model, not a raw body. The model enforces types and ranges: constr patterns and lengths, conint/Field ge/le bounds, and a Literal enum for employment_status. Appeal text has a max length of 5000. Input is also authenticated through verify_token (E10). Scoring (E11) only uses the validated model_dump, and failures raise ScoringError. The model is a tabular LightGBM, so file-type and upload-size limits do not apply. The only gaps are no visible request body size limit at the server or ingress, and no explicit handling of NaN/inf floats. Both are minor.",
+   "evidence_ids": [
+    "f138f7c7fdde",
+    "322336058ee2",
+    "aff6ac56806b"
+   ],
+   "gaps": [
+    "No explicit request body size limit at the uvicorn or ingress level in the evidence",
+    "No explicit rejection of NaN/inf floats shown",
+    "No adversarial-input tests shown (fuzzing or boundary tests)"
+   ],
+   "remediation": "Set request body size limits (ingress annotation or middleware). Add allow_inf_nan=False to the float Fields. Add tests for boundary and malformed payloads on /v1/score.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-02",
+   "status": "partial",
+   "confidence": 0.62,
+   "rationale": "The repo has a real auth mechanism. E2 verifies RS256 JWTs (audience check, scope check) and provides a `require_scope` authorisation dependency. In E6 the admin threshold route and the appeal resolution route use `require_scope` (`creditlens:admin`, `creditlens:underwriter`), so those routes have both authentication and authorisation. E5 adds TLS and a NetworkPolicy that restricts ingress to the origination namespace. However, the excerpts do not show the main inference route `POST /v1/score` (E7 mentions it), so I can't confirm it requires authentication. Other routes, such as `POST /v1/appeals`, are also not shown. Model-management or model-loading paths aren't covered either. Because of this, I can't call the requirement fully met.",
+   "evidence_ids": [
+    "cc7bfd2f4b62",
+    "9e24be3cf09d",
+    "aff6ac56806b",
+    "9a1368799773",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No visible evidence that POST /v1/score (the inference endpoint) depends on verify_token or require_scope",
+    "POST /v1/appeals and any other routes are not shown, so their authentication can't be confirmed",
+    "verify_token hard-requires the creditlens:score scope for every token. As a result, admin and underwriter tokens must also carry the score scope, which blurs the separation of authorisation",
+    "No evidence of defences against AI-specific attacks: adversarial input validation, model-extraction or abuse monitoring, model artefact integrity checks",
+    "The NetworkPolicy is the only network-layer control shown, and the API Gateway authoriser configuration is not shown",
+    "No tests that unauthenticated or unauthorised calls are rejected"
+   ],
+   "remediation": "Show or enforce that every route in service/app.py, including POST /v1/score and POST /v1/appeals, uses Depends(require_scope(...)). Consider applying it app-wide, for example through router-level dependencies. Move the creditlens:score check out of verify_token and into per-route scopes, so admin and underwriter scopes are separate from scoring. Add tests in tests/ that assert 401 or 403 for missing, invalid or wrongly scoped tokens on every route. Add an API Gateway authorizer in Terraform. Add model artefact integrity checks, for example hash verification at load time of models/pd-lgbm-3.1.0.txt. Add input validation and anomaly or abuse monitoring against adversarial and model-extraction attempts. Document these controls in docs/model-risk-management.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-01",
+   "status": "compliant",
+   "confidence": 0.72,
+   "rationale": "E1 documents all four required areas in docs/model-risk-management.md. Section 3 covers change management: minor/major classification, independent validation and Model Risk Committee approval. Section 4 covers pre-release validation (out-of-time test, stability tests, CI gate) and post-market monitoring (monthly performance report, PSI drift alerts, appeal reversal rate). Section 5 is headed \"Incident reporting\", but the excerpt is truncated, so the procedure's content is not visible. The CI gate in E3 enforces AUC, Gini and PSI thresholds, which supports the validation claim. E7 shows monitoring in practice through a quarterly fairness report. Incident reporting is the least verified element.",
+   "evidence_ids": [
+    "f9ec98d8ebac",
+    "5d382419a7f0",
+    "02a46e5d5fb3"
+   ],
+   "gaps": [
+    "Incident reporting section is truncated, so it is unverified that it covers serious-incident notification to authorities (Art. 73) with timelines and owners",
+    "No evidence of a broader QMS document (Art. 17) covering design control, data management and an accountability framework",
+    "No evidence that the monthly PSI monitoring is automated in production; the CI test only checks the offline OOT report",
+    "The change-management process is not enforced in code (the /v1/admin/thresholds endpoint changes the cutoff without an approval workflow)"
+   ],
+   "remediation": "Complete or confirm Section 5 of docs/model-risk-management.md. It should define serious-incident criteria, the internal escalation path, the regulator notification timelines under AI Act Art. 73, and owners. Add a QMS document or runbook that maps to Art. 17(1). Add production drift monitoring, such as CloudWatch alarms on PSI. Add a change-approval audit trail for cutoff changes made through the admin endpoint.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-02",
+   "status": "compliant",
+   "confidence": 0.82,
+   "rationale": "E1 has automated tests asserting ROC-AUC >= 0.78, Gini >= 0.56 and PSI < 0.1 against an out-of-time report. These are predefined thresholds, not an HTTP 200 smoke test. E2 names this file as the pre-release CI gate and describes out-of-time and stability testing. E6 shows the out-of-time test split is held out from training, and E3 reports results (AUC 0.81, Gini 0.62) that clear the thresholds. E4 adds subgroup AUC and fairness metrics. The thresholds are defined in advance and tied to the intended purpose.",
+   "evidence_ids": [
+    "5d382419a7f0",
+    "f9ec98d8ebac",
+    "170f5b442556",
+    "073ca4ff882a",
+    "02a46e5d5fb3"
+   ],
+   "gaps": [
+    "The CI workflow that runs the gate and blocks release is not shown in the evidence",
+    "The process that produces artifacts/oot_report.json from the held-out set is not shown",
+    "The thresholds (0.78 / 0.56) are not documented with a rationale",
+    "No gate on subgroup AUC, fairness (disparate impact) or calibration, although E4 reports them"
+   ],
+   "remediation": "Add a CI workflow (e.g. .github/workflows) that regenerates artifacts/oot_report.json from the held-out out-of-time set and runs tests/test_quality_gate.py as a required check before release. Document the threshold rationale in docs/model-risk-management.md. Add gates for calibration error, subgroup AUC and the disparate-impact ratio of at least 0.80.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-LAW-01",
+   "status": "partial",
+   "confidence": 0.7,
+   "rationale": "The DPIA [E2] and applicant notice [E3] name Art. 6(1)(b) and 6(1)(c) as the lawful basis for the credit scoring and assessment purpose. The retention is tied to a legal obligation in [E2], [E7] and [E9]. However, the evidence doesn't give a basis per purpose for other processing. Model development and training on the loan book is described in [E1] only as \"compatible further processing\" (Art. 6(4)), with no Art. 6(1) basis named. The fairness analysis in [E8] joins KYC data for evaluation, and no basis is documented for it. Monitoring and appeals are also not covered. No record of processing activities is present. Consent isn't relied on, so consent recording isn't needed.",
+   "evidence_ids": [
+    "073ca4ff882a",
+    "2ccfbb1e9e56",
+    "267d1a695bfe",
+    "02a46e5d5fb3"
+   ],
+   "gaps": [
+    "No lawful basis under Art. 6(1) named for model development/training purpose",
+    "No lawful basis documented for fairness evaluation using KYC-sourced protected attributes",
+    "No basis for monitoring, appeals handling or bureau data sharing",
+    "No record of processing activities (Art. 30) listing purpose-to-basis mapping",
+    "Compatibility assessment of 2024-01-10 is referenced but not included in the evidence"
+   ],
+   "remediation": "Add docs/ropa.md (or extend docs/dpia.md) with a table of each processing purpose (credit assessment, model training, fairness testing, monitoring, appeals, bureau inquiry, retention/archiving) and its Art. 6(1) basis. Where legitimate interests is used, for example for model development, include a documented legitimate interests assessment. Link the 2024-01-10 compatibility assessment. Also mirror the per-purpose bases in docs/applicant-notice.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-TRN-01",
+   "status": "partial",
+   "confidence": 0.8,
+   "rationale": "E1 is an applicant-facing notice that covers the controller (ACME Consumer Finance S.A., with the DPO email), the legal basis (Art. 6(1)(b) and (c)), retention (5 years), the right to contest automated decisions, the right to a human review, the right to lodge a complaint, and the logic and main factors of the automated decision. E1 does not list the other rights (access, rectification, erasure, objection, restriction, portability). It also does not state the purposes explicitly or name the recipients, such as the credit bureau and lending staff, which E3 mentions only internally. E4 links to E1 as the \"applicant information\". No evidence shows that the notice is shown or linked to applicants at the point of collection.",
+   "evidence_ids": [
+    "267d1a695bfe",
+    "2ccfbb1e9e56",
+    "9a1368799773"
+   ],
+   "gaps": [
+    "Rights to access, rectification, erasure, objection, restriction and portability are not listed",
+    "Purposes of processing are not stated explicitly",
+    "Recipients or categories of recipients, including the credit bureau, are not named in the notice",
+    "No evidence that the notice is presented or linked to applicants at collection",
+    "The notice has no explanation of whether providing data is statutory or contractual, or of the consequences of not providing it",
+    "No mention of the source of bureau data or of international transfers"
+   ],
+   "remediation": "Expand docs/applicant-notice.md into a full Art. 13 privacy notice. Add the controller's contact details and the DPO's. Add an explicit purposes section. Add recipients, including the credit bureau and processors. Add retention periods. Add the full list of rights: access, rectification, erasure, restriction, objection, portability and complaint. Add whether providing the data is required and the consequences of not providing it, plus any transfers. Publish the notice, or link it, in the application portal and the application form before data is submitted. Add a test or configuration entry that checks the link is present.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-RET-01",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "Retention is defined, justified and enforced for the main data categories. Raw payloads are 30 days and application records are 5 years, and both are documented as a legal obligation in the DPIA and config (E3, E7). The S3 lifecycle rules enforce these periods automatically with expirations of 30 days and 1830 days (E2, E4). The audit log group has a 30-day retention (E4), and applicants are told the retention period (E5). Gaps remain. The 5-year period is \"after contract end or decline\" (E7), but the S3 rule expires at 1830 days from object creation, so it may not match the documented trigger. The YAML retention values in E3 are not shown to be consumed by code. Training data (1.9M applications from 2018-2023, E6) has no retention period shown, and the same is true for the other data categories, such as bureau data and appeals.",
+   "evidence_ids": [
+    "9c2d81458c4a",
+    "f82942cbaf6f",
+    "4b265edfdb5a",
+    "267d1a695bfe",
+    "2ccfbb1e9e56",
+    "073ca4ff882a"
+   ],
+   "gaps": [
+    "No retention period or purge defined for training datasets (E6) or derived data",
+    "The S3 expiration counts from object creation (1830 days), not from contract end or decline as the DPIA states",
+    "No evidence that config/scoring.yaml retention values are enforced in code, so they may drift from Terraform",
+    "Appeals records, bureau data and other categories have no retention definition or enforcement",
+    "The DPIA gives no per-category justification for the 5-year period beyond a general legal reference, and does not cite the specific statutes",
+    "Whether the 'records/' prefix holds all personal data is not shown, and no non-current-version or backup expiration is shown"
+   ],
+   "remediation": "Add a retention schedule to docs/dpia.md that covers every data category: training datasets, bureau data, appeals, logs and backups. For each, state the purpose, the period and the legal basis. Add Terraform lifecycle rules, including noncurrent_version_expiration, or purge jobs for those categories. Align the 5-year records rule with the documented trigger (contract end or decline), for example with an object tag set at closure that the lifecycle rule filters on. Generate or validate the Terraform values from config/scoring.yaml, and add a test that checks they match. Define a retention or anonymisation policy for the training data.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ERA-01",
+   "status": "non_compliant",
+   "confidence": 0.82,
+   "rationale": "The evidence shows only automatic time-based expiry: raw payloads after 30 days and application records after about 5 years (E3, E5, E7). The DPIA and applicant notice describe retention and the right to contest decisions, but they don't mention erasure requests (E1, E6). No endpoint, admin job or documented procedure deletes a single data subject's data, and nothing covers derived data such as training sets or logs (E2, E5). The 5-year retention is justified as a legal obligation, which could limit erasure under Art. 17(3)(b). The evidence doesn't document how that exception is applied or how erasure requests are handled for data outside it.",
+   "evidence_ids": [
+    "2ccfbb1e9e56",
+    "f82942cbaf6f",
+    "4b265edfdb5a",
+    "267d1a695bfe",
+    "9c2d81458c4a",
+    "073ca4ff882a"
+   ],
+   "gaps": [
+    "No per-data-subject erasure endpoint, job or script",
+    "No documented erasure request procedure or SLA",
+    "Applicant notice doesn't mention the right to erasure",
+    "No coverage of derived data (training datasets, logs, features, bureau copies)",
+    "No documented Art. 17(3) exception assessment for the 5-year legal-retention records",
+    "No handling of erasure for data outside the legal retention scope, such as raw payloads before 30 days"
+   ],
+   "remediation": "Implement an erasure path for a single data subject, such as an authenticated DELETE /applicants/{id} endpoint or an admin job. It should purge or anonymise the subject's data in S3 (raw/ and records/), the databases, the audit logs and derived stores. Add a docs/erasure-procedure.md that gives the response deadline (one month), identity verification, and the Art. 17(3)(b) legal-obligation exception with a restriction-of-processing fallback. It should also say how to handle training data and derived data, and how to notify recipients such as the credit bureau. Update docs/applicant-notice.md to describe the erasure right and how to exercise it, and add tests for the deletion path.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "Loans up to EUR 25,000 are approved or declined automatically (E2, E5), so Art. 22 applies. The DPIA relies on the Art. 22(2)(a) exception with appeal safeguards (E1). The safeguards are implemented. POST /v1/appeals takes the applicant's statement and queues it for review (E2). An underwriter-scoped resolution endpoint can uphold or reverse the decision and replaces the automated outcome (E7). Resolutions are audited (E8). Applicants are told of their rights to contest, to express their view and to get human review (E3). Larger amounts, model errors and the kill switch all route to an underwriter (E2, E4).",
+   "evidence_ids": [
+    "2ccfbb1e9e56",
+    "532afdbb56df",
+    "267d1a695bfe",
+    "9a1368799773",
+    "9e24be3cf09d",
+    "16c6081b910f",
+    "f82942cbaf6f"
+   ],
+   "gaps": [
+    "No evidence of tests that exercise the appeal path or the 5-day SLA",
+    "The 'Contest decision' portal button is not in the provided evidence; only the API endpoint is",
+    "POST /v1/appeals does not check that the caller owns the application"
+   ],
+   "remediation": "Add automated tests for the appeal and resolution flow. Monitor the 5-day SLA. Verify that the portal exposes 'Contest decision'. Restrict /v1/appeals to the applicant's own application, or to the authorised origination platform.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-02",
+   "status": "compliant",
+   "confidence": 0.82,
+   "rationale": "E1 is an applicant-facing notice. It states that automated decision-making based on a statistical credit-scoring model is used, and that loans up to EUR 25,000 can be decided automatically. It lists the main factors: income and debt-to-income ratio, bureau score and payment history, length of employment, and number of open credit lines. It also gives the consequences (decline letter with main reasons, human review above the threshold) and the right to contest, express a point of view and obtain staff review. This satisfies the Art. 13(2)(f) and Art. 22(3) elements. E3 points to this notice as the applicant information, and E2 and E8 show the reason codes and appeals are implemented.",
+   "evidence_ids": [
+    "267d1a695bfe",
+    "9a1368799773",
+    "2ccfbb1e9e56",
+    "532afdbb56df"
+   ],
+   "gaps": [
+    "The notice does not state the relative weight or importance of each factor",
+    "The notice does not describe the consequence of an automatic decline in detail, such as financial exclusion or loan refusal",
+    "Nothing shows the notice is delivered to applicants at the time data are collected, for example linked in the application flow",
+    "The notice does not mention profiling explicitly, only automated decision-making"
+   ],
+   "remediation": "Link docs/applicant-notice.md from the application form so applicants see it when data are collected. Add a sentence on the consequences of an automatic decline and on profiling. Optionally explain how the factors are weighted, or how each factor raises or lowers the likelihood of approval.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-PBD-01",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "The model's FEATURES list (E11) contains only financial, employment and bureau variables. It has no gender, age or nationality. E5 confirms protected attributes are not model inputs and were joined only for fairness evaluation in a segregated environment, then deleted. E4 says only financial and employment data are used, with no special categories, and lists pseudonymous applicant references and KMS encryption. Raw payloads expire after 30 days (E4, E7). The only recipient outside ACME is the credit bureau, under a contracted purpose (E1, E4), and no third-party LLM is used. Minimisation and pseudonymisation are documented, though the pseudonymisation code is not shown.",
+   "evidence_ids": [
+    "d537446fbb53",
+    "02a46e5d5fb3",
+    "2ccfbb1e9e56",
+    "9c2d81458c4a",
+    "073ca4ff882a",
+    "322336058ee2"
+   ],
+   "gaps": [
+    "No code evidence of the pseudonymisation of applicant references (documented only in the DPIA)",
+    "No explicit data-minimisation review of each feature, such as months_at_employer, which is a possible age proxy"
+   ],
+   "remediation": "Add or reference the code that generates the pseudonymous applicant references, and mention it in the DPIA. Document a per-feature necessity justification, including a proxy analysis for months_at_employer. Consider masking PII in logs and the raw/ payloads.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-01",
+   "status": "partial",
+   "confidence": 0.8,
+   "rationale": "At-rest encryption is evidenced for the S3 bucket (SSE-KMS with key rotation, E1) and the CloudWatch audit log group (KMS, E5). In transit, the pod serves TLS on port 8443 using a mounted secret (E2). Gaps remain. SQS queues (underwriting/appeals, E9) have no evidenced encryption. Nothing evidences TLS between API Gateway and the pods, or TLS for S3/SQS access. No evidence covers backups or the data stores in the origination platform. The TLS certificate comes from a secret whose provenance is unknown. Docs (E3, E6) only mention KMS in general terms.",
+   "evidence_ids": [
+    "9c2d81458c4a",
+    "aff6ac56806b",
+    "4b265edfdb5a",
+    "3031139e2406",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "SQS queues (underwriting_queue, appeals_queue) have no evidenced SSE/KMS encryption",
+    "No evidence of TLS enforcement for S3 (e.g. aws:SecureTransport bucket policy)",
+    "No evidence of TLS between API Gateway and the EKS pods, or of the integration/ingress configuration",
+    "No evidence for backup or volume encryption (EBS/PV)",
+    "Source and production-grade status of the creditlens-tls certificate (cert-manager or CA) is not shown",
+    "Data stores in the origination platform are outside the evidence"
+   ],
+   "remediation": "Add aws_sqs_queue resources with kms_master_key_id. Add an S3 bucket policy denying requests when aws:SecureTransport is false. Configure the API Gateway integration with HTTPS and TLS to the pods, and use a CA-issued certificate managed by cert-manager or ACM for creditlens-tls. Enable encryption for any EBS volumes and backups. Add a docs/security section listing every store holding personal data with its at-rest and in-transit encryption status.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-02",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "The evidence shows authentication and role/scope-based authorisation. /v1/score depends on verify_token (E11). The appeal resolution endpoint requires the creditlens:underwriter scope and the admin thresholds endpoint requires creditlens:admin (E5). The deployment adds a NetworkPolicy limiting ingress to the origination namespace and TLS (E2). The architecture and DPIA describe OAuth2 scopes and private networking (E1, E7, E10). The excerpt is truncated, so the appeal creation endpoint and any other personal-data routes are not confirmed.",
+   "evidence_ids": [
+    "9e24be3cf09d",
+    "f138f7c7fdde",
+    "aff6ac56806b",
+    "3031139e2406",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "Authentication on POST /v1/appeals is not visible in the truncated excerpt",
+    "No evidence of access reviews or least-privilege IAM for the S3 bucket holding personal data",
+    "No tests proving that protected routes reject unauthenticated or unauthorised calls"
+   ],
+   "remediation": "Confirm that every route in service/app.py, including /v1/appeals, uses Depends(verify_token) or require_scope. Add tests that check unauthenticated and wrong-scope calls are rejected. Add IAM policies that restrict S3 and SQS access to least privilege, and document the roles and access reviews.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ROPA-01",
+   "status": "partial",
+   "confidence": 0.85,
+   "rationale": "No dedicated ROPA file appears in the evidence, so the deterministic file check would fail. The DPIA (E2) covers some Art. 30(1) items: purposes and processing description, data subjects (loan applicants), recipients (lending staff, credit bureau), retention (30 days for raw payloads, 5 years for records) and security measures (KMS encryption, OAuth2 scopes, pseudonymous references). Retention is consistent with E5 and E8. The DPIA does not name the controller, DPO or contact details. It also has no explicit categories of personal data and no statement on third-country transfers. A DPIA alone is not a ROPA, so this is only partial.",
+   "evidence_ids": [
+    "2ccfbb1e9e56",
+    "f82942cbaf6f",
+    "9c2d81458c4a",
+    "3031139e2406",
+    "073ca4ff882a"
+   ],
+   "gaps": [
+    "No dedicated ROPA document",
+    "Controller and DPO name and contact details missing",
+    "Categories of personal data not listed explicitly",
+    "Third-country transfers not addressed (e.g. credit bureau, AWS/CloudWatch)",
+    "Recipient categories incomplete (processors such as AWS not listed)",
+    "Training/model development processing not recorded as a separate activity"
+   ],
+   "remediation": "Add docs/ropa.md (or ropa.yaml) with an Art. 30(1) entry for each processing activity: credit scoring/decisioning, model training, and audit logging. Each entry should include: (a) controller and DPO contact details; (b) purposes and lawful basis; (c) data subject categories and personal data categories (the FEATURES fields, bureau data, application records); (d) recipients, including processors (AWS) and the credit bureau; (e) third-country transfers or a statement that there are none (eu-central-1) with safeguards; (f) retention periods (30 days, 5 years); (g) a security measures summary (KMS, OAuth2, private networking). Link it to the DPIA and keep it under review.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-DPIA-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "docs/dpia.md (E3) exists and contains all four Art. 35(7) elements. It has a description of the processing (section 1), a necessity and proportionality assessment with lawful basis and Art. 22 safeguards (section 2), a risk assessment (section 3), and measures (section 4). It also records residual risk acceptance by the DPO and Head of Lending, and retention. The risks and measures are corroborated by the risk register (E5), the fairness report (E6) and the applicant notice (E8). The DPIA covers automated credit scoring with automatic decisions, which is the Art. 35(3)(a) case.",
+   "evidence_ids": [
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac",
+    "02a46e5d5fb3",
+    "267d1a695bfe",
+    "f82942cbaf6f"
+   ],
+   "gaps": [
+    "DPIA does not document consultation with data subjects or their representatives (Art. 35(9)), though this is optional 'where appropriate'",
+    "DPIA does not state whether the DPO's advice was sought under Art. 35(2), only that the DPO accepted the residual risk",
+    "No review or update schedule, and no link to the model version (pd-lgbm-3.1.0)",
+    "Risk assessment is a short list without likelihood or severity ratings",
+    "Purposes are not explicit about legitimate interest, though Art. 6(1)(b) and (c) are the bases used"
+   ],
+   "remediation": "Keep docs/dpia.md current. Add a document version and review date, a link to the model version, a likelihood and severity scoring for each risk, and a record of the DPO's advice and any data-subject consultation. Re-run the DPIA whenever there is a major model change under the model-risk change management process.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-01",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "The applicant notice (E2) discloses \"automated decision-making based on a statistical credit-scoring model\" and explains the right to a human review, which partly covers the applicant-facing disclosure. However, it is a document, and nothing shows it is displayed at or before the first interaction in the portal. It also never uses the term AI. The staff-facing decision-support requirement is not evidenced. The API returns a bare \"decision\", \"pd\" and \"reason_codes\" with no AI-recommendation label or statement of who decides (E10). E3 only says reason codes are shown to underwriters, and no UI components, e-mail templates or underwriter screens are in the evidence (E8 says the back office is a separate system).",
+   "evidence_ids": [
+    "267d1a695bfe",
+    "f9ec98d8ebac",
+    "3031139e2406",
+    "532afdbb56df",
+    "9a1368799773"
+   ],
+   "gaps": [
+    "No evidence the applicant notice is shown in the portal at or before the first interaction",
+    "Applicant notice does not explicitly state that AI is involved",
+    "No label on staff/underwriter outputs stating the score or decision is an AI-generated recommendation",
+    "No statement of who takes the final decision in the underwriter UI",
+    "API response has no AI-disclosure field, and no API documentation for integrators requires disclosure",
+    "No e-mail or decline-letter templates in the evidence"
+   ],
+   "remediation": "Add an explicit AI disclosure to the applicant portal and decline/approve letters, visible before the application is submitted and not only in the terms of service. Wording such as \"This assessment uses an AI/automated scoring system\" works. Add fields such as `\"ai_generated\": true` and `\"final_decision_by\": \"underwriter|automated\"` to the /v1/score response. Require the origination back-office UI to label scores as \"AI-generated recommendation; final decision by the underwriter\", and document this requirement for integrators in the API docs. Store the UI and template texts in the repository so they can be audited.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-02",
+   "status": "not_applicable",
+   "confidence": 0.97,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-03",
+   "status": "partial",
+   "confidence": 0.9,
+   "rationale": "Structured per-decision audit logging exists (E1) and is confirmed by a sample log (E6). It records the application id, input SHA-256, output (pd and reason codes), model_version and caller. The timestamp comes from the log framework. However, the CloudWatch audit log group has retention_in_days = 30 (E2), well under the required 180 days. The 1830-day rule in E2/E9 and the 5-year retention in E3/E4 apply only to application records in S3, not to prediction logs. No tamper-resistance is shown, since there is no append-only storage, Object Lock or log-integrity validation. Some records have model_version=None when a case is referred (E6), and no correlation id separate from application_id is shown.",
+   "evidence_ids": [
+    "16c6081b910f",
+    "4b265edfdb5a",
+    "f789ac4f68f7",
+    "9c2d81458c4a",
+    "f82942cbaf6f",
+    "2ccfbb1e9e56"
+   ],
+   "gaps": [
+    "Audit log group retention is 30 days, below the 180-day minimum",
+    "No tamper-resistant or append-only protection for audit logs",
+    "No separate request or correlation id; only application_id is logged",
+    "model_version is None for referred decisions",
+    "Reviewer identity and action are not clearly logged for human-reviewed outcomes; the appeal log records only an underwriter client_id",
+    "No evidence of a waiver for shorter retention"
+   ],
+   "remediation": "In infra/terraform/main.tf, set aws_cloudwatch_log_group.audit retention_in_days to at least 180, or export the logs to S3 with a lifecycle rule of 180 days or more. For tamper resistance, use S3 Object Lock in compliance mode or a CloudWatch Logs subscription to an immutable bucket, and restrict log deletion and modification through IAM. In service/audit.py, add a request or correlation id and log the model version for every decision, including referrals. Log the reviewer identity and action for human-reviewed decisions. Document the retention policy for prediction logs.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-04",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The raw payload store is the S3 prefix raw/, which has an automated lifecycle expiration of 30 days (E3, E6). The same 30-day retention is set in config (E2) and documented in the DPIA (E5). The longer-retained records/ prefix (1830 days, about 5 years) is a documented legal obligation (E2, E5, E9), so it is justified. The audit log group is also set to 30 days (E3), and the audit log sample holds only hashes of the input (E10).",
+   "evidence_ids": [
+    "f82942cbaf6f",
+    "4b265edfdb5a",
+    "2ccfbb1e9e56",
+    "9c2d81458c4a",
+    "267d1a695bfe",
+    "f789ac4f68f7"
+   ],
+   "gaps": [
+    "The evidence doesn't show whether other raw-input stores exist (for example k8s volumes, queues, or application-side caches).",
+    "The 5-year application-record store is not itself a raw input, but the evidence doesn't confirm that it holds no raw payloads.",
+    "Docs cite the legal obligation in the DPIA, not in a formal record of processing or retention schedule."
+   ],
+   "remediation": "Add a data retention schedule or record of processing that lists every store, including the raw/ 30-day rule and the records/ legal basis. Confirm that no other raw-input store (k8s volumes, queues, caches, backups) exists without a TTL. Optionally add a test that checks the lifecycle rule stays at 30 days or less.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-05",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "Encryption at rest is well shown. E4 has a KMS key with rotation and an S3 bucket with SSE aws:kms, and E9 has the CloudWatch audit log group encrypted with the KMS key. In transit, E1 shows uvicorn serving on 8443 with TLS key and cert, and the NetworkPolicy restricts ingress to that port. But nothing shows a minimum TLS version of 1.2 or higher. The API Gateway TLS policy, SQS and S3 transport enforcement, and the external client path are also not evidenced. Model artefacts are baked into the container image (E11), and ECR image encryption is not shown. SQS queues hold application IDs and appeal statements, and their encryption is also not shown.",
+   "evidence_ids": [
+    "aff6ac56806b",
+    "9c2d81458c4a",
+    "4b265edfdb5a",
+    "3031139e2406",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No explicit minimum TLS version (1.2+) configured for uvicorn or API Gateway",
+    "No evidence of TLS enforcement on the API Gateway custom domain or security policy",
+    "No SSE/KMS configuration shown for SQS queues (appeals and underwriting) holding personal data",
+    "No evidence of ECR repository encryption for the image containing model artefacts",
+    "No S3 bucket policy denying non-TLS requests (aws:SecureTransport)",
+    "The uvicorn TLS setup is not shown to cover service-to-service traffic beyond the origination namespace"
+   ],
+   "remediation": "Set an explicit TLS floor. Pass --ssl-version/ssl context with a TLS 1.2+ minimum to uvicorn, or terminate TLS at a mesh or ingress with a minimum version. Set the API Gateway domain security_policy to TLS_1_2. Add an S3 bucket policy denying requests when aws:SecureTransport is false. Add kms_master_key_id to the aws_sqs_queue resources. Add an aws_ecr_repository with encryption_configuration set to KMS. Document the encryption-at-rest and TLS controls in docs/architecture.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-06",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "The visible routes are protected. /v1/score uses Depends(verify_token) (E8, E10). The admin threshold route /v1/admin/thresholds requires the scope creditlens:admin (E7), and the appeal resolution route requires creditlens:underwriter (E7). OAuth2 scope checks work as role-based authorisation. However, the excerpts are truncated (E8 stops at line 40, E7 covers only lines 61-82). The POST /v1/appeals route, the model reload, data export and transcript access endpoints, and any public declaration or rate limiting are not visible. A subtle issue is that verify_token requires the creditlens:score scope (E10). So admin and underwriter callers also need that scope, though this does not weaken security. The full route enumeration is therefore incomplete.",
+   "evidence_ids": [
+    "9e24be3cf09d",
+    "f138f7c7fdde",
+    "cc7bfd2f4b62",
+    "9a1368799773"
+   ],
+   "gaps": [
+    "Full route enumeration not visible (lines 40-61 of service/app.py missing, including POST /v1/appeals)",
+    "Authentication on POST /v1/appeals not confirmed",
+    "No evidence for model reload, data export or transcript access endpoints, if they exist",
+    "No public-endpoint declaration or rate limiting (POL-9) evidence",
+    "The API Gateway mentioned in the README is not shown, so its authorisation settings are unknown"
+   ],
+   "remediation": "Provide the complete service/app.py route list and confirm that POST /v1/appeals and any other route (reload, export, transcript) use verify_token or require_scope. If any route is deliberately public, declare it in the service configuration and add rate limiting (for example at API Gateway or via middleware). Add a test that enumerates app.routes and asserts each has an auth dependency, and that admin routes require creditlens:admin.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-07",
+   "status": "non_compliant",
+   "confidence": 0.93,
+   "rationale": "Applications at or below EUR 25,000 are declined automatically with no human approval. E4 shows `decision = \"approve\" if result.pd <= cutoff else \"decline\"` is returned directly, and E1, E2 and E5 confirm automatic approval and decline for smaller amounts. The audit log (E10) shows direct \"decline\" entries with no reviewer. Only the above-threshold, kill-switch and model-error cases are referred to underwriters (E4). The appeals route (E4, E2) is a post-hoc contest by the applicant, not prior approval of the adverse decision. This contradicts POL-7(1).",
+   "evidence_ids": [
+    "9a1368799773",
+    "2ccfbb1e9e56",
+    "532afdbb56df",
+    "f82942cbaf6f",
+    "f789ac4f68f7",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "Automatic declines for amounts <= EUR 25,000 take effect without human approval",
+    "The decline decision is returned to the caller before any reviewer sees it",
+    "No reviewer approval or override is recorded in the prediction/audit log",
+    "Appeals are after the fact and only happen if the applicant contests",
+    "Human review is limited to a threshold, the kill switch and model errors, so it covers only part of the cases"
+   ],
+   "remediation": "In service/app.py, route every adverse outcome (pd > pd_cutoff) to underwriting_queue as a \"pending_decline\" recommendation. Do not return or communicate a final \"decline\" until a trained reviewer has approved it. Show the reviewer the PD and reason_codes, and let them change the outcome. Add an audit entry (in service/audit.py) for each review with reviewer id, timestamp, final outcome and whether the AI recommendation was overridden. Update README, the DPIA and config/scoring.yaml to remove the automatic-decline path. Add tests that assert no decline is issued without an approval record.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-08",
+   "status": "partial",
+   "confidence": 0.8,
+   "rationale": "MODEL_CARD.md (E1) exists for the only deployed model, pd-lgbm-3.1.0 (E3, E5). It covers owner, intended and out-of-scope use, training data summary (linked to E2), evaluation metrics and limitations. The version appears only in the title, with no explicit version field. The card does not give a dataset or model-artefact reference or a date. Fairness is only a link to a report that is not in the evidence. The model's structure and hyperparameters are not described. The evidence doesn't show whether any third-party models are used, so that part can't be assessed. The card is mostly complete but has minor gaps.",
+   "evidence_ids": [
+    "170f5b442556",
+    "073ca4ff882a",
+    "322336058ee2",
+    "d537446fbb53"
+   ],
+   "gaps": [
+    "No explicit 'Version' field (version appears only in the title)",
+    "No date or approval or validation status on the card",
+    "Fairness results only referenced; docs/fairness-report-2026Q2.md not in the evidence",
+    "Training data summary is brief and relies on an external link",
+    "No check that all deployed models are covered, including any third-party models (provider, version, product-specific evaluation)"
+   ],
+   "remediation": "Add an explicit 'Version' field and a last-updated or approval date to MODEL_CARD.md. Add a short inline training-data summary (size, period, key exclusions). Make sure docs/fairness-report-2026Q2.md exists in the repository and summarise its key results in the card. Confirm that every deployed model has its own card. If any third-party model is used, add a card that records the provider, model version and product-specific evaluation.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-09",
+   "status": "partial",
+   "confidence": 0.62,
+   "rationale": "E1 defines API Gateway throttling in Terraform (50 rps rate, 100 burst on prod, method_path \"*/*\"), and E6 shows the gateway in front of the service. This is rate limiting configured in code. However, the Gateway throttling is stage/method-wide, not per client (API key, session or IP) as POL-9(1) requires, and no usage plan or API key is tied to it. E1 also hardcodes `rest_api_id` and `stage_name`. E4 shows a NetworkPolicy limiting ingress to the origination namespace, and E7 shows OAuth2 auth. These suggest the endpoint is not broadly exposed, but the evidence doesn't show whether it is reachable from untrusted networks. The application has no per-client limiter.",
+   "evidence_ids": [
+    "4b265edfdb5a",
+    "3031139e2406",
+    "aff6ac56806b",
+    "cc7bfd2f4b62"
+   ],
+   "gaps": [
+    "Throttling is global per stage/method, not per client (API key, session or IP)",
+    "No usage plan or API key association for per-client limits",
+    "No application-level rate limiter (e.g. slowapi) keyed on the OAuth2 client_id",
+    "Limits are hardcoded in Terraform (50/100), not parameterised variables or config",
+    "Exposure to untrusted networks is not clearly documented"
+   ],
+   "remediation": "Add an aws_api_gateway_usage_plan with per-client API keys, or use a per-client throttle with its own quotas. Alternatively, add slowapi or similar middleware in service/app.py keyed on Principal.client_id, with limits read from service/settings.py. Move the throttling values into Terraform variables or configuration. Document in docs/architecture.md whether the endpoint is reachable from untrusted networks and how the limits contain abuse and cost exhaustion.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-10",
+   "status": "partial",
+   "confidence": 0.7,
+   "rationale": "E1 has a section \"5. Incident reporting\" in docs/model-risk-management.md that mentions model incidents (wrong declines at scale, outages, discri...). The excerpt is truncated, so it does not show detection, escalation steps, the AI Governance Board (ai-incidents@acme.example) or a 24-hour deadline. No other excerpt (E2-E7) has a standalone incident response procedure. An AI-specific incident section exists, but the evidence doesn't show the required 24h governance reporting or a full procedure.",
+   "evidence_ids": [
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "No visible 24-hour reporting requirement to the AI Governance Board",
+    "No reference to ai-incidents@acme.example",
+    "No clear detection mechanism or triggers described",
+    "No escalation path, roles or severity definition for serious incidents",
+    "Incident section is truncated, so its full content can't be confirmed",
+    "No dedicated incident response procedure document"
+   ],
+   "remediation": "Add a dedicated docs/ai-incident-response.md, or expand section 5 of docs/model-risk-management.md. It should cover: (1) AI incident types (harmful or discriminatory outputs, data leaks via the model, significant performance degradation, safety events); (2) detection sources (PSI drift alerts, appeal-reversal monitoring, CloudWatch audit alarms); (3) severity criteria and an escalation path with named owners; (4) a MUST-report rule sending serious incidents to the AI Governance Board at ai-incidents@acme.example within 24 hours of detection; (5) a report template and post-incident review. Link it from the README.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-11",
+   "status": "compliant",
+   "confidence": 0.82,
+   "rationale": "The repository stores a fairness report (E3, docs/fairness-report-2026Q2.md) for pd-lgbm-3.1.0 with actual results per protected group: gender, age bands and nationality. It gives approval rate, disparate impact, default rate and AUC for each group. It also names a mitigation, the capped months_at_employer contribution shipped in 3.1.0. The model card (E2) references the report under \"Fairness\", and it covers the same model version. This meets the policy's requirements for metrics, per-group results, mitigations, storage in the repository and a model card reference. The DPIA and risk register (E4, E5) support this but are not needed to reach the conclusion.",
+   "evidence_ids": [
+    "170f5b442556",
+    "02a46e5d5fb3",
+    "2ccfbb1e9e56",
+    "f9ec98d8ebac"
+   ],
+   "gaps": [
+    "Report is dated Q2 2026; the evidence does not show it was completed before the 3.1.0 release",
+    "Mitigation effect (before/after metrics) not quantified",
+    "Age 21-29 disparate impact of 0.82 is near the threshold, and there is no intersectional analysis or confidence intervals",
+    "Report and mitigation are not linked to the CI gate (tests/test_quality_gate.py has only AUC, Gini and PSI checks, no fairness check)"
+   ],
+   "remediation": "Record the report date and the 3.1.0 release date, and show that the evaluation came first. Add before/after metrics for the months_at_employer mitigation. Add confidence intervals and, where sample sizes allow, intersectional groups. Add a fairness check (for example, a disparate-impact threshold) to tests/test_quality_gate.py so each release is evaluated automatically.",
+   "method": "llm",
+   "verified": true
+  }
+ ],
+ "evidence": [
+  {
+   "id": "170f5b442556",
+   "kind": "model_card",
+   "path": "MODEL_CARD.md",
+   "start_line": 1,
+   "end_line": 11,
+   "snippet": "# Model card: pd-lgbm-3.1.0\n\n* **Owner:** Credit Risk Analytics (cra@acme-finance.example)\n* **Type:** LightGBM binary classifier, probability of default within 12 months.\n* **Intended use:** consumer personal-loan applications, EUR 1,000-75,000, EU retail customers.\n* **Out of scope:** mortgages, business lending, collections prioritisation, fraud detection.\n* **Training data:** 1.9M applications 2018-2023 with 12-month performance (`docs/data/training-data.md`).\n* **Performance (out-of-time test 2024):** ROC-AUC 0.81, Gini 0.62, KS 0.47; calibration error 0.6 pp.\n* **Fairness:** see `docs/fairness-report-2026Q2.md`.\n* **Limitations:** thin-file applicants (no bureau history) have lower accuracy (AUC 0.72); not\n  validated for applicants under 21.",
+   "signal": "data_documentation,bias_fairness,accuracy_metrics",
+   "score": 0.0
+  },
+  {
+   "id": "2ccfbb1e9e56",
+   "kind": "doc",
+   "path": "docs/dpia.md",
+   "start_line": 1,
+   "end_line": 27,
+   "snippet": "# DPIA: automated credit scoring (CreditLens)\n\n## 1. Description of the processing\nEvaluation of creditworthiness of loan applicants using a statistical model fed by application data\nand credit-bureau data; automatic approval/decline for amounts up to EUR 25,000, underwriter review\nabove. Data subjects: loan applicants. Recipients: ACME lending staff, credit bureau (inquiry).\n\n## 2. Necessity and proportionality\nLawful basis: Art. 6(1)(b) (steps prior to contract) and Art. 6(1)(c) (creditworthiness assessment\nrequired by the Consumer Credit Directive). Automated decisions rely on Art. 22(2)(a); safeguards:\nappeal with human re-assessment, right to express a point of view. Only financial and employment\ndata are used; no special categories.\n\n## 3. Risks to rights and freedoms\n* Unjustified declines and financial exclusion; indirect discrimination; opacity of the score;\n  breach of financial data.\n\n## 4. Measures\nAppeals (5-day SLA), reason codes in decline letters, quarterly fairness report, KMS encryption,\npseudonymous applicant references, access via OAuth2 scopes.\n\n## 5. Residual risk\nMedium-low; accepted by DPO and Head of Lending on 2026-04-14.\n\n## 6. Retention\nRaw request payloads 30 days; application records 5 years after contract end or decline (legal\nobligation under national consumer credit and AML law).",
+   "signal": "retention_config,consent,encryption,access_control,bias_fairness",
+   "score": 0.0
+  },
+  {
+   "id": "f138f7c7fdde",
+   "kind": "code",
+   "path": "service/app.py",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "from __future__ import annotations\n\nfrom datetime import date\nfrom typing import Literal\n\nfrom fastapi import Depends, FastAPI, HTTPException\nfrom pydantic import BaseModel, Field, conint, constr\n\nfrom .audit import audit_decision, audit_appeal_outcome\nfrom .auth import Principal, require_scope, verify_token\nfrom .queues import appeals_queue, underwriting_queue\nfrom .scoring import ScoringError, scorer\nfrom .settings import settings\n\napp = FastAPI(title=\"CreditLens\", version=\"3.1.0\")\n\n\nclass LoanApplication(BaseModel):\n    application_id: constr(pattern=r\"^LA-\\d{8}$\")\n    applicant_ref: constr(min_length=16, max_length=64)  # pseudonymous id from origination\n    amount_eur: conint(ge=1_000, le=75_000)\n    term_months: conint(ge=6, le=120)\n    net_monthly_income_eur: float = Field(ge=0, le=100_000)\n    monthly_obligations_eur: float = Field(ge=0, le=100_000)\n    employment_status: Literal[\"employed\", \"self_employed\", \"retired\", \"student\", \"unemployed\"]\n    months_at_employer: conint(ge=0, le=600)\n    bureau_score: conint(ge=0, le=1000)\n    open_credit_lines: conint(ge=0, le=100)\n    delinquencies_24m: conint(ge=0, le=50)\n\n\nclass Appeal(BaseModel):\n    application_id: constr(pattern=r\"^LA-\\d{8}$\")\n    applicant_statement: constr(min_length=1, max_length=5000)\n\n\n@app.post(\"/v1/score\")\ndef score(app_in: LoanApplication, caller: Principal = Depends(verify_token)):\n    if settings.kill_switch or app_in.amount_eur > settings.manual_review_threshold_eur:\n        underwriting_queue.put(app_in.application_id, reason=\"threshold\" if not settings.kill_switch else \"kill_switch\")",
+   "signal": "human_override,access_control",
+   "score": 0.0
+  },
+  {
+   "id": "02a46e5d5fb3",
+   "kind": "doc",
+   "path": "docs/fairness-report-2026Q2.md",
+   "start_line": 1,
+   "end_line": 15,
+   "snippet": "# Fairness report Q2 2026 (pd-lgbm-3.1.0)\n\nProtected attributes are not model inputs; they were joined from the KYC system for evaluation only\n(Art. 10(5) AI Act safeguards: segregated environment, deleted after analysis).\n\n| Group | Approval rate | Disparate impact vs reference | Default rate (approved) | AUC |\n|---|---|---|---|---|\n| Women (ref: men) | 61.8% vs 63.1% | 0.98 | 2.9% vs 3.1% | 0.81 / 0.81 |\n| Age 21-29 (ref: 30-59) | 52.4% vs 64.0% | 0.82 | 4.1% vs 2.8% | 0.78 / 0.82 |\n| Age 60+ (ref: 30-59) | 66.2% vs 64.0% | 1.03 | 2.2% vs 2.8% | 0.80 / 0.82 |\n| Non-national residents (ref: nationals) | 55.1% vs 63.5% | 0.87 | 3.6% vs 3.0% | 0.79 / 0.81 |\n\n**Findings.** All groups above the 0.80 disparate-impact threshold. Age 21-29 near the threshold,\ndriven by `months_at_employer`; mitigation: capped contribution of `months_at_employer` for applicants\nwith education completed < 3 years ago (shipped in 3.1.0), monitored monthly.",
+   "signal": "bias_fairness,accuracy_metrics,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "d537446fbb53",
+   "kind": "code",
+   "path": "service/scoring.py",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "from __future__ import annotations\n\nfrom dataclasses import dataclass\n\nimport lightgbm as lgb\nimport numpy as np\n\nMODEL_VERSION = \"pd-lgbm-3.1.0\"\nFEATURES = [\n    \"amount_eur\", \"term_months\", \"net_monthly_income_eur\", \"monthly_obligations_eur\", \"dti\",\n    \"employment_status\", \"months_at_employer\", \"bureau_score\", \"open_credit_lines\", \"delinquencies_24m\",\n]\nREASON_TEXT = {\n    \"dti\": \"R01 Debt-to-income ratio too high\",\n    \"bureau_score\": \"R02 Credit bureau score\",\n    \"delinquencies_24m\": \"R03 Recent payment delinquencies\",\n    \"months_at_employer\": \"R04 Length of current employment\",\n    \"open_credit_lines\": \"R05 Number of open credit lines\",\n    \"net_monthly_income_eur\": \"R06 Income level\",\n}\n\n\nclass ScoringError(RuntimeError):\n    pass\n\n\n@dataclass\nclass ScoreResult:\n    pd: float\n    reason_codes: list[str]\n    model_version: str = MODEL_VERSION\n\n\nclass Scorer:\n    def __init__(self, path: str = \"models/pd-lgbm-3.1.0.txt\") -> None:\n        self.booster = lgb.Booster(model_file=path)\n\n    def _row(self, a) -> np.ndarray:\n        d = a.model_dump()\n        d[\"dti\"] = d[\"monthly_obligations_eur\"] / max(d[\"net_monthly_income_eur\"], 1.0)",
+   "signal": "",
+   "score": 0.0
+  },
+  {
+   "id": "9a1368799773",
+   "kind": "doc",
+   "path": "README.md",
+   "start_line": 1,
+   "end_line": 18,
+   "snippet": "# CreditLens\n\nCredit scoring service for ACME Consumer Finance personal loans (EUR 1,000 to 75,000). The loan\norigination platform calls `POST /v1/score` with the application; CreditLens returns a probability\nof default, a decision recommendation and adverse-action reason codes.\n\n* **AI Act:** high-risk, Annex III point 5(b) (creditworthiness evaluation of natural persons).\n  Rationale and risk register in `docs/model-risk-management.md`.\n* **GDPR:** DPIA in `docs/dpia.md`; applicant information in `docs/applicant-notice.md`.\n\n## Decision flow\n1. Applications above `manual_review_threshold_eur` always go to an underwriter.\n2. Smaller applications are approved or declined automatically from the score.\n3. Applicants can contest any decision via `POST /v1/appeals`; an underwriter re-assesses the file.\n\n## Repository\n`service/` FastAPI app, `infra/terraform` AWS (KMS, S3, CloudWatch, API Gateway), `infra/k8s`\nmanifests, `tests/` quality gates, `docs/` governance documents.",
+   "signal": "human_override,consent,encryption,risk_management",
+   "score": 0.0
+  },
+  {
+   "id": "f9ec98d8ebac",
+   "kind": "doc",
+   "path": "docs/model-risk-management.md",
+   "start_line": 1,
+   "end_line": 29,
+   "snippet": "# Model risk management: CreditLens\n\n## 1. Regulatory classification\nCredit scoring of natural persons is listed in AI Act **Annex III, point 5(b)**; CreditLens is a\nhigh-risk AI system. It is also in scope of the EBA guidelines on loan origination and monitoring.\n\n## 2. Risk register\n| ID | Risk | Mitigation | Owner |\n|---|---|---|---|\n| MR-1 | Discriminatory outcomes by age/gender/nationality proxies | Protected attributes excluded; quarterly fairness report with disparate-impact thresholds | CRA |\n| MR-2 | Model drift after interest-rate changes | Monthly PSI and back-testing; challenger model | CRA |\n| MR-3 | Over-reliance by underwriters | Reason codes shown; underwriter guide; 10% double review | Lending Ops |\n| MR-4 | Erroneous automatic declines | Appeals process with 5-day SLA; monthly appeal-reversal review | Lending Ops |\n| MR-5 | Data breach | KMS encryption, private networking, OAuth2 client credentials | Platform |\n\n## 3. Change management\nModel changes are classified minor/major. Major changes (new features, retraining, cutoff change\n> 1 pp) need independent validation by Model Validation and approval by the Model Risk Committee.\n\n## 4. Validation and monitoring\nPre-release: out-of-time test, stability tests, CI gate (`tests/test_quality_gate.py`).\nPost-market monitoring: monthly performance report (AUC, Gini, default rate per score band), PSI\ndrift alerts, appeal reversal rate.\n\n## 5. Incident reporting\nModel incidents (wrong declines at scale, outages, discriminatory patterns) are logged in the\nOperational Risk system within 24 hours and escalated to the Model Risk Committee; serious incidents\nare reported to the AI Governance Board (ai-incidents@acme.example) and, where required, to the\ncompetent authority.",
+   "signal": "human_override,pii_field,encryption,access_control,bias_fairness,accuracy_metrics,risk_management,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "073ca4ff882a",
+   "kind": "doc",
+   "path": "docs/data/training-data.md",
+   "start_line": 1,
+   "end_line": 13,
+   "snippet": "# Training data: pd-lgbm-3.1.0\n\n* **Origin:** ACME loan book 2018-2023 (1.9M applications) joined with 12-month repayment outcomes\n  and bureau attributes at application time (contracted bureau, purpose: credit risk modelling).\n* **Collection purpose:** creditworthiness assessment; model development is compatible further\n  processing (assessment of 2024-01-10).\n* **Preparation:** exclusion of fraud-flagged applications (0.8%); winsorisation of income at\n  P99.5; missing bureau data imputed with a \"thin file\" indicator; reject inference via\n  fuzzy augmentation for declined applications.\n* **Splits:** train 2018-2022, validation 2023-H1, out-of-time test 2023-H2/2024.\n* **Assumptions:** 90+ days past due within 12 months as default definition; macro conditions of\n  2018-2023 representative for the next 2 years.\n* **Known gaps:** few applicants under 21 and over 75; self-employed under-represented (6%).",
+   "signal": "model_call,data_documentation",
+   "score": 0.0
+  },
+  {
+   "id": "3031139e2406",
+   "kind": "doc",
+   "path": "docs/architecture.md",
+   "start_line": 1,
+   "end_line": 13,
+   "snippet": "# CreditLens architecture\n\n```\nLoan origination platform \u2500\u2500OAuth2\u2500\u2500\u25ba API Gateway (throttling) \u2500\u2500\u25ba creditlens (EKS, 3 pods)\n                                                                   \u251c\u2500 scoring.py (LightGBM + TreeSHAP reason codes)\n                                                                   \u251c\u2500 audit.py  \u2500\u2500\u25ba CloudWatch /creditlens/audit\n                                                                   \u251c\u2500 underwriting_queue / appeals_queue (SQS)\n                                                                   \u2514\u2500 S3 acme-creditlens-applications (KMS)\n```\n\n* The service is stateless; application records are written by origination to S3 `records/`.\n* Underwriters work in the origination back office, which reads the SQS queues.\n* Model artefacts are baked into the container image; version reported in every response.",
+   "signal": "encryption,access_control,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "aff6ac56806b",
+   "kind": "iac",
+   "path": "infra/k8s/deployment.yaml",
+   "start_line": 1,
+   "end_line": 34,
+   "snippet": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: creditlens\n  namespace: lending\nspec:\n  replicas: 3\n  selector:\n    matchLabels: {app: creditlens}\n  template:\n    metadata:\n      labels: {app: creditlens}\n    spec:\n      containers:\n        - name: api\n          image: 123456789012.dkr.ecr.eu-central-1.amazonaws.com/creditlens:3.1.0\n          args: [\"uvicorn\", \"service.app:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8443\",\n                 \"--ssl-keyfile\", \"/tls/tls.key\", \"--ssl-certfile\", \"/tls/tls.crt\"]\n          volumeMounts: [{name: tls, mountPath: /tls, readOnly: true}]\n      volumes:\n        - name: tls\n          secret: {secretName: creditlens-tls}\n---\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: creditlens-ingress\n  namespace: lending\nspec:\n  podSelector: {matchLabels: {app: creditlens}}\n  ingress:\n    - from:\n        - namespaceSelector: {matchLabels: {name: origination}}\n      ports: [{port: 8443}]",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "322336058ee2",
+   "kind": "code",
+   "path": "service/scoring.py",
+   "start_line": 31,
+   "end_line": 56,
+   "snippet": "    model_version: str = MODEL_VERSION\n\n\nclass Scorer:\n    def __init__(self, path: str = \"models/pd-lgbm-3.1.0.txt\") -> None:\n        self.booster = lgb.Booster(model_file=path)\n\n    def _row(self, a) -> np.ndarray:\n        d = a.model_dump()\n        d[\"dti\"] = d[\"monthly_obligations_eur\"] / max(d[\"net_monthly_income_eur\"], 1.0)\n        d[\"employment_status\"] = [\"employed\", \"self_employed\", \"retired\", \"student\", \"unemployed\"].index(d[\"employment_status\"])\n        return np.array([[d[f] for f in FEATURES]], dtype=float)\n\n    def score(self, a) -> ScoreResult:\n        try:\n            x = self._row(a)\n            pd_ = float(self.booster.predict(x)[0])\n            contrib = self.booster.predict(x, pred_contrib=True)[0][:-1]  # TreeSHAP contributions\n        except Exception as exc:  # noqa: BLE001\n            raise ScoringError(str(exc)) from exc\n        ranked = sorted(zip(FEATURES, contrib), key=lambda t: t[1], reverse=True)\n        codes = [REASON_TEXT[f] for f, c in ranked if c > 0 and f in REASON_TEXT][:4]\n        return ScoreResult(pd=pd_, reason_codes=codes)\n\n\nscorer = Scorer()",
+   "signal": "model_call",
+   "score": 0.0
+  },
+  {
+   "id": "f789ac4f68f7",
+   "kind": "log",
+   "path": "logs/audit-sample-2026-10-20.log",
+   "start_line": 1,
+   "end_line": 3,
+   "snippet": "2026-10-20T09:12:03.112Z INFO creditlens.audit credit decision approve application_id=LA-20481123 input_sha256=4be1...9c pd=0.041 reason_codes=[] model_version=pd-lgbm-3.1.0 caller=origination-prod\n2026-10-20T09:12:07.845Z INFO creditlens.audit credit decision decline application_id=LA-20481131 input_sha256=a01f...e2 pd=0.231 reason_codes=[\"R01 Debt-to-income ratio too high\",\"R03 Recent payment delinquencies\"] model_version=pd-lgbm-3.1.0 caller=origination-prod\n2026-10-20T09:13:44.009Z INFO creditlens.audit credit decision referred application_id=LA-20481140 input_sha256=77c3...1d pd=None reason_codes=None model_version=None caller=origination-prod",
+   "signal": "",
+   "score": 0.0
+  },
+  {
+   "id": "16c6081b910f",
+   "kind": "code",
+   "path": "service/audit.py",
+   "start_line": 1,
+   "end_line": 27,
+   "snippet": "\"\"\"Audit trail of every credit decision (shipped to CloudWatch log group /creditlens/audit).\"\"\"\n\nimport hashlib\nimport json\nimport logging\n\naudit_logger = logging.getLogger(\"creditlens.audit\")\n\n\ndef audit_decision(app_in, result, decision, caller):\n    payload = app_in.model_dump()\n    audit_logger.info(\"credit decision %s\", decision, extra={\n        \"application_id\": app_in.application_id,\n        \"input_sha256\": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(),\n        \"pd\": None if result is None else result.pd,\n        \"reason_codes\": None if result is None else result.reason_codes,\n        \"model_version\": None if result is None else result.model_version,\n        \"caller\": caller.client_id,\n    })\n\n\ndef audit_appeal_outcome(application_id, ticket, outcome, note, caller):\n    audit_logger.info(\n        \"appeal resolved %s\",\n        outcome,\n        extra={\"application_id\": application_id, \"ticket\": ticket, \"note\": note, \"underwriter\": caller.client_id},\n    )",
+   "signal": "logging_call,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "267d1a695bfe",
+   "kind": "doc",
+   "path": "docs/applicant-notice.md",
+   "start_line": 1,
+   "end_line": 15,
+   "snippet": "# How we assess your loan application (information for applicants)\n\nWe use automated decision-making based on a statistical credit-scoring model to assess\napplications. For loans up to EUR 25,000 the decision can be made automatically; larger amounts are\nalways reviewed by an underwriter.\n\n**Main factors** that influence the decision: your income and existing obligations\n(debt-to-income ratio), your credit bureau score and payment history, length of employment and\nnumber of open credit lines. If your application is declined, the letter lists the main reasons.\n\n**Your rights.** You can contest an automatic decision, express your point of view and obtain a\nreview by a member of our staff within 5 working days via \"Contest decision\" in your application\nportal. Legal basis: Art. 6(1)(b) and 6(1)(c) GDPR. Controller: ACME Consumer Finance S.A.,\ndpo@acme-finance.example. Retention: 5 years (legal obligation). You can lodge a complaint with your\nsupervisory authority.",
+   "signal": "retention_config,consent",
+   "score": 0.0
+  },
+  {
+   "id": "532afdbb56df",
+   "kind": "code",
+   "path": "service/app.py",
+   "start_line": 31,
+   "end_line": 70,
+   "snippet": "\nclass Appeal(BaseModel):\n    application_id: constr(pattern=r\"^LA-\\d{8}$\")\n    applicant_statement: constr(min_length=1, max_length=5000)\n\n\n@app.post(\"/v1/score\")\ndef score(app_in: LoanApplication, caller: Principal = Depends(verify_token)):\n    if settings.kill_switch or app_in.amount_eur > settings.manual_review_threshold_eur:\n        underwriting_queue.put(app_in.application_id, reason=\"threshold\" if not settings.kill_switch else \"kill_switch\")\n        audit_decision(app_in, None, \"referred\", caller)\n        return {\"decision\": \"referred_to_underwriter\"}\n    try:\n        result = scorer.score(app_in)\n    except ScoringError:\n        # fail-safe: never decline because the model is unavailable\n        underwriting_queue.put(app_in.application_id, reason=\"model_error\")\n        audit_decision(app_in, None, \"referred\", caller)\n        return {\"decision\": \"referred_to_underwriter\"}\n    decision = \"approve\" if result.pd <= settings.pd_cutoff else \"decline\"\n    audit_decision(app_in, result, decision, caller)\n    return {\"decision\": decision, \"pd\": round(result.pd, 4), \"reason_codes\": result.reason_codes,\n            \"model_version\": result.model_version}\n\n\n@app.post(\"/v1/appeals\")\ndef appeal(body: Appeal, caller: Principal = Depends(verify_token)):\n    \"\"\"Applicant contests a decision: an underwriter re-assesses the full file and can reverse it.\"\"\"\n    ticket = appeals_queue.put(body.application_id, statement=body.applicant_statement)\n    return {\"ticket\": ticket, \"sla_days\": 5}\n\n\nclass AppealResolution(BaseModel):\n    outcome: Literal[\"upheld\", \"reversed_to_approve\", \"reversed_to_counteroffer\"]\n    underwriter_note: constr(min_length=10, max_length=5000)\n\n\n@app.post(\"/v1/appeals/{ticket}/resolution\")\ndef resolve_appeal(ticket: str, body: AppealResolution,\n                   caller: Principal = Depends(require_scope(\"creditlens:underwriter\"))):",
+   "signal": "human_override",
+   "score": 0.0
+  },
+  {
+   "id": "4b265edfdb5a",
+   "kind": "iac",
+   "path": "infra/terraform/main.tf",
+   "start_line": 31,
+   "end_line": 56,
+   "snippet": "    filter { prefix = \"raw/\" }\n    expiration { days = 30 }\n  }\n  rule {\n    id     = \"application-records\"\n    status = \"Enabled\"\n    filter { prefix = \"records/\" }\n    expiration { days = 1830 }\n  }\n}\n\nresource \"aws_cloudwatch_log_group\" \"audit\" {\n  name              = \"/creditlens/audit\"\n  retention_in_days = 30\n  kms_key_id        = aws_kms_key.creditlens.arn\n}\n\nresource \"aws_api_gateway_method_settings\" \"all\" {\n  rest_api_id = \"creditlens-api\"\n  stage_name  = \"prod\"\n  method_path = \"*/*\"\n  settings {\n    throttling_rate_limit  = 50\n    throttling_burst_limit = 100\n  }\n}",
+   "signal": "retention_config,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "f82942cbaf6f",
+   "kind": "config",
+   "path": "config/scoring.yaml",
+   "start_line": 1,
+   "end_line": 6,
+   "snippet": "pd_cutoff: 0.12\nmanual_review_threshold_eur: 25000\nkill_switch: false            # true = every application goes to underwriters\nretention:\n  raw_request_payload_days: 30\n  application_record_years: 5   # legal obligation, see docs/dpia.md section 6",
+   "signal": "human_override,retention_config",
+   "score": 0.0
+  },
+  {
+   "id": "9c2d81458c4a",
+   "kind": "iac",
+   "path": "infra/terraform/main.tf",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "terraform {\n  required_providers { aws = { source = \"hashicorp/aws\", version = \"~> 5.50\" } }\n}\n\nprovider \"aws\" { region = \"eu-central-1\" }\n\nresource \"aws_kms_key\" \"creditlens\" {\n  description         = \"CreditLens data and log encryption\"\n  enable_key_rotation = true\n}\n\nresource \"aws_s3_bucket\" \"applications\" {\n  bucket = \"acme-creditlens-applications\"\n}\n\nresource \"aws_s3_bucket_server_side_encryption_configuration\" \"applications\" {\n  bucket = aws_s3_bucket.applications.id\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm     = \"aws:kms\"\n      kms_master_key_id = aws_kms_key.creditlens.arn\n    }\n  }\n}\n\nresource \"aws_s3_bucket_lifecycle_configuration\" \"applications\" {\n  bucket = aws_s3_bucket.applications.id\n  rule {\n    id     = \"raw-payloads\"\n    status = \"Enabled\"\n    filter { prefix = \"raw/\" }\n    expiration { days = 30 }\n  }\n  rule {\n    id     = \"application-records\"\n    status = \"Enabled\"\n    filter { prefix = \"records/\" }\n    expiration { days = 1830 }\n  }\n}",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "9e24be3cf09d",
+   "kind": "code",
+   "path": "service/app.py",
+   "start_line": 61,
+   "end_line": 82,
+   "snippet": "\n\nclass AppealResolution(BaseModel):\n    outcome: Literal[\"upheld\", \"reversed_to_approve\", \"reversed_to_counteroffer\"]\n    underwriter_note: constr(min_length=10, max_length=5000)\n\n\n@app.post(\"/v1/appeals/{ticket}/resolution\")\ndef resolve_appeal(ticket: str, body: AppealResolution,\n                   caller: Principal = Depends(require_scope(\"creditlens:underwriter\"))):\n    \"\"\"Underwriter's final decision on a contested application; replaces the automated outcome.\"\"\"\n    application_id = appeals_queue.close(ticket, outcome=body.outcome)\n    audit_appeal_outcome(application_id, ticket, body.outcome, body.underwriter_note, caller)\n    return {\"application_id\": application_id, \"outcome\": body.outcome}\n\n\n@app.post(\"/v1/admin/thresholds\")\ndef update_cutoff(pd_cutoff: float, caller: Principal = Depends(require_scope(\"creditlens:admin\"))):\n    if not 0.01 <= pd_cutoff <= 0.5:\n        raise HTTPException(422, \"cutoff out of range\")\n    settings.pd_cutoff = pd_cutoff\n    return {\"pd_cutoff\": pd_cutoff}",
+   "signal": "",
+   "score": 0.0
+  },
+  {
+   "id": "5d382419a7f0",
+   "kind": "code",
+   "path": "tests/test_quality_gate.py",
+   "start_line": 1,
+   "end_line": 15,
+   "snippet": "import json\n\nREPORT = json.load(open(\"artifacts/oot_report.json\"))\n\n\ndef test_auc_gate():\n    assert REPORT[\"roc_auc\"] >= 0.78\n\n\ndef test_gini_gate():\n    assert REPORT[\"gini\"] >= 0.56\n\n\ndef test_psi_stable():\n    assert REPORT[\"psi_score\"] < 0.1",
+   "signal": "accuracy_metrics",
+   "score": 0.0
+  },
+  {
+   "id": "cc7bfd2f4b62",
+   "kind": "code",
+   "path": "service/auth.py",
+   "start_line": 1,
+   "end_line": 38,
+   "snippet": "\"\"\"OAuth2 client-credentials tokens issued by the ACME identity provider (machine-to-machine).\"\"\"\n\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\n\nimport jwt\nfrom fastapi import Depends, HTTPException\nfrom fastapi.security import HTTPAuthorizationCredentials, HTTPBearer\n\nfrom .settings import settings\n\nbearer = HTTPBearer()\n\n\n@dataclass\nclass Principal:\n    client_id: str\n    scopes: set[str]\n\n\ndef verify_token(cred: HTTPAuthorizationCredentials = Depends(bearer)) -> Principal:\n    try:\n        claims = jwt.decode(cred.credentials, settings.idp_public_key, algorithms=[\"RS256\"], audience=\"creditlens\")\n    except jwt.PyJWTError as exc:\n        raise HTTPException(401, \"invalid token\") from exc\n    scopes = set(claims.get(\"scope\", \"\").split())\n    if \"creditlens:score\" not in scopes:\n        raise HTTPException(403, \"missing scope\")\n    return Principal(client_id=claims[\"client_id\"], scopes=scopes)\n\n\ndef require_scope(scope: str):\n    def dep(p: Principal = Depends(verify_token)) -> Principal:\n        if scope not in p.scopes:\n            raise HTTPException(403, f\"missing scope {scope}\")\n        return p\n    return dep",
+   "signal": "access_control",
+   "score": 0.0
+  }
+ ],
+ "scorecard": [
+  {
+   "category": "risk_classification",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "transparency",
+   "total": 6,
+   "compliant": 3,
+   "partial": 3,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 75.0
+  },
+  {
+   "category": "record_keeping",
+   "total": 3,
+   "compliant": 0,
+   "partial": 2,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 33.3
+  },
+  {
+   "category": "human_oversight",
+   "total": 5,
+   "compliant": 1,
+   "partial": 3,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "data_governance",
+   "total": 4,
+   "compliant": 3,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 87.5
+  },
+  {
+   "category": "technical_documentation",
+   "total": 5,
+   "compliant": 2,
+   "partial": 3,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 70.0
+  },
+  {
+   "category": "accuracy_robustness",
+   "total": 3,
+   "compliant": 3,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "security",
+   "total": 7,
+   "compliant": 2,
+   "partial": 5,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 64.3
+  },
+  {
+   "category": "data_retention",
+   "total": 3,
+   "compliant": 1,
+   "partial": 1,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "other",
+   "total": 4,
+   "compliant": 1,
+   "partial": 3,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 62.5
+  }
+ ],
+ "overall_score": 65.9,
+ "stats": {
+  "mode": "llm",
+  "model": "sonnet",
+  "backend": "claude",
+  "timings": {
+   "requirements_s": 0.113,
+   "evidence_s": 0.056,
+   "risk_s": 0.011,
+   "deterministic_s": 0.0,
+   "llm_judge_s": 121.311,
+   "report_s": 0.006,
+   "total_s": 121.497
+  },
+  "llm_calls": 42,
+  "llm_cache_hits": 1,
+  "llm_failures": 0,
+  "input_tokens": 307502,
+  "output_tokens": 30084,
+  "cost_usd": 1.324155,
+  "llm_latency_s": 353.145,
+  "llm_cached_cost_usd": 0.025512,
+  "llm_cached_latency_s": 20.484,
+  "llm_cached_input_tokens": 5429,
+  "llm_cached_output_tokens": 380,
+  "use_verifier": true,
+  "verify_with_llm": false,
+  "n_requirements": 45,
+  "n_llm_judged": 42,
+  "n_needs_review": 0,
+  "files_scanned": 17,
+  "n_evidence_items": 21,
+  "wall_s": 121.5
+ }
+}

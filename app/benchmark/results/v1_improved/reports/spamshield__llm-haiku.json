@@ -1,0 +1,2738 @@
+{
+ "id": "993fd9f02e14",
+ "created_at": "2026-10-28T18:20:38.948473Z",
+ "target": "app/benchmark/apps/spamshield",
+ "policies": [
+  "eu-ai-act",
+  "gdpr",
+  "acme-rai"
+ ],
+ "mode": "llm",
+ "risk": {
+  "level": "minimal",
+  "rationale": "SpamShield is an internal inbound e-mail spam filter. It returns deliver, tag or quarantine for messages, and its README and model card state the system is not an Annex III use case. Spam filtering does not fall under any Annex III category (biometrics, critical infrastructure, education, employment, essential services, law enforcement, migration, justice). It is not a safety component of an Annex I product. It does not interact with people as a chatbot and does not generate content, so no Art. 50 transparency duty applies. No Art. 5 prohibited practice is present; it classifies text, not biometric or emotional traits, and does no profiling for policing or scoring. The keyword hint's chatbot mention is a negated reference and is disregarded.",
+  "triggers": [
+   "No Annex III category matched (e-mail spam filtering is not an employment, education, essential-service or law-enforcement use)",
+   "No Art. 5 prohibited practice indicators",
+   "No Art. 50 trigger: no chatbot interaction and no synthetic content generation",
+   "Not a safety component of an Annex I product"
+  ],
+  "evidence_ids": [
+   "cbf48293d1d9",
+   "98aa525d2b09",
+   "535764b31b1a",
+   "78238ee77704"
+  ],
+  "confidence": 0.92
+ },
+ "requirements": [
+  {
+   "id": "AIA-RISK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.5(1)"
+   ],
+   "category": "risk_classification",
+   "title": "No prohibited AI practices",
+   "statement": "The system does not implement any practice prohibited by Art. 5(1): subliminal or manipulative techniques, exploitation of vulnerabilities, social scoring, crime prediction based solely on profiling, untargeted scraping of facial images, emotion inference in the workplace or in education, or biometric categorisation inferring sensitive traits.",
+   "applies_to": [
+    "prohibited",
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "no emotion recognition / social scoring / face scraping code",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(emotion[_ ]?(recognition|detection|analysis)|infer_emotion|facial[_ ]expression|social[_ ]?scor|scrape[_ ]?faces?|face[_ ]?scrap)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Look for code or documentation showing the system infers emotions (e.g. from video interviews or voice) of employees/candidates/students, scores people on social behaviour, scrapes facial images, or categorises people by biometrics into sensitive traits. A comment or doc stating that such a feature is NOT implemented is evidence of compliance, not a violation. Mark non_compliant only if a prohibited practice is actually implemented or planned for production.",
+   "evidence_queries": [
+    "emotion recognition facial expression",
+    "social score citizen behaviour",
+    "biometric categorisation face embedding",
+    "scrape faces images",
+    "manipulative dark pattern nudge"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-RISK-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.6(2)",
+    "eu-ai-act/Art.6(3)",
+    "eu-ai-act/Art.6(4)",
+    "eu-ai-act/AnnexIII"
+   ],
+   "category": "risk_classification",
+   "title": "Risk classification documented",
+   "statement": "The provider documents the AI Act risk classification of the system with its rationale: the applicable Annex III area/point if high-risk, the Art. 6(3) assessment if an Annex III system is claimed not to be high-risk, or why the system is limited/minimal risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "risk tier stated in documentation",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(annex\\s+iii|high[- ]risk|limited[- ]risk|minimal[- ]risk)\\b.*(ai act|art(icle)?\\.?\\s*\\d|annex|use case|point)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a README section, ADR or compliance document that states the risk tier AND gives a reason (e.g. \"Annex III point 4(a) recruitment\", \"chatbot, transparency obligations under Art. 50\", \"spam filtering, no Annex III use case\"). A bare marketing claim (\"fully compliant\") is not a classification.",
+   "evidence_queries": [
+    "AI Act risk classification",
+    "high-risk Annex III",
+    "limited risk minimal risk",
+    "intended purpose"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-RISK-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(1)",
+    "eu-ai-act/Art.9(2)",
+    "eu-ai-act/Art.9(5)"
+   ],
+   "category": "other",
+   "title": "Risk management system documented",
+   "statement": "A risk management process is documented for the high-risk system: known and reasonably foreseeable risks to health, safety and fundamental rights are identified and evaluated, and targeted mitigation measures with residual-risk acceptance are recorded and kept up to date.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a risk assessment / risk register document exists",
+     "globs": [
+      "**/*risk-assessment*",
+      "**/*risk_assessment*",
+      "**/*risk-register*",
+      "**/*risk_register*",
+      "**/RISK*.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a risk register / risk assessment / model risk management document listing concrete risks (e.g. discrimination, automation bias, data drift), their likelihood/impact and mitigations. A single sentence like \"risks are low\" is not sufficient (partial at most).",
+   "evidence_queries": [
+    "risk assessment",
+    "risk register",
+    "foreseeable misuse",
+    "mitigation residual risk"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)"
+   ],
+   "category": "data_governance",
+   "title": "Training data documented (datasheet)",
+   "statement": "Training, validation and test data sets are documented: origin and collection process, original purpose for personal data, preparation steps (labelling, cleaning, enrichment), assumptions, and the availability/quantity/suitability of the data.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a datasheet / data card exists",
+     "globs": [
+      "**/DATASHEET*",
+      "**/datasheet*",
+      "**/DATA_CARD*",
+      "**/data_card*",
+      "**/data-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a datasheet / data card / training-data document. Code that loads a CSV is not documentation. Partial if only some of origin, preparation and splits are described.",
+   "evidence_queries": [
+    "datasheet training data",
+    "data collection origin",
+    "labelling cleaning preprocessing",
+    "train validation test split"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)",
+    "eu-ai-act/Art.10(4)"
+   ],
+   "category": "data_governance",
+   "title": "Bias examination and mitigation of data sets",
+   "statement": "The data sets have been examined for possible biases likely to lead to discrimination (including representativeness for the persons and setting the system is used on), and measures to detect, prevent and mitigate the identified biases are documented with results.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires an actual bias/fairness analysis with results (metrics per group, findings, mitigations). A plan (\"bias audit planned\"), a TODO, or merely excluding protected attributes from the features does NOT satisfy this requirement on its own (proxies may remain). Judge from documents and evaluation code/reports.",
+   "evidence_queries": [
+    "bias evaluation fairness",
+    "disparate impact demographic parity",
+    "protected attributes gender age",
+    "representativeness of data"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.11(1)",
+    "eu-ai-act/AnnexIV(1)",
+    "eu-ai-act/AnnexIV(2)"
+   ],
+   "category": "technical_documentation",
+   "title": "Technical documentation (Annex IV)",
+   "statement": "Technical documentation covering the Annex IV elements exists before deployment: general description and intended purpose, versions, how the system interacts with other software, development methods, design specifications and key design choices, system architecture, and validation/testing procedures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "technical documentation file exists",
+     "globs": [
+      "**/*technical-documentation*",
+      "**/*technical_documentation*",
+      "**/TECHNICAL_DOC*",
+      "**/annex-iv*",
+      "**/annex_iv*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a document (or set of docs) covers most Annex IV(1)-(2) elements. An architecture overview plus a model card without development/validation information is partial.",
+   "evidence_queries": [
+    "technical documentation",
+    "system architecture components",
+    "design choices rationale",
+    "validation and testing procedures"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/AnnexIV(3)",
+    "eu-ai-act/Art.11(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for the deployed model",
+   "statement": "A model card documents the deployed model: intended use and out-of-scope uses, version, training data summary, evaluation results, capabilities and known limitations.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md",
+      "**/model-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that a model card exists and covers intended use, limitations and evaluation results.",
+   "evidence_queries": [
+    "model card",
+    "intended use limitations",
+    "model version evaluation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-DOC-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(2)",
+    "eu-ai-act/Art.13(3)"
+   ],
+   "category": "transparency",
+   "title": "Instructions for use for deployers",
+   "statement": "Instructions for use are provided to deployers and contain at least: provider identity and contact, intended purpose, level of accuracy and its metrics, known limitations and foreseeable misuse risks, human oversight measures, and how to collect and interpret the logs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "instructions for use document exists",
+     "globs": [
+      "**/*instructions-for-use*",
+      "**/*instructions_for_use*",
+      "**/INSTRUCTIONS*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "instructions mention accuracy metrics",
+     "globs": [
+      "**/*instructions*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": "(accuracy|auc|precision|recall|f1)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if the instructions contain all the listed elements. If a guide exists but misses accuracy metrics, limitations or log interpretation, the status is partial. Sections marked TBD count as missing.",
+   "evidence_queries": [
+    "instructions for use",
+    "user guide deployer",
+    "provider contact",
+    "how to interpret the score"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(1)",
+    "eu-ai-act/Art.13(3)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "transparency",
+   "title": "Interpretable outputs for deployers",
+   "statement": "The system provides information that lets deployers interpret each output (e.g. main reasons, feature contributions, reason codes or confidence) rather than a bare score.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that returns explanations/reason codes alongside the score and shows them to the human reviewer. A global feature-importance chart in a notebook alone is partial.",
+   "evidence_queries": [
+    "explanation reasons",
+    "shap feature importance",
+    "reason codes",
+    "confidence score explanation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-TRA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(1)",
+    "eu-ai-act/Art.50(5)"
+   ],
+   "category": "transparency",
+   "title": "Disclosure of interaction with an AI system",
+   "statement": "Natural persons interacting directly with the AI system (e.g. a chatbot) are informed, clearly and at the latest at the first interaction, that they are interacting with an AI system.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for user-facing UI strings (React/HTML templates, chat greeting) that tell users they talk to an AI, shown at the start of the conversation. A statement buried in terms of service is not sufficient.",
+   "evidence_queries": [
+    "you are chatting with an AI",
+    "AI assistant disclosure banner",
+    "virtual assistant notice"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(2)"
+   ],
+   "category": "transparency",
+   "title": "Marking of AI-generated content",
+   "statement": "Synthetic text, image, audio or video generated by the system is marked as AI-generated in a machine-readable format (and labelled for the recipient where it is published or delivered).",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that adds an AI-generated flag/header/metadata or visible label to each generated message. A TODO or ticket reference to add labelling later means non_compliant. A disclosure that the user talks to an AI (Art. 50(1)) is a different obligation and does not mark the content.",
+   "evidence_queries": [
+    "AI-generated label",
+    "watermark content credential c2pa",
+    "response metadata generated"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-WRK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.26(7)",
+    "eu-ai-act/Art.26(11)"
+   ],
+   "category": "transparency",
+   "title": "Affected persons informed about high-risk AI use",
+   "statement": "Natural persons subject to decisions made or assisted by the high-risk AI system (candidates, applicants, workers) are informed that such a system is used on them.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "code"
+     ],
+     "pattern": "(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a candidate/applicant notice, privacy notice or e-mail template that tells the person an AI system is used to assess them. Recruiter-facing UI text does not inform the candidate.",
+   "evidence_queries": [
+    "candidate notice automated screening",
+    "applicant information AI used",
+    "privacy notice automated decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-REC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.12(1)",
+    "eu-ai-act/Art.12(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Automatic logging of AI decisions",
+   "statement": "The system automatically records an event for each decision/output over its lifetime, with timestamp, input reference, output, model version and (where applicable) the human reviewer, enabling traceability and post-market monitoring.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that writes a structured record for every prediction (custom journal/audit classes count). Commented-out logging calls, TODOs or debug prints do not count. Logging only errors is not decision logging.",
+   "evidence_queries": [
+    "audit log decision",
+    "log prediction model version",
+    "journal record decision",
+    "append-only event store"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-REC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.19(1)",
+    "eu-ai-act/Art.26(6)"
+   ],
+   "category": "record_keeping",
+   "title": "Logs retained for at least six months",
+   "statement": "Automatically generated decision logs are retained for a period appropriate to the intended purpose and of at least six months (>= 180 days).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(log|journal|audit)\\w*[\\s\\S]{0,120}?(retention_days|retention_in_days|retentiondays)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the effective retention of the decision/audit logs (config, Terraform log group, lifecycle rules). Compliant only if >= 180 days. If logs exist but retention is shorter or unbounded deletion is configured, non_compliant. If no logs exist at all, non_compliant.",
+   "evidence_queries": [
+    "log retention days",
+    "retention_in_days cloudwatch",
+    "decision log retention"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(1)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Human can override or disregard the AI output",
+   "statement": "Natural persons overseeing the system can decide not to use, disregard, override or reverse an individual output of the system, and the override is recorded.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(override|manual[_ ]review|human[_ ]review|reviewer)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented mechanism (API endpoint, UI action, workflow state) letting a human change the outcome. A flag set to False, a README promise without code, or an override limited to admins for model config does not count.",
+   "evidence_queries": [
+    "override decision reviewer",
+    "manual review",
+    "appeal contest decision",
+    "reverse outcome"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-HUM-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Stop / interrupt mechanism",
+   "statement": "Operators can interrupt the system (a 'stop' button, kill switch or similar procedure) so that it halts in a safe state, e.g. automated processing is suspended and cases fall back to manual handling.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config"
+     ],
+     "pattern": "(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept any implemented switch (feature flag, admin endpoint, config) that stops automated decisions and routes work to humans. Infrastructure scaling to zero without a documented procedure is partial.",
+   "evidence_queries": [
+    "kill switch",
+    "disable model feature flag",
+    "suspend automated processing",
+    "stop button halt"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)",
+    "eu-ai-act/Art.26(2)"
+   ],
+   "category": "human_oversight",
+   "title": "No adverse decision solely on the AI output",
+   "statement": "Decisions adverse to natural persons (e.g. rejection, decline) are not taken automatically on the basis of the AI output alone; a competent human reviews and confirms them, mitigating automation bias.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "auto[_-]?reject",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace the decision flow in code. If any adverse outcome is set without a human step (e.g. score below threshold -> rejected), it is non_compliant; if only a subset of cases gets human review (e.g. above an amount threshold), partial.",
+   "evidence_queries": [
+    "auto reject threshold",
+    "automatic decline",
+    "human confirmation required",
+    "final decision recruiter underwriter"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-ACC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(1)",
+    "eu-ai-act/Art.15(3)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Accuracy levels and metrics declared",
+   "statement": "The levels of accuracy and the relevant accuracy metrics (e.g. AUC, precision/recall, error rates) are declared in the documentation accompanying the system (instructions for use and/or model card).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\\n]{0,30}\\d\\.\\d+",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Metrics must be declared in documentation shipped with the system, with values. A training script that prints accuracy is not a declaration.",
+   "evidence_queries": [
+    "accuracy auc precision recall",
+    "evaluation results metrics",
+    "performance holdout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-ACC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(4)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Resilience to errors (fallback / fail-safe)",
+   "statement": "The system handles errors, faults and model unavailability safely (e.g. timeouts and exceptions lead to a fail-safe outcome such as routing to manual handling, never to an automatic adverse decision).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for explicit error handling around model inference with a safe fallback. Generic web framework error pages are not sufficient.",
+   "evidence_queries": [
+    "fallback manual queue",
+    "fail-safe error handling",
+    "model unavailable timeout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Input validation against malformed or adversarial inputs",
+   "statement": "Inputs to the model are validated (schema, types, ranges, size limits, file types) before inference to resist malformed or adversarial inputs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(BaseModel|Field\\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for schema validation (pydantic/zod/marshmallow), constraints and upload limits on the inference path. Reading raw request bodies directly into the model is non_compliant.",
+   "evidence_queries": [
+    "input validation schema",
+    "pydantic constraints",
+    "max file size content type"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Protection of model endpoints against unauthorised use",
+   "statement": "Inference and model-management endpoints are protected against unauthorised third parties (authentication and authorisation), so that the system's use, outputs or performance cannot be altered by exploiting vulnerabilities.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(Depends\\(\\s*(get_current|verify|require)\\w*|login_required|requires?_role|verify_token|jwt|oauth2)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Every inference and admin route must require authentication; admin/model routes need authorisation. Partial if some sensitive routes are unauthenticated.",
+   "evidence_queries": [
+    "authentication token",
+    "require role admin",
+    "oauth2 jwt api key"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-QMS-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.17(1)",
+    "eu-ai-act/Art.9(2)"
+   ],
+   "category": "other",
+   "title": "Quality management and post-market monitoring procedures",
+   "statement": "Documented procedures cover change management of the model/system, validation before release, post-market monitoring of performance in production (e.g. drift), and serious-incident reporting.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(post[- ]market monitoring|change management|quality management)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "incident",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if the repository documents change management, pre-release validation, production monitoring AND incident reporting; partial if only some are covered.",
+   "evidence_queries": [
+    "release process change management",
+    "post-market monitoring drift",
+    "incident reporting procedure",
+    "quality management"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-QMS-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(6)",
+    "eu-ai-act/Art.9(8)",
+    "eu-ai-act/Art.17(1)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Testing against predefined metrics before release",
+   "statement": "The system is tested before release against prior defined metrics and thresholds appropriate to its intended purpose (e.g. an automated quality gate failing the build below a minimum AUC).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": "assert\\w*\\s*\\(?.*(auc|accuracy|precision|recall|f1|gini)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Smoke tests that only check an HTTP 200 are not model validation; require assertions against metric thresholds on held-out data.",
+   "evidence_queries": [
+    "test model quality threshold",
+    "assert auc greater than",
+    "evaluation gate ci"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-LAW-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.6(1)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "other",
+   "title": "Lawful basis documented for each processing purpose",
+   "statement": "Each purpose for which personal data is processed has a documented lawful basis under Art. 6(1) (consent, contract, legal obligation, vital interests, public task or legitimate interests), and consent is collected and recorded where it is the basis relied on.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "config"
+     ],
+     "pattern": "(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a privacy notice, record of processing or DPIA naming the lawful basis per purpose. A README claim \"fully GDPR compliant\" is not evidence of a lawful basis.",
+   "evidence_queries": [
+    "lawful basis legal basis",
+    "legitimate interest",
+    "consent",
+    "Art. 6(1)"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-TRN-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "transparency",
+   "title": "Privacy notice provided to data subjects",
+   "statement": "Data subjects receive a privacy notice at collection stating the controller and contact details, purposes and lawful basis, recipients, retention period, and their rights (access, rectification, erasure, objection, complaint).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*privacy*",
+      "**/*PRIVACY*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(right to (erasure|access|object|rectification)|your rights)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if a notice covering controller, purposes, legal basis, retention and rights exists and is shown/linked to data subjects. Partial if key items (e.g. retention or rights) are missing.",
+   "evidence_queries": [
+    "privacy notice",
+    "your rights erasure access",
+    "data controller contact",
+    "how long we keep your data"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-RET-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.5(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "data_retention",
+   "title": "Storage limitation enforced",
+   "statement": "Personal data is kept no longer than necessary for its purpose: a retention period proportionate to the purpose is defined for each data category and enforced automatically (TTL, purge job, lifecycle rule).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check both that a retention period is defined AND enforced in code/IaC, and that it is proportionate (e.g. keeping raw support chats for years without justification is excessive; keeping data \"forever\" is non_compliant). Defined and enforced but disproportionate -> partial.",
+   "evidence_queries": [
+    "retention period days",
+    "purge job delete older than",
+    "lifecycle expiration ttl"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ERA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.17(1)"
+   ],
+   "category": "data_retention",
+   "title": "Right to erasure implemented",
+   "statement": "A mechanism exists to erase a data subject's personal data on request without undue delay (endpoint, admin job or documented procedure covering all stores, including derived data).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented deletion path for a single data subject. Automatic expiry of all data after N days is not an on-request erasure mechanism (partial at most).",
+   "evidence_queries": [
+    "delete user data erasure",
+    "right to be forgotten",
+    "data subject request"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ADM-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.22(1)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "human_oversight",
+   "title": "Safeguards for solely automated decisions",
+   "statement": "Decisions producing legal or similarly significant effects are not based solely on automated processing, or, where an Art. 22(2) exception applies, the data subject can obtain human intervention, express their point of view and contest the decision.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Compliant if no significant decision is fully automated, OR if automated decisions come with an implemented contest/appeal path leading to human review. Non_compliant if decisions are fully automated with no recourse.",
+   "evidence_queries": [
+    "contest decision appeal",
+    "human intervention review",
+    "automated rejection"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "GDPR-ADM-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(2)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "transparency",
+   "title": "Meaningful information about the logic involved",
+   "statement": "Data subjects are informed of the existence of automated decision-making/profiling and receive meaningful information about the logic involved and its envisaged consequences.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an applicant/candidate-facing explanation of the main factors used and the consequences. Internal model documentation does not inform data subjects.",
+   "evidence_queries": [
+    "logic involved automated decision",
+    "how the score is calculated",
+    "factors that influence the decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-PBD-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.25(1)",
+    "gdpr/Art.25(2)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "data_governance",
+   "title": "Data minimisation and privacy by design",
+   "statement": "Only personal data necessary for the purpose is collected and used (no unnecessary sensitive or protected attributes as model features), and privacy-by-design measures such as pseudonymisation or redaction are applied before processing or sharing with third parties.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect model features and data flows. Using gender/age/nationality as features, or sending raw personal data to a third-party LLM without redaction, is non_compliant. Look for explicit redaction/pseudonymisation code.",
+   "evidence_queries": [
+    "pseudonymisation redaction",
+    "features gender age nationality",
+    "data minimisation drop columns",
+    "mask PII before sending"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)"
+   ],
+   "category": "security",
+   "title": "Encryption of personal data at rest and in transit",
+   "statement": "Personal data is encrypted at rest (databases, object storage, volumes, backups) and in transit (TLS) as appropriate to the risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "encryption at rest configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms_key|sse_algorithm|server_side_encryption|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true|aws:kms)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "TLS configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https|ssl_certificate|cert-manager)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at-rest and in-transit encryption must be evidenced for all stores holding personal data. Only one of the two -> partial. Self-signed dev certificates in docker-compose do not count for production.",
+   "evidence_queries": [
+    "kms encryption at rest",
+    "storage_encrypted",
+    "tls certificate https ingress",
+    "server_side_encryption"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)",
+    "gdpr/Art.32(4)"
+   ],
+   "category": "security",
+   "title": "Access control to personal data",
+   "statement": "Access to personal data and to administrative functions is restricted to authenticated and authorised personnel (authentication, role-based authorisation, least privilege).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that endpoints exposing personal data require authentication and that admin/export routes check roles. Unauthenticated upload/listing endpoints are non_compliant.",
+   "evidence_queries": [
+    "authentication middleware",
+    "role based access admin",
+    "network policy least privilege"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ROPA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.30(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Record of processing activities",
+   "statement": "A record of processing activities is maintained for the system listing purposes, categories of data subjects and personal data, recipients, transfers, retention limits and security measures.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*ropa*",
+      "**/*ROPA*",
+      "**/*processing-record*",
+      "**/*processing_record*",
+      "**/*records-of-processing*",
+      "**/*processing-activities*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a ROPA entry in the repo (markdown/yaml). A DPIA or privacy notice alone is not a ROPA but may be partial if it contains the Art. 30(1) items.",
+   "evidence_queries": [
+    "record of processing activities",
+    "ROPA",
+    "categories of data subjects recipients"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-DPIA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.35(1)",
+    "gdpr/Art.35(3)",
+    "gdpr/Art.35(7)"
+   ],
+   "category": "technical_documentation",
+   "title": "Data protection impact assessment",
+   "statement": "A DPIA has been carried out for the processing (systematic and extensive evaluation of personal aspects based on automated processing) and contains a description of the processing, necessity and proportionality assessment, risk assessment and mitigation measures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*dpia*",
+      "**/*DPIA*",
+      "**/*impact-assessment*",
+      "**/*impact_assessment*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a DPIA document with the Art. 35(7) elements exists.",
+   "evidence_queries": [
+    "DPIA data protection impact assessment",
+    "necessity proportionality",
+    "risks to rights and freedoms"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-01",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-1(1)",
+    "acme-rai/POL-1(2)"
+   ],
+   "category": "transparency",
+   "title": "AI use disclosed in user interfaces",
+   "statement": "Every interface where a person interacts with the AI system or sees an AI-produced score, ranking, classification or text visibly discloses AI involvement; decision-support UIs state that the output is an AI recommendation and who decides.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect UI components, e-mail templates and notification texts. Neutral names like \"Smart Score\" do not disclose AI involvement.",
+   "evidence_queries": [
+    "AI-generated recommendation label",
+    "powered by AI disclosure",
+    "final decision made by",
+    "classified automatically"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-02",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-2(1)",
+    "acme-rai/POL-2(2)"
+   ],
+   "category": "transparency",
+   "title": "AI-generated content labelled",
+   "statement": "AI-generated text/media delivered to customers carries a visible \"AI-generated\" label and, where feasible, a machine-readable marker.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|x-ai-generated)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A banner saying the user chats with an AI is POL-1, not POL-2. Look for per-message labelling or metadata. TODO comments do not count.",
+   "evidence_queries": [
+    "AI-generated badge",
+    "X-AI-Generated header",
+    "generated content label"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-03",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-3(1)",
+    "acme-rai/POL-3(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Prediction logging with 180-day retention",
+   "statement": "Every production prediction/response is logged with timestamp, correlation id, model version, input reference and output, in tamper-resistant storage retained for at least 180 days.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "model_version",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both parts are needed: structured per-prediction logging AND >= 180 days retention. Logging with shorter retention -> partial. No logging -> non_compliant.",
+   "evidence_queries": [
+    "prediction log model version request id",
+    "log retention days",
+    "append-only audit"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-04",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-4(1)",
+    "acme-rai/POL-4(2)"
+   ],
+   "category": "data_retention",
+   "title": "Raw personal-data inputs deleted within 30 days",
+   "statement": "Raw inputs containing personal data (documents, messages, transcripts, payloads) are automatically deleted or anonymised within 30 days, unless a documented legal retention obligation applies.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the retention of each raw-input store. Any raw store kept > 30 days without a documented legal obligation is non_compliant; no automated deletion at all is non_compliant.",
+   "evidence_queries": [
+    "raw input retention 30 days",
+    "transcript retention",
+    "purge uploaded documents",
+    "lifecycle expiration"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-05",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-5(1)",
+    "acme-rai/POL-5(2)"
+   ],
+   "category": "security",
+   "title": "Encryption at rest and TLS in transit",
+   "statement": "Storage of personal data, model artefacts and logs is encrypted at rest, and all service traffic uses TLS 1.2+.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at rest and in transit must be shown; one of the two -> partial.",
+   "evidence_queries": [
+    "kms encrypted storage",
+    "tls ingress certificate",
+    "min tls version"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-06",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-6(1)",
+    "acme-rai/POL-6(2)"
+   ],
+   "category": "security",
+   "title": "Access control on model endpoints",
+   "statement": "Inference and model-management endpoints require authentication (or are declared public and rate-limited), and administrative endpoints enforce role-based authorisation.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Enumerate routes. Any undeclared unauthenticated inference/upload route, or an admin route without a role check, is non_compliant.",
+   "evidence_queries": [
+    "authentication required endpoint",
+    "admin role check",
+    "public endpoints declared"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-07",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-7(1)",
+    "acme-rai/POL-7(2)"
+   ],
+   "category": "human_oversight",
+   "title": "Human approval of adverse decisions",
+   "statement": "Adverse decisions about natural persons (rejection, decline, closure) are approved by a human reviewer who sees the AI output and reasons and can change the outcome, and the approval is logged.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(auto[_-]?reject|auto[_-]?decline)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace adverse outcomes in code. Human approval for only part of the cases (e.g. above an amount threshold) is partial. Automatic rejection is non_compliant.",
+   "evidence_queries": [
+    "reviewer approval reject",
+    "auto decline",
+    "human confirmation required"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "ACME-08",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-8(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for every deployed model",
+   "statement": "Each deployed model (including third-party models) has a model card covering intended and out-of-scope use, version, training data summary, evaluation metrics, limitations and owner.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check presence and completeness of the model card(s) against the listed fields.",
+   "evidence_queries": [
+    "model card",
+    "intended use out of scope",
+    "owner team limitations"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-09",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-9(1)"
+   ],
+   "category": "security",
+   "title": "Rate limiting on AI endpoints",
+   "statement": "AI endpoints reachable from untrusted networks enforce per-client rate limiting configured in code or configuration.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config",
+      "iac"
+     ],
+     "pattern": "(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for rate-limit middleware (express-rate-limit, slowapi), gateway throttling or ingress annotations. Public endpoints without it are non_compliant.",
+   "evidence_queries": [
+    "rate limit",
+    "throttling",
+    "requests per minute"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-10",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-10(1)",
+    "acme-rai/POL-10(2)"
+   ],
+   "category": "other",
+   "title": "AI incident response procedure",
+   "statement": "The repository contains an AI incident response procedure (detection, escalation, reporting) that requires reporting serious incidents to the AI Governance Board within 24 hours.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(ai[- ]incidents?@|incident (response|reporting))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A generic ops runbook without AI incidents or without the 24h governance reporting is partial.",
+   "evidence_queries": [
+    "incident response",
+    "escalation on-call",
+    "ai-incidents report 24 hours"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-11",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-11(1)"
+   ],
+   "category": "data_governance",
+   "title": "Bias and fairness evaluation before release",
+   "statement": "A documented bias and fairness evaluation (metrics and results per protected group, mitigations) exists for the released model and is referenced from the model card.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires actual results. \"Planned\", TODOs or excluding protected features only is non_compliant.",
+   "evidence_queries": [
+    "fairness evaluation report",
+    "disparate impact ratio",
+    "bias audit results per group"
+   ],
+   "severity": "high"
+  }
+ ],
+ "verdicts": [
+  {
+   "requirement_id": "AIA-RISK-01",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "Every element of the Art. 5(1) prohibition list is absent from the evidence, and nothing shows a prohibited practice implemented or planned. The model card (E1) and README (E2) scope the system to classifying inbound e-mail as spam, suspicious or legitimate, explicitly exclude any evaluation of employees, and state the system is not an Annex III use case. The code excerpts (E5, E6) show only a message-classification HTTP endpoint that returns deliver, quarantine or tag, with no emotion recognition, social scoring, facial image scraping, biometric categorisation or subliminal/manipulative logic. The excerpts are windows of files, so the residual uncertainty is that unseen parts of the repository were not reviewed.",
+   "evidence_ids": [
+    "98aa525d2b09",
+    "cbf48293d1d9",
+    "5e84a50f2805",
+    "78238ee77704"
+   ],
+   "gaps": [
+    "Full repository not reviewed; the excerpts cover only the classifier endpoint and model card",
+    "No explicit written Art. 5 prohibited-practices assessment document in the evidence"
+   ],
+   "remediation": "Add a short documented Art. 5 screening note (e.g. in README.md or docs/ai-act-assessment.md) stating that SpamShield implements none of the Art. 5(1) practices and is limited to e-mail spam classification. Keep the model card's out-of-scope statement on employee evaluation in place, and re-run the emotion-recognition, social-scoring and face-scraping code check on each release.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-02",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The README states the AI Act tier explicitly as \"minimal-risk system\" and gives reasons: spam filtering is not an Annex III use case, the system does not interact with people as a chatbot, and it does not generate content (E1). The model card's out-of-scope list excludes evaluation of employees (E2), which supports the Annex III point 4 reasoning, and the classification is consistent with the described intended use. This meets the statement's \"why the system is limited/minimal risk\" branch, and the guidance's example \"spam filtering, no Annex III use case\" matches. The excerpts do not show a separate Art. 6(3) claim, which is not needed because no Annex III high-risk exemption is being claimed.",
+   "evidence_ids": [
+    "cbf48293d1d9",
+    "98aa525d2b09"
+   ],
+   "gaps": [],
+   "remediation": "Optionally move the AI Act classification from the README into a dedicated compliance document (e.g. docs/ai-act-classification.md) that records the tier, the Annex III analysis, and the date and owner of the assessment, and link it from the README and the model card. Keep it updated when the intended use changes.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-03",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-03",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to limited risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-03",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to limited risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-WRK-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-03",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-LAW-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "The e-mail filtering purpose is well documented: the processing record names legitimate interest under Art. 6(1)(f) with a balancing test reference [E1], and the published privacy note states the same basis [E2]. However, the model card shows a second processing purpose on personal data, training and evaluating the SpamShield classifier on 1.2M employee-reported or quarantine-released messages over a rolling 12 months [E3]. No lawful basis is documented for that purpose in the visible evidence; E1 covers only spam protection, and E2 does not mention training. Consent is not relied on anywhere, so the consent-recording element does not apply. The E1 and E3 excerpts are windows, but nothing visible records a basis for the training purpose.",
+   "evidence_ids": [
+    "ff8611b02a55",
+    "d627fb3313ec",
+    "98aa525d2b09"
+   ],
+   "gaps": [
+    "No documented lawful basis (Art. 6(1)) for the model training and evaluation purpose using employee-reported or quarantined messages",
+    "Processing record IT-SEC-03 does not list the training purpose, its retention (rolling 12 months) or its data sources",
+    "Privacy note does not mention model training on message content",
+    "No compatibility assessment under Art. 6(4) / Art. 5(1)(b) if training is treated as further processing"
+   ],
+   "remediation": "Add a separate record-of-processing entry for the SpamShield model training and evaluation purpose. It should name the Art. 6(1) basis (for example 6(1)(f) with a documented LIA, or a documented Art. 6(4) compatibility assessment with the original IT-SEC-03 purpose), the data sources, the 12-month retention and the safeguards. Link the LIA file from that entry. Update docs/privacy-note.md to disclose that messages are used to train the spam classifier. Confirm whether employee-reported messages create any separate employee-monitoring purpose and document its basis if so.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-TRN-01",
+   "status": "partial",
+   "confidence": 0.7,
+   "rationale": "The privacy note in E1 covers the controller and DPO contact, purposes, legitimate-interest legal basis, retention (30-day quarantine, 180-day logs), and the rights of access, rectification, erasure, restriction, objection and complaint to a supervisory authority. E2 confirms the same controller, purpose, basis and retention in the processing record. However, neither E1 nor any other excerpt states the recipients of the data in the notice itself; E2 only records recipients in the internal processing record, which is not the notice given to data subjects. Evidence that the notice is shown or linked at collection is also thin: E1 only says it is published on the intranet and linked from an e-mail footer policy, and the quarantine digest in E3 does not link to it.",
+   "evidence_ids": [
+    "d627fb3313ec",
+    "ff8611b02a55",
+    "ea99d6f0456b"
+   ],
+   "gaps": [
+    "Recipients or categories of recipients not stated in the privacy notice (only in the internal processing record E2)",
+    "No evidence the notice is linked from the quarantine digest delivered to data subjects (E3)",
+    "Link from the e-mail footer policy is asserted in E1 but no footer or policy file is in the evidence"
+   ],
+   "remediation": "Add a 'Recipients' section to docs/privacy-note.md stating that data is accessible only to ACME IT Security and the Messaging Platform team and is not disclosed to third parties. Add a link to the privacy note in the digest template in spamshield/digest.py (for example a line pointing to the intranet URL) so recipients receive it with each quarantine digest. Add the same link to the e-mail footer or disclaimer template so the notice is shown at the point of collection.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-RET-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "Retention periods are defined in config and documentation: quarantine for 30 days (E2, E3, E8) and classification logs for 180 days (E2, E3). The quarantine period is enforced automatically: a purge function deletes files older than the cutoff (E1), and a daily CronJob runs it at 03:00 with purge(30) (E4, E5). The 180-day log retention is defined but no enforcement is evidenced; E2 only sets a `logging.retention_days` value for the Loki sink, and no lifecycle rule or purge job for logs appears in the excerpts. The record also gives no justification for keeping hashed classification logs for 180 days (E3), so proportionality for that category is not shown.",
+   "evidence_ids": [
+    "d2be045348b5",
+    "e3d448c53a89",
+    "ff8611b02a55",
+    "4aee4658e970",
+    "87e49fd5212c",
+    "d627fb3313ec",
+    "ea99d6f0456b"
+   ],
+   "gaps": [
+    "No automated enforcement (purge job, TTL or lifecycle rule) evidenced for the 180-day classification/logging retention",
+    "Loki log retention is configured in spamshield.yaml but its enforcement mechanism is not shown",
+    "No documented justification for 180-day retention of classification logs",
+    "Purge job hardcodes 30 days in the CronJob command instead of reading the configured value, so config and enforcement can drift"
+   ],
+   "remediation": "Add an enforced retention mechanism for classification logs: a Loki retention/compactor configuration (or a purge CronJob) that deletes logs after the documented period, with evidence it is active. Document the necessity of 180 days in the processing record (E3) or shorten it. Change the quarantine CronJob to read retention_days from config/spamshield.yaml so the defined period and the enforced period cannot diverge.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ERA-01",
+   "status": "non_compliant",
+   "confidence": 0.7,
+   "rationale": "The only deletion mechanism evidenced is an age-based purge of quarantined messages after 30 days, run by a CronJob (E1, E3, E8, E5). Nothing in the excerpts erases a specific data subject's data on request, and the deterministic erase/forget/delete function pattern finds no match. The privacy note (E7) states that erasure rights exist, but that is a claim, not an implemented mechanism, and the processing record (E6) only lists retention periods. Automatic expiry is at most partial under the guidance, and no on-request path covers the 180-day classification logs (E11, E6) or the training data derived from messages (E2).",
+   "evidence_ids": [
+    "d2be045348b5",
+    "98aa525d2b09",
+    "4aee4658e970",
+    "e3d448c53a89",
+    "ff8611b02a55",
+    "d627fb3313ec",
+    "87e49fd5212c",
+    "ea99d6f0456b",
+    "5e84a50f2805"
+   ],
+   "gaps": [
+    "No on-request erasure endpoint, admin job or function for a single data subject",
+    "No erasure procedure or runbook with response timeline",
+    "Quarantine purge is age-based only, not subject-based",
+    "Classification logs (180 days) have no on-request erasure path",
+    "Derived data (training set, spam scores, release actions) has no erasure handling",
+    "Privacy note promises erasure rights without a mechanism behind them"
+   ],
+   "remediation": "Add an erasure function such as erase_subject(identifier) in spamshield/quarantine.py that removes quarantined messages matching a sender or recipient address and records the action. Expose it through an admin CLI or Kubernetes Job with access control and an audit log. Add docs/erasure-procedure.md covering intake, identity verification, the one-month response deadline, log and training-data handling, and third-party notification. Update docs/processing-record.md to describe the erasure path for each store, including logs and any model training data, and document how erased data is excluded from future retraining.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-PBD-01",
+   "status": "compliant",
+   "confidence": 0.72,
+   "rationale": "The model features are TF-IDF/char n-grams over normalised subject and body text, and no gender, age, nationality or other protected attribute appears as a feature (E1, E5, E6). Privacy-by-design redaction is applied before processing: the normaliser replaces URLs and e-mail addresses with placeholder tokens before the model sees the text (E5), and the classification log stores only a truncated SHA-256 message reference rather than the message ID (E4, E5). The processing record shows no recipients outside IT Security and the Messaging Platform, so there is no third-party sharing, and it sets 30-day quarantine and 180-day log retention with encrypted storage (E2, E3, E7). Full message bodies are still processed and quarantined, but that is needed for the stated spam-filtering purpose and release function.",
+   "evidence_ids": [
+    "98aa525d2b09",
+    "ff8611b02a55",
+    "d627fb3313ec",
+    "5e84a50f2805",
+    "535764b31b1a",
+    "cbf48293d1d9",
+    "06d9699096d8"
+   ],
+   "gaps": [
+    "Redaction covers only e-mail addresses and URLs; names and phone numbers in bodies are not redacted (not required by the statement, but noted)",
+    "No documented minimisation review of the monthly retraining dataset (E1, E6)",
+    "Quarantined messages are stored in full plaintext before any redaction (E4 q.store(msg)); justified by purpose but not documented as a minimisation decision"
+   ],
+   "remediation": "Add a short data-minimisation note (for example in docs/processing-record.md or the LIA IT-SEC-03) stating that no protected attributes are used as features, with a test that asserts the feature set. Document how the monthly retraining set is minimised and pseudonymised before use. Optionally extend normalise() to redact phone numbers and other identifiers, and document why full bodies are retained in quarantine.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-01",
+   "status": "partial",
+   "confidence": 0.7,
+   "rationale": "In-transit encryption is evidenced: the SpamShield server wraps its socket in TLS with a minimum of TLS 1.2, requires client certificates (CERT_REQUIRED) and accepts only the gateway CA (E4, E8, E9). The Postfix-to-filter link is described as mTLS (E1, E12). At-rest encryption is evidenced only for the quarantine volume: the PVC uses the encrypted-ssd StorageClass with a KMS key (E2, E3), and the quarantine store writes to that PersistentVolume (E7, E9). Other stores that hold personal data are not evidenced: the Loki log sink with 180-day retention (E9, E10) has no at-rest encryption configuration, and no backup configuration or encryption is present. Because at-rest encryption is not shown for every store, the requirement is only partly met.",
+   "evidence_ids": [
+    "ff8611b02a55",
+    "87e49fd5212c",
+    "06d9699096d8",
+    "5e84a50f2805",
+    "d2be045348b5",
+    "78238ee77704",
+    "e3d448c53a89",
+    "d627fb3313ec",
+    "cbf48293d1d9"
+   ],
+   "gaps": [
+    "No at-rest encryption evidence for the Loki log store holding classification logs (180 days)",
+    "No backup configuration or backup encryption evidence for quarantine or logs",
+    "Hashed message references in logs are not shown to be encrypted or otherwise protected at rest"
+   ],
+   "remediation": "Document and configure at-rest encryption for the Loki log storage backend (for example an encrypted bucket or volume with a KMS key, referenced in config/spamshield.yaml or a k8s/loki manifest). Add a backup policy for the quarantine PVC and the log store that states backups are encrypted with a KMS key, and record it in docs/processing-record.md or a security annex. Keep the existing TLS/mTLS settings and the encrypted-ssd StorageClass as they are.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-02",
+   "status": "needs_review",
+   "confidence": 0.55,
+   "rationale": "Service-level access controls are evidenced: the NetworkPolicy admits ingress to the spamshield pods only from the postfix-gateway pods on port 9443 (E3), the gateway channel uses mTLS with a client CA configured (E7), and the processing record states mTLS and network policy as security measures (E2). However, the statement also requires authentication and role-based, least-privilege authorisation for personnel and administrative functions. No RBAC, personnel authentication, or role checks are evidenced for the quarantine store, the purge job, or administrative access (E1, E3, E6). The release action that lets a recipient access quarantined personal data (E2, E4) has no authorisation mechanism shown in the excerpts (E8 covers classification only). Excerpts are truncated, so this is a partial rather than a non_compliant finding.\nLow confidence (0.55) for 'partial': routed to human review.",
+   "evidence_ids": [
+    "06d9699096d8",
+    "ff8611b02a55",
+    "87e49fd5212c",
+    "d627fb3313ec",
+    "4aee4658e970",
+    "e3d448c53a89",
+    "535764b31b1a"
+   ],
+   "gaps": [
+    "No role-based authorisation or personnel authentication for quarantine access or release",
+    "No least-privilege RBAC (ServiceAccount, Role, RoleBinding) for the spamshield deployment or purge CronJob",
+    "Authorisation of recipient quarantine release not evidenced in code",
+    "No evidence of administrative function access controls or access logging for personnel"
+   ],
+   "remediation": "Add Kubernetes RBAC manifests (ServiceAccount, Role, RoleBinding) under k8s/ with least-privilege verbs for the spamshield and purge workloads. Implement and document authentication plus role checks (for example, a requireRole decorator or middleware) on quarantine release and any admin or export endpoints in spamshield/quarantine.py and the HTTP handlers. Record the personnel access model (who can read quarantine, who can release, who administers) in docs/processing-record.md or an access-control document. Add audit logging of quarantine access and release actions.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ROPA-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "A ROPA entry exists at docs/processing-record.md (E1) and covers the controller and DPO contact, purpose, data subjects, personal data, recipients, retention limits (30 days quarantine, 180 days logs) and security measures. The retention values are consistent with the config (E7), and the security claims match the mTLS and certificate-required code (E4, E6). The transfers element is not addressed in E1: it says recipients are \"None outside ACME IT Security\", which only implies there are no third-country transfers, and it never states that explicitly. Because the statement names transfers as a required element, this is a partial gap.",
+   "evidence_ids": [
+    "ff8611b02a55",
+    "d627fb3313ec",
+    "5e84a50f2805",
+    "78238ee77704",
+    "e3d448c53a89"
+   ],
+   "gaps": [
+    "No explicit transfers field in the ROPA entry (third-country or international organisation transfers, or a statement that none occur)",
+    "Recipients row does not explicitly rule out transfers to third countries or hosting outside the EU"
+   ],
+   "remediation": "Add a \"Transfers\" row to docs/processing-record.md stating whether any personal data is transferred to a third country or international organisation (including hosting or sub-processor locations for the Loki log sink and the KMS). If none, say so explicitly; if any, name the country or organisation and the Art. 46 safeguard. Optionally cross-reference the record from the privacy note (docs/privacy-note.md).",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-DPIA-01",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "The one human-facing interface in the evidence, the quarantine digest e-mail, clearly discloses AI involvement: it names \"ACME's automated filter, which uses a machine-learning model to classify incoming e-mail\" [E4], which also satisfies the deterministic pattern check. The second element is not evidenced: the digest never states that the held classification is an AI-generated recommendation, nor makes explicit that the employee takes the final decision (it only says \"click Release\" if the message is not spam) [E4]. The privacy note describes the scan as a \"spam filter\" with no AI or machine-learning disclosure [E3], and the API response returns a score only to the mail gateway [E6], so no UI for it is evidenced. Whether the digest counts as a decision-support UI is arguable, which keeps confidence moderate.",
+   "evidence_ids": [
+    "d627fb3313ec",
+    "ea99d6f0456b",
+    "5e84a50f2805"
+   ],
+   "gaps": [
+    "Digest does not state that the classification is an AI-generated recommendation",
+    "Digest does not state that the employee makes the final release decision",
+    "Privacy note (intranet, linked from e-mail footer) does not mention AI or machine-learning involvement",
+    "No evidence of the quarantine release UI or any other staff-facing interface and its disclosure"
+   ],
+   "remediation": "1) In spamshield/digest.py DIGEST_TEMPLATE, add a sentence such as: \"The hold decision was made automatically by an AI (machine-learning) classifier and is a recommendation; you decide whether to release each message.\" 2) In docs/privacy-note.md, state that the spam filter is an AI/machine-learning classifier and that its classification is reviewed by the recipient before release. 3) If a quarantine web or release UI exists, add the same AI-generated-recommendation and final-decision wording at or before the first interaction, visible in the page and not only in a tooltip or terms. 4) Add the same disclosure to any staff-facing score or ranking output.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-02",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to limited risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-03",
+   "status": "partial",
+   "confidence": 0.65,
+   "rationale": "Most elements are evidenced. Each production classification emits a structured log line with a hashed input reference (message_ref), the action and score as output, and model_version (E6, E5). The log sink is set to 180-day retention (E2), and the processing record and privacy note state classification logs are kept 180 days (E4, E7). However, nothing evidences tamper resistance: no append-only, WORM or immutability setting for the Loki sink appears in the excerpts. The only encryption evidence covers the quarantine volume, not the prediction logs (E9, E10). The log call also does not show an explicit UTC timestamp or a separate correlation id, so those elements rely on unseen sink formatting.",
+   "evidence_ids": [
+    "e3d448c53a89",
+    "ff8611b02a55",
+    "535764b31b1a",
+    "5e84a50f2805",
+    "d627fb3313ec",
+    "06d9699096d8",
+    "87e49fd5212c"
+   ],
+   "gaps": [
+    "No evidence of tamper-resistant (append-only/WORM/immutable) storage for prediction logs",
+    "Explicit UTC timestamp not present in the log record; relies on unseen sink formatting",
+    "No dedicated correlation id; only a truncated SHA-256 of message_id is logged",
+    "Loki retention_days is configuration only; no IaC or code evidence that it is enforced"
+   ],
+   "remediation": "Configure the Loki (or replacement) log store with immutable/WORM retention (e.g. object-lock bucket or Loki retention with restricted delete access) and document it in docs/processing-record.md. Add an explicit UTC timestamp and a request correlation id field to the classification log record in spamshield/server.py (e.g. a structured JSON formatter). Add IaC or a deployment doc that shows the 180-day retention is enforced and that delete/modify access to prediction logs is restricted.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-04",
+   "status": "needs_review",
+   "confidence": 0.5,
+   "rationale": "The quarantined raw e-mail store is covered: retention is set to 30 days (E2), documented in the record of processing (E1) and privacy note (E8), enforced by an automated daily CronJob calling purge(30) (E5) that deletes files older than the cutoff (E3), and the volume is encrypted (E7). However, the model card describes a training corpus of 1.2M message bodies kept on a rolling 12-month window (E4). Message bodies are only partly normalised (URLs and addresses tokenised), so this may be a raw-message store kept beyond 30 days with no documented legal obligation. Whether it counts as a raw-input store under POL-4(1) is ambiguous and needs a human decision. The 180-day classification logs (E1, E2) hold only hashed references and are not raw inputs, so they are not assessed against this statement.",
+   "evidence_ids": [
+    "ff8611b02a55",
+    "e3d448c53a89",
+    "d2be045348b5",
+    "98aa525d2b09",
+    "4aee4658e970",
+    "ea99d6f0456b",
+    "87e49fd5212c",
+    "d627fb3313ec"
+   ],
+   "gaps": [
+    "No retention or deletion evidence for the 12-month rolling training corpus of message bodies (E4)",
+    "No documented legal obligation or retention schedule covering the training corpus",
+    "Message bodies in the corpus are only partly normalised, so anonymisation is not evidenced"
+   ],
+   "remediation": "Confirm whether the training corpus holds raw message bodies. If it does, either delete or irreversibly anonymise those bodies within 30 days of collection, or document a legal retention basis in docs/processing-record.md or a retention schedule. Add an automated purge or lifecycle rule for the corpus store, for example a CronJob with a 30-day cutoff, and update the MODEL_CARD.md training-data section to state the retention and anonymisation applied. Keep the existing quarantine purge (E5) as is.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-05",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "In transit is evidenced for the spamshield classify endpoint: the server sets ctx.minimum_version to TLSv1_2 and requires client certificates (CERT_REQUIRED), and the gateway mTLS is documented (E8, E6, E2). At rest is evidenced only for the quarantine store: the PVC uses the encrypted-ssd StorageClass with a KMS key (E1, E3), and the processing record and code comments confirm encrypted volumes (E2, E10). No encryption-at-rest evidence exists for the model artefact path (/models/nb-2026.10.joblib) or for the Loki log sink with 180-day retention (E7), so one element of the at-rest requirement is missing.",
+   "evidence_ids": [
+    "87e49fd5212c",
+    "ff8611b02a55",
+    "06d9699096d8",
+    "5e84a50f2805",
+    "e3d448c53a89",
+    "78238ee77704",
+    "d2be045348b5"
+   ],
+   "gaps": [
+    "No evidence of encryption at rest for model artefact storage (/models/nb-2026.10.joblib)",
+    "No evidence of encryption at rest for the Loki log sink storage (logs retained 180 days)",
+    "No evidence of TLS for log shipping to Loki or for model artefact retrieval"
+   ],
+   "remediation": "Add IaC (e.g. k8s/ or Helm values) that mounts the model artefact volume from a KMS-encrypted StorageClass or object store with SSE-KMS, and document the key reference. Configure the Loki deployment/storage backend with encryption at rest (KMS-backed volumes or bucket SSE-KMS) and add that to docs/processing-record.md. Document or configure TLS for the Loki push endpoint and any model artefact download path, and record the verification in the repository.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-06",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "The only inference route, POST /v1/classify, sits behind mutual TLS: the server sets ssl.CERT_REQUIRED and accepts only the mail gateway's client certificate (E3, E7), and a NetworkPolicy limits ingress to the postfix-gateway pods (E2). The route is also rate-limited via a token bucket and a configured 6000 requests/minute (E3, E9), so the authentication element is evidenced. The excerpts show no administrative endpoints (no model reload, threshold change, export or transcript route); the handler returns 404 for any path other than /v1/classify and thresholds are read from config (E3, E9). The role-based authorisation element is therefore not triggered by any visible route. Confidence is moderate because client-certificate identity is not role-based authorisation, and the excerpts cover the server file only in part.",
+   "evidence_ids": [
+    "87e49fd5212c",
+    "78238ee77704",
+    "5e84a50f2805",
+    "e3d448c53a89",
+    "cbf48293d1d9"
+   ],
+   "gaps": [
+    "No explicit documented statement that the service has no administrative endpoints",
+    "Client-certificate authentication is not role-based; any future admin route would need an RBAC check"
+   ],
+   "remediation": "Add a short security section (e.g. in README.md or docs/) stating the complete route inventory: POST /v1/classify only, mTLS-authenticated and rate-limited. Add a regression test that enumerates routes and fails if a new path is added without client-certificate verification and a role check. If model reload, threshold changes or quarantine export/transcript access are introduced, implement role-based authorisation (e.g. mapping certificate subject or an identity header to roles) and document it.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-07",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-08",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The deployed model (SpamShield nb-2026.10) has a model card in MODEL_CARD.md that covers every listed element: intended use, out-of-scope uses, version, training data summary, evaluation metrics, limitations and owner (E1). The version is corroborated by the code, which sets MODEL_VERSION = \"nb-2026.10\" and logs it per classification (E6, E5). The README describes the same model and does not conflict with the card (E7). The statement's \"third-party models\" clause is not triggered, since the only model is in-house TF-IDF + Complement Naive Bayes built with scikit-learn, and no third-party model deployment appears in the evidence.",
+   "evidence_ids": [
+    "98aa525d2b09",
+    "5e84a50f2805",
+    "535764b31b1a",
+    "cbf48293d1d9"
+   ],
+   "gaps": [],
+   "remediation": "No change required for the current deployment. If a third-party model is deployed later, add a model card for it that records the provider, model version and product-specific evaluation, and keep the card in the repository as MODEL_CARD.md or *.modelcard.md.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-09",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The statement requires per-client rate limiting on AI endpoints, configured in code or configuration. E3 implements a per-key token bucket, and E4 wires it into the POST /v1/classify handler, keyed on the client IP (client_address[0]) and returning HTTP 429 when the bucket is empty before the body is processed. The limit is configured in E1 (rate_limit.requests_per_minute) and read in E4 at build time. Whether the endpoint counts as reachable from untrusted networks is debatable: E5 restricts ingress to the postfix-gateway pods, and E4 requires client certificates. The control is present either way, so the outcome does not change. The 6000 requests/minute value and the per-replica, in-process state are not addressed by the statement and are not treated as gaps.",
+   "evidence_ids": [
+    "e3d448c53a89",
+    "40dba9f11178",
+    "78238ee77704"
+   ],
+   "gaps": [],
+   "remediation": "No mandatory remediation for the stated requirement. Optional hardening: document the chosen 6000 requests/minute limit and its rationale, and consider a shared limiter if rate limits must hold across the two replicas in k8s/deployment.yaml.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-10",
+   "status": "non_compliant",
+   "confidence": 0.8,
+   "rationale": "No AI incident response procedure is evidenced in the repository. The README (E1) describes the system, model, and AI Act classification but contains no detection, escalation, or reporting procedure and no reference to ai-incidents@acme.example or the 24-hour Governance Board reporting duty. The code excerpts (E2, E4) show only routine classification logging with a model_version field, which is operational logging rather than an incident procedure; E3 likewise contains no incident handling. The deterministic pattern check also finds no match in the supplied excerpts. Because the excerpts are partial windows, a procedure document could exist elsewhere, but none is evidenced and absence of evidence is not compliance.",
+   "evidence_ids": [
+    "cbf48293d1d9",
+    "5e84a50f2805",
+    "535764b31b1a",
+    "78238ee77704"
+   ],
+   "gaps": [
+    "No AI incident response procedure document in the repository",
+    "No detection criteria for AI incidents (harmful outputs, model data leaks, performance degradation, safety events)",
+    "No escalation path defined",
+    "No 24-hour reporting obligation to the AI Governance Board (ai-incidents@acme.example)",
+    "No definition of what constitutes a serious incident"
+   ],
+   "remediation": "Add docs/ai-incident-response.md (and link it from README.md) covering: (1) detection, including monitoring for performance degradation and drift of the monthly-retrained NB model, misclassification spikes, and any data leak via model outputs or logs; (2) escalation roles, owners, and on-call contacts; (3) a definition of serious incidents; (4) reporting to the AI Governance Board at ai-incidents@acme.example within 24 hours of detection, with a template and a timeline record. Optionally add an alert configuration in config/ that triggers on the classification-action or score anomalies already logged with model_version.",
+   "method": "llm",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-11",
+   "status": "not_applicable",
+   "confidence": 0.92,
+   "rationale": "Applies to high risk systems; this system is classified as minimal.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  }
+ ],
+ "evidence": [
+  {
+   "id": "98aa525d2b09",
+   "kind": "model_card",
+   "path": "MODEL_CARD.md",
+   "start_line": 1,
+   "end_line": 10,
+   "snippet": "# Model card: SpamShield nb-2026.10\n\n* **Owner:** Messaging Platform team (messaging@acme.example)\n* **Model:** TF-IDF + Complement Naive Bayes (scikit-learn 1.5), version `nb-2026.10`.\n* **Intended use:** classifying inbound e-mail to ACME mailboxes as spam / suspicious / legitimate.\n* **Out of scope:** outbound mail, phishing attribution, any evaluation of employees.\n* **Training data:** 1.2M messages reported as spam or released from quarantine by employees\n  (rolling 12 months), message bodies normalised (URLs and addresses replaced by tokens).\n* **Evaluation (October 2026 hold-out):** precision 0.991, recall 0.947, false-positive rate 0.04%.\n* **Limitations:** weaker on image-only spam and on non-Latin scripts.",
+   "signal": "data_documentation,accuracy_metrics",
+   "score": 0.0
+  },
+  {
+   "id": "cbf48293d1d9",
+   "kind": "doc",
+   "path": "README.md",
+   "start_line": 1,
+   "end_line": 16,
+   "snippet": "# SpamShield\n\nInbound e-mail spam filter for the ACME corporate mail gateway. Postfix hands each message to the\nSpamShield milter over mTLS; SpamShield returns `deliver`, `quarantine` or `tag`. Employees get a\ndaily quarantine digest and can release messages themselves.\n\n* Model: TF-IDF (word + char n-grams) + Complement Naive Bayes, retrained monthly on\n  employee-reported spam/ham.\n* **AI Act:** minimal-risk system: spam filtering is not an Annex III use case, the system does not\n  interact with people as a chatbot and does not generate content.\n* Internal service only; no internet-facing endpoint.\n\n## Run\n```bash\npython -m spamshield.server --config config/spamshield.yaml\n```",
+   "signal": "",
+   "score": 0.0
+  },
+  {
+   "id": "5e84a50f2805",
+   "kind": "code",
+   "path": "spamshield/server.py",
+   "start_line": 31,
+   "end_line": 60,
+   "snippet": "                return\n            msg = json.loads(self.rfile.read(int(self.headers[\"Content-Length\"])))\n            v = clf.classify(msg.get(\"subject\", \"\"), msg.get(\"body\", \"\"))\n            if v.action == \"quarantine\":\n                q.store(msg)\n            log.info(\"classified message=%s action=%s p=%.3f model_version=%s\",\n                     message_ref(msg[\"message_id\"]), v.action, v.spam_probability, v.model_version)\n            body = json.dumps({\"action\": v.action, \"score\": round(v.spam_probability, 3)}).encode()\n            self.send_response(200)\n            self.send_header(\"Content-Type\", \"application/json\")\n            self.end_headers()\n            self.wfile.write(body)\n\n    return Handler\n\n\ndef main(config_path: str = \"config/spamshield.yaml\"):\n    cfg = yaml.safe_load(open(config_path))\n    server = ThreadingHTTPServer((\"0.0.0.0\", cfg[\"port\"]), build(cfg))\n    ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)\n    ctx.minimum_version = ssl.TLSVersion.TLSv1_2\n    ctx.load_cert_chain(cfg[\"tls\"][\"cert\"], cfg[\"tls\"][\"key\"])\n    ctx.load_verify_locations(cfg[\"tls\"][\"client_ca\"])\n    ctx.verify_mode = ssl.CERT_REQUIRED  # only the mail gateway's client certificate is accepted\n    server.socket = ctx.wrap_socket(server.socket, server_side=True)\n    server.serve_forever()\n\n\nif __name__ == \"__main__\":\n    main()",
+   "signal": "logging_call,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "78238ee77704",
+   "kind": "code",
+   "path": "spamshield/server.py",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "\"\"\"Milter-style HTTP endpoint used by the Postfix gateway (mTLS, client certificate required).\"\"\"\n\nfrom __future__ import annotations\n\nimport logging\nimport ssl\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\nimport json\n\nimport yaml\n\nfrom .classifier import SpamClassifier, message_ref\nfrom .quarantine import Quarantine\nfrom .ratelimit import TokenBucket\n\nlog = logging.getLogger(\"spamshield\")\n\n\ndef build(cfg):\n    clf = SpamClassifier(cfg[\"model_path\"], cfg[\"thresholds\"][\"tag\"], cfg[\"thresholds\"][\"quarantine\"])\n    q = Quarantine(cfg[\"quarantine\"][\"path\"])\n    bucket = TokenBucket(cfg[\"rate_limit\"][\"requests_per_minute\"])\n\n    class Handler(BaseHTTPRequestHandler):\n        def do_POST(self):\n            if self.path != \"/v1/classify\":\n                self.send_error(404)\n                return\n            if not bucket.take(self.client_address[0]):\n                self.send_error(429)\n                return\n            msg = json.loads(self.rfile.read(int(self.headers[\"Content-Length\"])))\n            v = clf.classify(msg.get(\"subject\", \"\"), msg.get(\"body\", \"\"))\n            if v.action == \"quarantine\":\n                q.store(msg)\n            log.info(\"classified message=%s action=%s p=%.3f model_version=%s\",\n                     message_ref(msg[\"message_id\"]), v.action, v.spam_probability, v.model_version)\n            body = json.dumps({\"action\": v.action, \"score\": round(v.spam_probability, 3)}).encode()\n            self.send_response(200)\n            self.send_header(\"Content-Type\", \"application/json\")",
+   "signal": "logging_call,encryption,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "ff8611b02a55",
+   "kind": "doc",
+   "path": "docs/processing-record.md",
+   "start_line": 1,
+   "end_line": 12,
+   "snippet": "# Record of processing: inbound e-mail filtering (entry IT-SEC-03)\n\n| Item | Content |\n|---|---|\n| Controller | ACME Corp, IT Security; DPO dpo@acme.example |\n| Purpose | Protecting ACME mailboxes from spam and malicious e-mail |\n| Lawful basis | Legitimate interest in IT security (Art. 6(1)(f) GDPR); balancing test IT-SEC-03-LIA |\n| Data subjects | Senders and recipients of inbound e-mail |\n| Personal data | E-mail headers and content; spam score; release actions |\n| Recipients | None outside ACME IT Security / Messaging Platform |\n| Retention | Quarantined messages 30 days; classification logs 180 days (message reference hash only) |\n| Security | mTLS between gateway and filter, encrypted volumes (KMS), network policy |",
+   "signal": "retention_config,consent,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "d627fb3313ec",
+   "kind": "doc",
+   "path": "docs/privacy-note.md",
+   "start_line": 1,
+   "end_line": 8,
+   "snippet": "# Privacy note: e-mail filtering (published on the intranet and linked from the e-mail footer policy)\n\nACME Corp (controller, dpo@acme.example) automatically scans inbound e-mail with a spam filter to\nprotect its systems, based on its legitimate interest in IT security (Art. 6(1)(f) GDPR). Suspicious\nmessages are held in quarantine for 30 days and can be released by the recipient. Classification\nlogs contain only a hashed message reference and are kept for 180 days. Senders and recipients have\nthe rights of access, rectification, erasure, restriction and objection and may complain to a\nsupervisory authority.",
+   "signal": "consent",
+   "score": 0.0
+  },
+  {
+   "id": "ea99d6f0456b",
+   "kind": "code",
+   "path": "spamshield/digest.py",
+   "start_line": 1,
+   "end_line": 16,
+   "snippet": "\"\"\"Daily quarantine digest e-mail sent to each employee.\"\"\"\n\nDIGEST_TEMPLATE = \"\"\"Subject: Your quarantined messages ({count})\n\nThe following messages addressed to you were held by SpamShield, ACME's automated filter, which uses\na machine-learning model to classify incoming e-mail. Nothing has been deleted. If a message is not\nspam, click \"Release\" and it will be delivered; your feedback is used to improve the filter.\n\n{rows}\n\nQuarantined messages are removed automatically after 30 days.\n\"\"\"\n\n\ndef render(count: int, rows: list[str]) -> str:\n    return DIGEST_TEMPLATE.format(count=count, rows=\"\\n\".join(rows))",
+   "signal": "",
+   "score": 0.0
+  },
+  {
+   "id": "d2be045348b5",
+   "kind": "code",
+   "path": "spamshield/quarantine.py",
+   "start_line": 1,
+   "end_line": 25,
+   "snippet": "\"\"\"Quarantine store on an encrypted PersistentVolume; messages are purged after the configured days.\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport time\nfrom pathlib import Path\n\n\nclass Quarantine:\n    def __init__(self, path: str) -> None:\n        self.root = Path(path)\n        self.root.mkdir(parents=True, exist_ok=True)\n\n    def store(self, msg: dict) -> None:\n        (self.root / f\"{int(time.time())}-{abs(hash(msg['message_id']))}.json\").write_text(json.dumps(msg))\n\n    def purge(self, retention_days: int) -> int:\n        cutoff = time.time() - retention_days * 86400\n        removed = 0\n        for f in self.root.glob(\"*.json\"):\n            if f.stat().st_mtime < cutoff:\n                f.unlink()\n                removed += 1\n        return removed",
+   "signal": "retention_config,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "e3d448c53a89",
+   "kind": "config",
+   "path": "config/spamshield.yaml",
+   "start_line": 1,
+   "end_line": 17,
+   "snippet": "port: 9443\nmodel_path: /models/nb-2026.10.joblib\nthresholds:\n  tag: 0.70\n  quarantine: 0.95\nrate_limit:\n  requests_per_minute: 6000\nquarantine:\n  path: /var/lib/spamshield/quarantine\n  retention_days: 30\nlogging:\n  sink: loki\n  retention_days: 180\ntls:\n  cert: /etc/spamshield/tls/tls.crt\n  key: /etc/spamshield/tls/tls.key\n  client_ca: /etc/spamshield/tls/gateway-ca.crt",
+   "signal": "retention_config,encryption,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "4aee4658e970",
+   "kind": "iac",
+   "path": "k8s/deployment.yaml",
+   "start_line": 61,
+   "end_line": 73,
+   "snippet": "  name: spamshield-quarantine-purge\n  namespace: mail\nspec:\n  schedule: \"0 3 * * *\"\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:\n            - name: purge\n              image: registry.acme.example/mail/spamshield:2026.10\n              command: [\"python\", \"-c\", \"from spamshield.quarantine import Quarantine; Quarantine('/var/lib/spamshield/quarantine').purge(30)\"]",
+   "signal": "retention_config",
+   "score": 0.0
+  },
+  {
+   "id": "87e49fd5212c",
+   "kind": "iac",
+   "path": "k8s/deployment.yaml",
+   "start_line": 31,
+   "end_line": 70,
+   "snippet": "  namespace: mail\nspec:\n  storageClassName: encrypted-ssd\n  accessModes: [ReadWriteOnce]\n  resources: {requests: {storage: 50Gi}}\n---\napiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: encrypted-ssd\nprovisioner: pd.csi.storage.gke.io\nparameters:\n  type: pd-ssd\n  disk-encryption-kms-key: projects/acme-mail/locations/europe-west1/keyRings/mail/cryptoKeys/spamshield\n---\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: spamshield-only-gateway\n  namespace: mail\nspec:\n  podSelector: {matchLabels: {app: spamshield}}\n  ingress:\n    - from:\n        - podSelector: {matchLabels: {app: postfix-gateway}}\n      ports: [{port: 9443}]\n---\napiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: spamshield-quarantine-purge\n  namespace: mail\nspec:\n  schedule: \"0 3 * * *\"\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:",
+   "signal": "retention_config,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "535764b31b1a",
+   "kind": "code",
+   "path": "spamshield/classifier.py",
+   "start_line": 1,
+   "end_line": 43,
+   "snippet": "from __future__ import annotations\n\nimport hashlib\nimport re\nfrom dataclasses import dataclass\n\nimport joblib\n\nMODEL_VERSION = \"nb-2026.10\"\nURL = re.compile(r\"https?://\\S+\")\nEMAIL = re.compile(r\"[\\w.+-]+@[\\w-]+\\.[\\w.]+\")\n\n\n@dataclass\nclass Verdict:\n    action: str  # deliver | tag | quarantine\n    spam_probability: float\n    model_version: str = MODEL_VERSION\n\n\ndef normalise(subject: str, body: str) -> str:\n    \"\"\"Reduce the message to what the model needs; addresses become placeholders.\"\"\"\n    text = f\"{subject}\\n{body[:20000]}\"\n    text = URL.sub(\" URLTOKEN \", text)\n    return EMAIL.sub(\" EMAILTOKEN \", text).lower()\n\n\ndef message_ref(message_id: str) -> str:\n    return hashlib.sha256(message_id.encode()).hexdigest()[:24]\n\n\nclass SpamClassifier:\n    def __init__(self, path: str, tag_at: float, quarantine_at: float) -> None:\n        self.pipeline = joblib.load(path)\n        self.tag_at, self.quarantine_at = tag_at, quarantine_at\n\n    def classify(self, subject: str, body: str) -> Verdict:\n        p = float(self.pipeline.predict_proba([normalise(subject, body)])[0][1])\n        if p >= self.quarantine_at:\n            return Verdict(\"quarantine\", p)\n        if p >= self.tag_at:\n            return Verdict(\"tag\", p)\n        return Verdict(\"deliver\", p)",
+   "signal": "pii_field,model_call,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "06d9699096d8",
+   "kind": "iac",
+   "path": "k8s/deployment.yaml",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spamshield\n  namespace: mail\nspec:\n  replicas: 2\n  selector:\n    matchLabels: {app: spamshield}\n  template:\n    metadata:\n      labels: {app: spamshield}\n    spec:\n      containers:\n        - name: spamshield\n          image: registry.acme.example/mail/spamshield:2026.10\n          ports: [{containerPort: 9443}]\n          volumeMounts:\n            - {name: quarantine, mountPath: /var/lib/spamshield/quarantine}\n            - {name: tls, mountPath: /etc/spamshield/tls, readOnly: true}\n      volumes:\n        - name: quarantine\n          persistentVolumeClaim: {claimName: spamshield-quarantine}\n        - name: tls\n          secret: {secretName: spamshield-mtls}\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: spamshield-quarantine\n  namespace: mail\nspec:\n  storageClassName: encrypted-ssd\n  accessModes: [ReadWriteOnce]\n  resources: {requests: {storage: 50Gi}}\n---\napiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: encrypted-ssd",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "40dba9f11178",
+   "kind": "code",
+   "path": "spamshield/ratelimit.py",
+   "start_line": 1,
+   "end_line": 21,
+   "snippet": "\"\"\"Per-client token bucket protecting the classifier from floods (e.g. a misconfigured relay).\"\"\"\n\nimport time\nfrom collections import defaultdict\n\n\nclass TokenBucket:\n    def __init__(self, per_minute: int) -> None:\n        self.rate = per_minute / 60.0\n        self.capacity = per_minute\n        self.tokens = defaultdict(lambda: float(per_minute))\n        self.stamp = defaultdict(time.monotonic)\n\n    def take(self, key: str) -> bool:\n        now = time.monotonic()\n        self.tokens[key] = min(self.capacity, self.tokens[key] + (now - self.stamp[key]) * self.rate)\n        self.stamp[key] = now\n        if self.tokens[key] >= 1:\n            self.tokens[key] -= 1\n            return True\n        return False",
+   "signal": "",
+   "score": 0.0
+  }
+ ],
+ "scorecard": [
+  {
+   "category": "risk_classification",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "transparency",
+   "total": 2,
+   "compliant": 0,
+   "partial": 2,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "record_keeping",
+   "total": 1,
+   "compliant": 0,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "data_governance",
+   "total": 1,
+   "compliant": 1,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "technical_documentation",
+   "total": 2,
+   "compliant": 1,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 75.0
+  },
+  {
+   "category": "security",
+   "total": 5,
+   "compliant": 2,
+   "partial": 2,
+   "non_compliant": 0,
+   "needs_review": 1,
+   "score": 60.0
+  },
+  {
+   "category": "data_retention",
+   "total": 3,
+   "compliant": 0,
+   "partial": 1,
+   "non_compliant": 1,
+   "needs_review": 1,
+   "score": 16.7
+  },
+  {
+   "category": "other",
+   "total": 2,
+   "compliant": 0,
+   "partial": 1,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 25.0
+  }
+ ],
+ "overall_score": 56.1,
+ "stats": {
+  "mode": "llm",
+  "model": "haiku",
+  "backend": "claude",
+  "timings": {
+   "requirements_s": 0.136,
+   "evidence_s": 0.059,
+   "risk_s": 0.007,
+   "deterministic_s": 0.0,
+   "llm_judge_s": 62.771,
+   "report_s": 0.005,
+   "total_s": 62.978
+  },
+  "llm_calls": 18,
+  "llm_cache_hits": 1,
+  "llm_failures": 0,
+  "input_tokens": 119526,
+  "output_tokens": 30798,
+  "cost_usd": 0.032719,
+  "llm_latency_s": 179.195,
+  "llm_cached_cost_usd": 0.001155,
+  "llm_cached_latency_s": 5.402,
+  "llm_cached_input_tokens": 4976,
+  "llm_cached_output_tokens": 726,
+  "use_verifier": true,
+  "hybrid_threshold": null,
+  "verify_with_llm": false,
+  "n_requirements": 45,
+  "n_llm_judged": 18,
+  "n_needs_review": 2,
+  "files_scanned": 13,
+  "n_evidence_items": 16,
+  "wall_s": 62.979
+ }
+}

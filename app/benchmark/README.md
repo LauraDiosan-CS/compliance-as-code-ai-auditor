@@ -95,3 +95,96 @@ should flag `ACME-02`, `ACME-03` and `ACME-07` as affected, and reports for hire
 days, still compliant) vs credit-lens (30 days) show different impact. Requirements are only curated for
 v1 (`requirements/acme-rai.yaml`); a v2 requirements file is intentionally not provided because the
 loader merges all YAML files with the same `policy_id`.
+
+## Evaluation
+
+```
+.venv/bin/python app/benchmark/evaluate.py --out v0_baseline --modes deterministic,hybrid,llm --model sonnet
+.venv/bin/python app/benchmark/evaluate.py --out v1_improved --modes hybrid --model haiku --append
+.venv/bin/python app/benchmark/evaluate.py --out v1_improved --modes hybrid --hybrid-threshold 1.01 --append  # route all
+.venv/bin/python app/benchmark/evaluate.py --out v1_improved --modes hybrid --no-verifier --append          # ablation
+.venv/bin/python app/benchmark/evaluate.py --out v1_improved --modes hybrid --verify-llm --append           # ablation
+.venv/bin/python app/benchmark/threshold_sweep.py --run v1_improved --model sonnet                         # LOAO routing threshold
+```
+
+Every run audits the 5 apps against all 3 policies and writes `results/<run>.json` (metrics + per-item
+predictions), the full reports `results/<run>/reports/<app>__<config>.json`, confusion matrices
+`results/<run>/confusion_<config>.csv`, and rebuilds `results/SUMMARY.md`. Metric definitions are in the
+`evaluate.py` docstring; in short, accuracy/macro-F1 are on the 165 applicable labels (needs_review and wrong
+N/A count as errors), *gap detection* treats partial|non_compliant as positive (needs_review counts as
+flagged), and the *false-compliance rate* is P(predicted compliant | truth partial or non_compliant), the
+critical failure for an auditor. Costs are the `total_cost_usd` reported by the Claude Code CLI (equivalent
+API price; the runs used a subscription), including cached calls at their original cost.
+Analysis and figures: `app/notebooks/02_results.ipynb`, `docs/report/figures/results_*.pdf`.
+
+### v0 (baseline) vs v1 (improved)
+
+| run | config | acc | macro-F1 | gap R | gap P | false-compl. | needs_review | acc@deferral | risk acc | LLM calls | cost $ | est. s/app |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| v0 | deterministic | 79.4 | 72.3 | 87.7 | 78.1 | 12.3 | 5.5 | 84.0 | 80 | 0 | 0.00 | <1 |
+| v0 | hybrid-sonnet | 86.1 | 77.1 | 87.7 | 83.8 | 12.3 | 0.0 | 86.1 | 100 | 23 | 0.67 | 25 |
+| v0 | llm-sonnet | 71.5 | 67.6 | 100.0 | 60.8 | 0.0 | 0.6 | 72.0 | 100 | 170 | 4.81 | 94 |
+| v1 | deterministic | 82.4 | 74.9 | 93.8 | 80.3 | 6.2 | 5.5 | 87.2 | 100 | 0 | 0.00 | <1 |
+| v1 | **hybrid-sonnet** (t=0.675) | **94.5** | **86.6** | 96.9 | **96.9** | 3.1 | 0.6 | 95.1 | 100 | 103 | 2.77 | 50 |
+| v1 | hybrid-sonnet-all (t>1) | 90.9 | 82.1 | 98.5 | 87.7 | 1.5 | 0.6 | 91.5 | 100 | 170 | 4.82 | 90 |
+| v1 | llm-sonnet | 90.9 | 83.1 | 100.0 | 85.5 | 0.0 | 0.6 | 91.5 | 100 | 170 | 4.68 | 91 |
+| v1 | hybrid-haiku | 83.6 | 75.4 | 96.9 | 76.8 | 3.1 | 5.5 | 88.5 | 100 | 103 | 0.19 | 75 |
+| v1 | llm-haiku | 71.5 | 66.7 | 100.0 | 61.9 | 0.0 | 7.3 | 77.1 | 100 | 170 | 0.32 | 116 |
+| v1 | hybrid-sonnet, no Verifier | 94.5 | 86.6 | 96.9 | 96.9 | 3.1 | 0.6 | 95.1 | 100 | 103 | 2.77 | 50 |
+| v1 | hybrid-sonnet + LLM claim verifier | 88.5 | 83.1 | 96.9 | 85.1 | 3.1 | 6.7 | 94.8 | 100 | 156 | 3.89 | 89 |
+
+Citation validity was 100% in every configuration (all cited evidence ids exist), and every LLM-involved
+compliant verdict cites at least one evidence item.
+
+### Changes between v0 and v1 (all general, no benchmark file or label was edited)
+
+1. **Rules engine: comment-aware matching** (`rules/comments.py`). Pattern checks run on text where comments,
+   docstrings and TODO/FIXME/TBD lines are blanked (line numbers preserved; Python via `tokenize`, C-like / hash /
+   HCL / SQL / markup comment syntaxes via a string-aware scanner). Commented-out code and TODOs are non-evidence
+   (a strong-ish negative, 0.75); explanatory prose comments/docstrings are a weak *claim* (pass at 0.55, which
+   hybrid routes to the LLM); switched-off flags (`*_allowed = False`) do not satisfy "present" checks; "absent"
+   checks ignore comments entirely. Effect (deterministic): 4 decoy false compliants removed (quickhire logging and
+   override, supportbot AI-label TODO x2) and the docstring false alarm on Art. 5 fixed.
+   An intermediate version that simply discarded all comment matches lost 3 true compliants whose only keyword was
+   an explanatory comment next to real fail-safe / mTLS code, hence the prose-vs-code distinction.
+2. **Graded rule confidence** instead of fixed 0.9/0.8/0.5/0.2: per-check strength from the number of matching
+   lines/files, evidence kind (a technical check satisfied only by documentation = claim, 0.55), and check type
+   (regex miss 0.6, "absent" pass 0.6, file exists 0.7, ...).
+3. **Hybrid routing / arbitration** (`pipeline.py`): threshold on the graded confidence chosen by
+   leave-one-app-out (`threshold_sweep.py`: every fold picks 0.625-0.675; median 0.675; pooled held-out
+   accuracy 93.3% vs 94.5% in-sample), so ~60% of applicable items get an LLM second opinion. On hard
+   rules-vs-LLM disagreement the side that is >= 0.15 more confident wins (confidence -0.1), otherwise
+   needs_review.
+4. **Risk heuristic** (`agents/risk.py`): negated mentions are ignored ("does not interact with people as a
+   chatbot"), signals are weighted (self-description in README / model card 2.0, other docs 1.0, code 0.5 and
+   code alone capped at 1.0), a tier needs a score >= 2. spamshield is now minimal (was limited), heuristic risk
+   accuracy 80% -> 100%, which also fixes 3 wrong applicability decisions in deterministic mode.
+5. **Judge prompt** (`agents/judge.py`): the v0 LLM errors were 41/47 compliant -> partial (perfectionism:
+   demanding things the statement does not require, or penalising excerpts truncated at the chunk boundary).
+   The rubric now states the documented labelling protocol: the statement is the test, truncation is not a gap,
+   claims/TODOs are not evidence, explicit compliant / partial / non_compliant semantics (a missing artefact is
+   non_compliant even if fragments exist elsewhere). llm-sonnet accuracy 71.5% -> 90.9%.
+
+### Ablations and findings
+
+* **Verifier off**: identical results for sonnet and haiku: with short evidence aliases (E1, E2, ...) and JSON
+  schema output neither model ever cited a non-existent id on this benchmark, so the deterministic Verifier is a
+  safety net that did not trigger (it is covered by unit tests with injected bad citations).
+* **LLM claim-support verifier** (`--verify-llm`): +53 calls, needs_review 0.6% -> 6.7%, accuracy 94.5% -> 88.5%,
+  false-compliance unchanged (3.1%): it mostly defers verdicts that were correct. Not worth it here.
+* **haiku vs sonnet**: hybrid-haiku costs 15x less ($0.19 vs $2.77 for the 5 apps) but loses 11 points of
+  accuracy; llm-haiku is no better than v0 llm-sonnet (still compliant -> partial heavy). The rules + routing
+  give haiku most of its accuracy.
+* **Remaining hybrid-sonnet errors (9/165)**: 5 at the partial / non_compliant boundary (erasure: automatic
+  expiry but no on-request process; human review only above EUR 25,000), 2 high-confidence rule passes where
+  only the proportionality of a value decides (2-year transcript retention, logs without tamper protection),
+  1 compliant -> partial, 1 rules-vs-LLM disagreement deferred to review.
+
+### Caveats
+
+* 5 apps / 165 applicable labels written by the same team that built the auditor: confidence intervals are
+  wide (+/- ~4 points at 95% for accuracy around 0.9) and the benchmark is not a held-out test set.
+* The v1 changes were designed after inspecting v0 errors on these same apps (and the prose-comment rule after
+  inspecting a v1 intermediate), so v1 numbers carry tuning bias even though no change refers to a specific
+  file. The routing threshold is the only tuned parameter and is reported with leave-one-app-out.
+* LLM outputs are cached by prompt hash; reruns are deterministic, a cold rerun could differ slightly.

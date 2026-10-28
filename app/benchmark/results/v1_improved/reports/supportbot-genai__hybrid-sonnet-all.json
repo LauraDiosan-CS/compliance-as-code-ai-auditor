@@ -1,0 +1,2740 @@
+{
+ "id": "12e40c3c7d8f",
+ "created_at": "2026-10-28T18:13:50.089514Z",
+ "target": "app/benchmark/apps/supportbot-genai",
+ "policies": [
+  "eu-ai-act",
+  "gdpr",
+  "acme-rai"
+ ],
+ "mode": "hybrid",
+ "risk": {
+  "level": "limited",
+  "rationale": "SupportBot is a customer-support chatbot for a home energy web shop. It answers questions about orders, deliveries, invoices and tariffs using an LLM grounded on help-centre articles, and it hands over to a human agent. It makes no decisions about people such as credit, eligibility or pricing. It is not in any Annex III area. It is not an Art. 5 practice. It interacts directly with natural persons, so Art. 50(1) transparency applies. The privacy notice mentions an AI assistant, but the code has a TODO (SUP-88) because AI-generated replies are not yet labelled in the widget. That is a compliance gap, not a change of tier.",
+  "triggers": [
+   "Art. 50(1): chatbot interacting directly with natural persons",
+   "Art. 50(2): LLM-generated text replies (labelling TODO SUP-88 open)",
+   "Not Annex III: customer support only, no decisions about people"
+  ],
+  "evidence_ids": [
+   "4249cd02ef44",
+   "98aa525d2b09",
+   "8c76f0027e72",
+   "f8b95dcac447"
+  ],
+  "confidence": 0.93
+ },
+ "requirements": [
+  {
+   "id": "AIA-RISK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.5(1)"
+   ],
+   "category": "risk_classification",
+   "title": "No prohibited AI practices",
+   "statement": "The system does not implement any practice prohibited by Art. 5(1): subliminal or manipulative techniques, exploitation of vulnerabilities, social scoring, crime prediction based solely on profiling, untargeted scraping of facial images, emotion inference in the workplace or in education, or biometric categorisation inferring sensitive traits.",
+   "applies_to": [
+    "prohibited",
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "no emotion recognition / social scoring / face scraping code",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(emotion[_ ]?(recognition|detection|analysis)|infer_emotion|facial[_ ]expression|social[_ ]?scor|scrape[_ ]?faces?|face[_ ]?scrap)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Look for code or documentation showing the system infers emotions (e.g. from video interviews or voice) of employees/candidates/students, scores people on social behaviour, scrapes facial images, or categorises people by biometrics into sensitive traits. A comment or doc stating that such a feature is NOT implemented is evidence of compliance, not a violation. Mark non_compliant only if a prohibited practice is actually implemented or planned for production.",
+   "evidence_queries": [
+    "emotion recognition facial expression",
+    "social score citizen behaviour",
+    "biometric categorisation face embedding",
+    "scrape faces images",
+    "manipulative dark pattern nudge"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-RISK-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.6(2)",
+    "eu-ai-act/Art.6(3)",
+    "eu-ai-act/Art.6(4)",
+    "eu-ai-act/AnnexIII"
+   ],
+   "category": "risk_classification",
+   "title": "Risk classification documented",
+   "statement": "The provider documents the AI Act risk classification of the system with its rationale: the applicable Annex III area/point if high-risk, the Art. 6(3) assessment if an Annex III system is claimed not to be high-risk, or why the system is limited/minimal risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "risk tier stated in documentation",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(annex\\s+iii|high[- ]risk|limited[- ]risk|minimal[- ]risk)\\b.*(ai act|art(icle)?\\.?\\s*\\d|annex|use case|point)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a README section, ADR or compliance document that states the risk tier AND gives a reason (e.g. \"Annex III point 4(a) recruitment\", \"chatbot, transparency obligations under Art. 50\", \"spam filtering, no Annex III use case\"). A bare marketing claim (\"fully compliant\") is not a classification.",
+   "evidence_queries": [
+    "AI Act risk classification",
+    "high-risk Annex III",
+    "limited risk minimal risk",
+    "intended purpose"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-RISK-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(1)",
+    "eu-ai-act/Art.9(2)",
+    "eu-ai-act/Art.9(5)"
+   ],
+   "category": "other",
+   "title": "Risk management system documented",
+   "statement": "A risk management process is documented for the high-risk system: known and reasonably foreseeable risks to health, safety and fundamental rights are identified and evaluated, and targeted mitigation measures with residual-risk acceptance are recorded and kept up to date.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a risk assessment / risk register document exists",
+     "globs": [
+      "**/*risk-assessment*",
+      "**/*risk_assessment*",
+      "**/*risk-register*",
+      "**/*risk_register*",
+      "**/RISK*.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a risk register / risk assessment / model risk management document listing concrete risks (e.g. discrimination, automation bias, data drift), their likelihood/impact and mitigations. A single sentence like \"risks are low\" is not sufficient (partial at most).",
+   "evidence_queries": [
+    "risk assessment",
+    "risk register",
+    "foreseeable misuse",
+    "mitigation residual risk"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)"
+   ],
+   "category": "data_governance",
+   "title": "Training data documented (datasheet)",
+   "statement": "Training, validation and test data sets are documented: origin and collection process, original purpose for personal data, preparation steps (labelling, cleaning, enrichment), assumptions, and the availability/quantity/suitability of the data.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a datasheet / data card exists",
+     "globs": [
+      "**/DATASHEET*",
+      "**/datasheet*",
+      "**/DATA_CARD*",
+      "**/data_card*",
+      "**/data-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a datasheet / data card / training-data document. Code that loads a CSV is not documentation. Partial if only some of origin, preparation and splits are described.",
+   "evidence_queries": [
+    "datasheet training data",
+    "data collection origin",
+    "labelling cleaning preprocessing",
+    "train validation test split"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)",
+    "eu-ai-act/Art.10(4)"
+   ],
+   "category": "data_governance",
+   "title": "Bias examination and mitigation of data sets",
+   "statement": "The data sets have been examined for possible biases likely to lead to discrimination (including representativeness for the persons and setting the system is used on), and measures to detect, prevent and mitigate the identified biases are documented with results.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires an actual bias/fairness analysis with results (metrics per group, findings, mitigations). A plan (\"bias audit planned\"), a TODO, or merely excluding protected attributes from the features does NOT satisfy this requirement on its own (proxies may remain). Judge from documents and evaluation code/reports.",
+   "evidence_queries": [
+    "bias evaluation fairness",
+    "disparate impact demographic parity",
+    "protected attributes gender age",
+    "representativeness of data"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.11(1)",
+    "eu-ai-act/AnnexIV(1)",
+    "eu-ai-act/AnnexIV(2)"
+   ],
+   "category": "technical_documentation",
+   "title": "Technical documentation (Annex IV)",
+   "statement": "Technical documentation covering the Annex IV elements exists before deployment: general description and intended purpose, versions, how the system interacts with other software, development methods, design specifications and key design choices, system architecture, and validation/testing procedures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "technical documentation file exists",
+     "globs": [
+      "**/*technical-documentation*",
+      "**/*technical_documentation*",
+      "**/TECHNICAL_DOC*",
+      "**/annex-iv*",
+      "**/annex_iv*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a document (or set of docs) covers most Annex IV(1)-(2) elements. An architecture overview plus a model card without development/validation information is partial.",
+   "evidence_queries": [
+    "technical documentation",
+    "system architecture components",
+    "design choices rationale",
+    "validation and testing procedures"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/AnnexIV(3)",
+    "eu-ai-act/Art.11(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for the deployed model",
+   "statement": "A model card documents the deployed model: intended use and out-of-scope uses, version, training data summary, evaluation results, capabilities and known limitations.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md",
+      "**/model-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that a model card exists and covers intended use, limitations and evaluation results.",
+   "evidence_queries": [
+    "model card",
+    "intended use limitations",
+    "model version evaluation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-DOC-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(2)",
+    "eu-ai-act/Art.13(3)"
+   ],
+   "category": "transparency",
+   "title": "Instructions for use for deployers",
+   "statement": "Instructions for use are provided to deployers and contain at least: provider identity and contact, intended purpose, level of accuracy and its metrics, known limitations and foreseeable misuse risks, human oversight measures, and how to collect and interpret the logs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "instructions for use document exists",
+     "globs": [
+      "**/*instructions-for-use*",
+      "**/*instructions_for_use*",
+      "**/INSTRUCTIONS*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "instructions mention accuracy metrics",
+     "globs": [
+      "**/*instructions*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": "(accuracy|auc|precision|recall|f1)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if the instructions contain all the listed elements. If a guide exists but misses accuracy metrics, limitations or log interpretation, the status is partial. Sections marked TBD count as missing.",
+   "evidence_queries": [
+    "instructions for use",
+    "user guide deployer",
+    "provider contact",
+    "how to interpret the score"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(1)",
+    "eu-ai-act/Art.13(3)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "transparency",
+   "title": "Interpretable outputs for deployers",
+   "statement": "The system provides information that lets deployers interpret each output (e.g. main reasons, feature contributions, reason codes or confidence) rather than a bare score.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that returns explanations/reason codes alongside the score and shows them to the human reviewer. A global feature-importance chart in a notebook alone is partial.",
+   "evidence_queries": [
+    "explanation reasons",
+    "shap feature importance",
+    "reason codes",
+    "confidence score explanation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-TRA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(1)",
+    "eu-ai-act/Art.50(5)"
+   ],
+   "category": "transparency",
+   "title": "Disclosure of interaction with an AI system",
+   "statement": "Natural persons interacting directly with the AI system (e.g. a chatbot) are informed, clearly and at the latest at the first interaction, that they are interacting with an AI system.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for user-facing UI strings (React/HTML templates, chat greeting) that tell users they talk to an AI, shown at the start of the conversation. A statement buried in terms of service is not sufficient.",
+   "evidence_queries": [
+    "you are chatting with an AI",
+    "AI assistant disclosure banner",
+    "virtual assistant notice"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(2)"
+   ],
+   "category": "transparency",
+   "title": "Marking of AI-generated content",
+   "statement": "Synthetic text, image, audio or video generated by the system is marked as AI-generated in a machine-readable format (and labelled for the recipient where it is published or delivered).",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that adds an AI-generated flag/header/metadata or visible label to each generated message. A TODO or ticket reference to add labelling later means non_compliant. A disclosure that the user talks to an AI (Art. 50(1)) is a different obligation and does not mark the content.",
+   "evidence_queries": [
+    "AI-generated label",
+    "watermark content credential c2pa",
+    "response metadata generated"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-WRK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.26(7)",
+    "eu-ai-act/Art.26(11)"
+   ],
+   "category": "transparency",
+   "title": "Affected persons informed about high-risk AI use",
+   "statement": "Natural persons subject to decisions made or assisted by the high-risk AI system (candidates, applicants, workers) are informed that such a system is used on them.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "code"
+     ],
+     "pattern": "(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a candidate/applicant notice, privacy notice or e-mail template that tells the person an AI system is used to assess them. Recruiter-facing UI text does not inform the candidate.",
+   "evidence_queries": [
+    "candidate notice automated screening",
+    "applicant information AI used",
+    "privacy notice automated decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-REC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.12(1)",
+    "eu-ai-act/Art.12(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Automatic logging of AI decisions",
+   "statement": "The system automatically records an event for each decision/output over its lifetime, with timestamp, input reference, output, model version and (where applicable) the human reviewer, enabling traceability and post-market monitoring.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that writes a structured record for every prediction (custom journal/audit classes count). Commented-out logging calls, TODOs or debug prints do not count. Logging only errors is not decision logging.",
+   "evidence_queries": [
+    "audit log decision",
+    "log prediction model version",
+    "journal record decision",
+    "append-only event store"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-REC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.19(1)",
+    "eu-ai-act/Art.26(6)"
+   ],
+   "category": "record_keeping",
+   "title": "Logs retained for at least six months",
+   "statement": "Automatically generated decision logs are retained for a period appropriate to the intended purpose and of at least six months (>= 180 days).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(log|journal|audit)\\w*[\\s\\S]{0,120}?(retention_days|retention_in_days|retentiondays)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the effective retention of the decision/audit logs (config, Terraform log group, lifecycle rules). Compliant only if >= 180 days. If logs exist but retention is shorter or unbounded deletion is configured, non_compliant. If no logs exist at all, non_compliant.",
+   "evidence_queries": [
+    "log retention days",
+    "retention_in_days cloudwatch",
+    "decision log retention"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(1)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Human can override or disregard the AI output",
+   "statement": "Natural persons overseeing the system can decide not to use, disregard, override or reverse an individual output of the system, and the override is recorded.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(override|manual[_ ]review|human[_ ]review|reviewer)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented mechanism (API endpoint, UI action, workflow state) letting a human change the outcome. A flag set to False, a README promise without code, or an override limited to admins for model config does not count.",
+   "evidence_queries": [
+    "override decision reviewer",
+    "manual review",
+    "appeal contest decision",
+    "reverse outcome"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-HUM-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Stop / interrupt mechanism",
+   "statement": "Operators can interrupt the system (a 'stop' button, kill switch or similar procedure) so that it halts in a safe state, e.g. automated processing is suspended and cases fall back to manual handling.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config"
+     ],
+     "pattern": "(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept any implemented switch (feature flag, admin endpoint, config) that stops automated decisions and routes work to humans. Infrastructure scaling to zero without a documented procedure is partial.",
+   "evidence_queries": [
+    "kill switch",
+    "disable model feature flag",
+    "suspend automated processing",
+    "stop button halt"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)",
+    "eu-ai-act/Art.26(2)"
+   ],
+   "category": "human_oversight",
+   "title": "No adverse decision solely on the AI output",
+   "statement": "Decisions adverse to natural persons (e.g. rejection, decline) are not taken automatically on the basis of the AI output alone; a competent human reviews and confirms them, mitigating automation bias.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "auto[_-]?reject",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace the decision flow in code. If any adverse outcome is set without a human step (e.g. score below threshold -> rejected), it is non_compliant; if only a subset of cases gets human review (e.g. above an amount threshold), partial.",
+   "evidence_queries": [
+    "auto reject threshold",
+    "automatic decline",
+    "human confirmation required",
+    "final decision recruiter underwriter"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-ACC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(1)",
+    "eu-ai-act/Art.15(3)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Accuracy levels and metrics declared",
+   "statement": "The levels of accuracy and the relevant accuracy metrics (e.g. AUC, precision/recall, error rates) are declared in the documentation accompanying the system (instructions for use and/or model card).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\\n]{0,30}\\d\\.\\d+",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Metrics must be declared in documentation shipped with the system, with values. A training script that prints accuracy is not a declaration.",
+   "evidence_queries": [
+    "accuracy auc precision recall",
+    "evaluation results metrics",
+    "performance holdout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-ACC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(4)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Resilience to errors (fallback / fail-safe)",
+   "statement": "The system handles errors, faults and model unavailability safely (e.g. timeouts and exceptions lead to a fail-safe outcome such as routing to manual handling, never to an automatic adverse decision).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for explicit error handling around model inference with a safe fallback. Generic web framework error pages are not sufficient.",
+   "evidence_queries": [
+    "fallback manual queue",
+    "fail-safe error handling",
+    "model unavailable timeout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Input validation against malformed or adversarial inputs",
+   "statement": "Inputs to the model are validated (schema, types, ranges, size limits, file types) before inference to resist malformed or adversarial inputs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(BaseModel|Field\\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for schema validation (pydantic/zod/marshmallow), constraints and upload limits on the inference path. Reading raw request bodies directly into the model is non_compliant.",
+   "evidence_queries": [
+    "input validation schema",
+    "pydantic constraints",
+    "max file size content type"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Protection of model endpoints against unauthorised use",
+   "statement": "Inference and model-management endpoints are protected against unauthorised third parties (authentication and authorisation), so that the system's use, outputs or performance cannot be altered by exploiting vulnerabilities.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(Depends\\(\\s*(get_current|verify|require)\\w*|login_required|requires?_role|verify_token|jwt|oauth2)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Every inference and admin route must require authentication; admin/model routes need authorisation. Partial if some sensitive routes are unauthenticated.",
+   "evidence_queries": [
+    "authentication token",
+    "require role admin",
+    "oauth2 jwt api key"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-QMS-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.17(1)",
+    "eu-ai-act/Art.9(2)"
+   ],
+   "category": "other",
+   "title": "Quality management and post-market monitoring procedures",
+   "statement": "Documented procedures cover change management of the model/system, validation before release, post-market monitoring of performance in production (e.g. drift), and serious-incident reporting.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(post[- ]market monitoring|change management|quality management)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "incident",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if the repository documents change management, pre-release validation, production monitoring AND incident reporting; partial if only some are covered.",
+   "evidence_queries": [
+    "release process change management",
+    "post-market monitoring drift",
+    "incident reporting procedure",
+    "quality management"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-QMS-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(6)",
+    "eu-ai-act/Art.9(8)",
+    "eu-ai-act/Art.17(1)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Testing against predefined metrics before release",
+   "statement": "The system is tested before release against prior defined metrics and thresholds appropriate to its intended purpose (e.g. an automated quality gate failing the build below a minimum AUC).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": "assert\\w*\\s*\\(?.*(auc|accuracy|precision|recall|f1|gini)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Smoke tests that only check an HTTP 200 are not model validation; require assertions against metric thresholds on held-out data.",
+   "evidence_queries": [
+    "test model quality threshold",
+    "assert auc greater than",
+    "evaluation gate ci"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-LAW-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.6(1)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "other",
+   "title": "Lawful basis documented for each processing purpose",
+   "statement": "Each purpose for which personal data is processed has a documented lawful basis under Art. 6(1) (consent, contract, legal obligation, vital interests, public task or legitimate interests), and consent is collected and recorded where it is the basis relied on.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "config"
+     ],
+     "pattern": "(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a privacy notice, record of processing or DPIA naming the lawful basis per purpose. A README claim \"fully GDPR compliant\" is not evidence of a lawful basis.",
+   "evidence_queries": [
+    "lawful basis legal basis",
+    "legitimate interest",
+    "consent",
+    "Art. 6(1)"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-TRN-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "transparency",
+   "title": "Privacy notice provided to data subjects",
+   "statement": "Data subjects receive a privacy notice at collection stating the controller and contact details, purposes and lawful basis, recipients, retention period, and their rights (access, rectification, erasure, objection, complaint).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*privacy*",
+      "**/*PRIVACY*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(right to (erasure|access|object|rectification)|your rights)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if a notice covering controller, purposes, legal basis, retention and rights exists and is shown/linked to data subjects. Partial if key items (e.g. retention or rights) are missing.",
+   "evidence_queries": [
+    "privacy notice",
+    "your rights erasure access",
+    "data controller contact",
+    "how long we keep your data"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-RET-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.5(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "data_retention",
+   "title": "Storage limitation enforced",
+   "statement": "Personal data is kept no longer than necessary for its purpose: a retention period proportionate to the purpose is defined for each data category and enforced automatically (TTL, purge job, lifecycle rule).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check both that a retention period is defined AND enforced in code/IaC, and that it is proportionate (e.g. keeping raw support chats for years without justification is excessive; keeping data \"forever\" is non_compliant). Defined and enforced but disproportionate -> partial.",
+   "evidence_queries": [
+    "retention period days",
+    "purge job delete older than",
+    "lifecycle expiration ttl"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ERA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.17(1)"
+   ],
+   "category": "data_retention",
+   "title": "Right to erasure implemented",
+   "statement": "A mechanism exists to erase a data subject's personal data on request without undue delay (endpoint, admin job or documented procedure covering all stores, including derived data).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented deletion path for a single data subject. Automatic expiry of all data after N days is not an on-request erasure mechanism (partial at most).",
+   "evidence_queries": [
+    "delete user data erasure",
+    "right to be forgotten",
+    "data subject request"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ADM-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.22(1)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "human_oversight",
+   "title": "Safeguards for solely automated decisions",
+   "statement": "Decisions producing legal or similarly significant effects are not based solely on automated processing, or, where an Art. 22(2) exception applies, the data subject can obtain human intervention, express their point of view and contest the decision.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Compliant if no significant decision is fully automated, OR if automated decisions come with an implemented contest/appeal path leading to human review. Non_compliant if decisions are fully automated with no recourse.",
+   "evidence_queries": [
+    "contest decision appeal",
+    "human intervention review",
+    "automated rejection"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "GDPR-ADM-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(2)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "transparency",
+   "title": "Meaningful information about the logic involved",
+   "statement": "Data subjects are informed of the existence of automated decision-making/profiling and receive meaningful information about the logic involved and its envisaged consequences.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an applicant/candidate-facing explanation of the main factors used and the consequences. Internal model documentation does not inform data subjects.",
+   "evidence_queries": [
+    "logic involved automated decision",
+    "how the score is calculated",
+    "factors that influence the decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-PBD-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.25(1)",
+    "gdpr/Art.25(2)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "data_governance",
+   "title": "Data minimisation and privacy by design",
+   "statement": "Only personal data necessary for the purpose is collected and used (no unnecessary sensitive or protected attributes as model features), and privacy-by-design measures such as pseudonymisation or redaction are applied before processing or sharing with third parties.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect model features and data flows. Using gender/age/nationality as features, or sending raw personal data to a third-party LLM without redaction, is non_compliant. Look for explicit redaction/pseudonymisation code.",
+   "evidence_queries": [
+    "pseudonymisation redaction",
+    "features gender age nationality",
+    "data minimisation drop columns",
+    "mask PII before sending"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)"
+   ],
+   "category": "security",
+   "title": "Encryption of personal data at rest and in transit",
+   "statement": "Personal data is encrypted at rest (databases, object storage, volumes, backups) and in transit (TLS) as appropriate to the risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "encryption at rest configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms_key|sse_algorithm|server_side_encryption|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true|aws:kms)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "TLS configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https|ssl_certificate|cert-manager)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at-rest and in-transit encryption must be evidenced for all stores holding personal data. Only one of the two -> partial. Self-signed dev certificates in docker-compose do not count for production.",
+   "evidence_queries": [
+    "kms encryption at rest",
+    "storage_encrypted",
+    "tls certificate https ingress",
+    "server_side_encryption"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)",
+    "gdpr/Art.32(4)"
+   ],
+   "category": "security",
+   "title": "Access control to personal data",
+   "statement": "Access to personal data and to administrative functions is restricted to authenticated and authorised personnel (authentication, role-based authorisation, least privilege).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that endpoints exposing personal data require authentication and that admin/export routes check roles. Unauthenticated upload/listing endpoints are non_compliant.",
+   "evidence_queries": [
+    "authentication middleware",
+    "role based access admin",
+    "network policy least privilege"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ROPA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.30(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Record of processing activities",
+   "statement": "A record of processing activities is maintained for the system listing purposes, categories of data subjects and personal data, recipients, transfers, retention limits and security measures.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*ropa*",
+      "**/*ROPA*",
+      "**/*processing-record*",
+      "**/*processing_record*",
+      "**/*records-of-processing*",
+      "**/*processing-activities*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a ROPA entry in the repo (markdown/yaml). A DPIA or privacy notice alone is not a ROPA but may be partial if it contains the Art. 30(1) items.",
+   "evidence_queries": [
+    "record of processing activities",
+    "ROPA",
+    "categories of data subjects recipients"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-DPIA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.35(1)",
+    "gdpr/Art.35(3)",
+    "gdpr/Art.35(7)"
+   ],
+   "category": "technical_documentation",
+   "title": "Data protection impact assessment",
+   "statement": "A DPIA has been carried out for the processing (systematic and extensive evaluation of personal aspects based on automated processing) and contains a description of the processing, necessity and proportionality assessment, risk assessment and mitigation measures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*dpia*",
+      "**/*DPIA*",
+      "**/*impact-assessment*",
+      "**/*impact_assessment*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a DPIA document with the Art. 35(7) elements exists.",
+   "evidence_queries": [
+    "DPIA data protection impact assessment",
+    "necessity proportionality",
+    "risks to rights and freedoms"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-01",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-1(1)",
+    "acme-rai/POL-1(2)"
+   ],
+   "category": "transparency",
+   "title": "AI use disclosed in user interfaces",
+   "statement": "Every interface where a person interacts with the AI system or sees an AI-produced score, ranking, classification or text visibly discloses AI involvement; decision-support UIs state that the output is an AI recommendation and who decides.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect UI components, e-mail templates and notification texts. Neutral names like \"Smart Score\" do not disclose AI involvement.",
+   "evidence_queries": [
+    "AI-generated recommendation label",
+    "powered by AI disclosure",
+    "final decision made by",
+    "classified automatically"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-02",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-2(1)",
+    "acme-rai/POL-2(2)"
+   ],
+   "category": "transparency",
+   "title": "AI-generated content labelled",
+   "statement": "AI-generated text/media delivered to customers carries a visible \"AI-generated\" label and, where feasible, a machine-readable marker.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|x-ai-generated)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A banner saying the user chats with an AI is POL-1, not POL-2. Look for per-message labelling or metadata. TODO comments do not count.",
+   "evidence_queries": [
+    "AI-generated badge",
+    "X-AI-Generated header",
+    "generated content label"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-03",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-3(1)",
+    "acme-rai/POL-3(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Prediction logging with 180-day retention",
+   "statement": "Every production prediction/response is logged with timestamp, correlation id, model version, input reference and output, in tamper-resistant storage retained for at least 180 days.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "model_version",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both parts are needed: structured per-prediction logging AND >= 180 days retention. Logging with shorter retention -> partial. No logging -> non_compliant.",
+   "evidence_queries": [
+    "prediction log model version request id",
+    "log retention days",
+    "append-only audit"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-04",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-4(1)",
+    "acme-rai/POL-4(2)"
+   ],
+   "category": "data_retention",
+   "title": "Raw personal-data inputs deleted within 30 days",
+   "statement": "Raw inputs containing personal data (documents, messages, transcripts, payloads) are automatically deleted or anonymised within 30 days, unless a documented legal retention obligation applies.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the retention of each raw-input store. Any raw store kept > 30 days without a documented legal obligation is non_compliant; no automated deletion at all is non_compliant.",
+   "evidence_queries": [
+    "raw input retention 30 days",
+    "transcript retention",
+    "purge uploaded documents",
+    "lifecycle expiration"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-05",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-5(1)",
+    "acme-rai/POL-5(2)"
+   ],
+   "category": "security",
+   "title": "Encryption at rest and TLS in transit",
+   "statement": "Storage of personal data, model artefacts and logs is encrypted at rest, and all service traffic uses TLS 1.2+.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at rest and in transit must be shown; one of the two -> partial.",
+   "evidence_queries": [
+    "kms encrypted storage",
+    "tls ingress certificate",
+    "min tls version"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-06",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-6(1)",
+    "acme-rai/POL-6(2)"
+   ],
+   "category": "security",
+   "title": "Access control on model endpoints",
+   "statement": "Inference and model-management endpoints require authentication (or are declared public and rate-limited), and administrative endpoints enforce role-based authorisation.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Enumerate routes. Any undeclared unauthenticated inference/upload route, or an admin route without a role check, is non_compliant.",
+   "evidence_queries": [
+    "authentication required endpoint",
+    "admin role check",
+    "public endpoints declared"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-07",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-7(1)",
+    "acme-rai/POL-7(2)"
+   ],
+   "category": "human_oversight",
+   "title": "Human approval of adverse decisions",
+   "statement": "Adverse decisions about natural persons (rejection, decline, closure) are approved by a human reviewer who sees the AI output and reasons and can change the outcome, and the approval is logged.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(auto[_-]?reject|auto[_-]?decline)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace adverse outcomes in code. Human approval for only part of the cases (e.g. above an amount threshold) is partial. Automatic rejection is non_compliant.",
+   "evidence_queries": [
+    "reviewer approval reject",
+    "auto decline",
+    "human confirmation required"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "ACME-08",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-8(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for every deployed model",
+   "statement": "Each deployed model (including third-party models) has a model card covering intended and out-of-scope use, version, training data summary, evaluation metrics, limitations and owner.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check presence and completeness of the model card(s) against the listed fields.",
+   "evidence_queries": [
+    "model card",
+    "intended use out of scope",
+    "owner team limitations"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-09",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-9(1)"
+   ],
+   "category": "security",
+   "title": "Rate limiting on AI endpoints",
+   "statement": "AI endpoints reachable from untrusted networks enforce per-client rate limiting configured in code or configuration.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config",
+      "iac"
+     ],
+     "pattern": "(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for rate-limit middleware (express-rate-limit, slowapi), gateway throttling or ingress annotations. Public endpoints without it are non_compliant.",
+   "evidence_queries": [
+    "rate limit",
+    "throttling",
+    "requests per minute"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-10",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-10(1)",
+    "acme-rai/POL-10(2)"
+   ],
+   "category": "other",
+   "title": "AI incident response procedure",
+   "statement": "The repository contains an AI incident response procedure (detection, escalation, reporting) that requires reporting serious incidents to the AI Governance Board within 24 hours.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(ai[- ]incidents?@|incident (response|reporting))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A generic ops runbook without AI incidents or without the 24h governance reporting is partial.",
+   "evidence_queries": [
+    "incident response",
+    "escalation on-call",
+    "ai-incidents report 24 hours"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-11",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-11(1)"
+   ],
+   "category": "data_governance",
+   "title": "Bias and fairness evaluation before release",
+   "statement": "A documented bias and fairness evaluation (metrics and results per protected group, mitigations) exists for the released model and is referenced from the model card.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires actual results. \"Planned\", TODOs or excluding protected features only is non_compliant.",
+   "evidence_queries": [
+    "fairness evaluation report",
+    "disparate impact ratio",
+    "bias audit results per group"
+   ],
+   "severity": "high"
+  }
+ ],
+ "verdicts": [
+  {
+   "requirement_id": "AIA-RISK-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The evidence shows a customer-support chatbot that answers questions on orders, deliveries, invoices and tariffs using retrieved help-centre extracts (E1, E3, E6). The server code in E6 and E7 only does retrieval, an LLM call, transcript storage and handover. It has no emotion inference, social scoring, facial image scraping, biometric categorisation or profiling. The system prompt restricts the bot to those topics (E6), and the README says it takes no decisions about people (E3). The chat widget discloses that the user is talking to an AI (E5). Nothing in the excerpts shows manipulative techniques or exploitation of vulnerabilities. The excerpts are windows of files, so coverage is not exhaustive, but no prohibited practice is implemented or planned.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.60] no emotion recognition / social scoring / face scraping code: confirmed absent",
+   "evidence_ids": [
+    "98aa525d2b09",
+    "4249cd02ef44",
+    "980f8c66ef17",
+    "f8b95dcac447",
+    "6315f29c1ab2"
+   ],
+   "gaps": [],
+   "remediation": "Optionally add an explicit statement in the README or a risk assessment document that Art. 5(1) practices are not implemented, for example no emotion inference on chat text and no customer scoring.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-02",
+   "status": "compliant",
+   "confidence": 0.78,
+   "rationale": "Rule engine and LLM judge disagree; the LLM judge is markedly more confident (0.88 vs 0.60) and is followed.\nLLM judge (compliant): The README's \"AI Act position\" section (E1) states the risk tier (limited-risk). It gives a rationale: the system is a chatbot that interacts directly with customers, takes no decisions about people, and is in no Annex III area. It also links the tier to the Art. 50 transparency obligations. This matches the guidance's accepted form. The deterministic regex missed it because the check is shallow. The model card (E2) supports the scope with its intended use and out-of-scope list. The open TODO about Art. 50(2) labelling (E3) concerns a different requirement and doesn't affect whether the classification is documented.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] risk tier stated in documentation: no match found",
+   "evidence_ids": [
+    "4249cd02ef44",
+    "98aa525d2b09"
+   ],
+   "gaps": [
+    "risk tier stated in documentation"
+   ],
+   "remediation": "Optional: move the classification into a dedicated compliance document or ADR with a review date. Note that the Art. 50(2) AI-generated content labelling TODO (SUP-88) is still open.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-RISK-03",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DATA-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-DOC-03",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-02",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "The ChatWidget header (E1) always shows the disclosure \"You are chatting with an AI assistant\" in the widget UI. It is visible from the first render, before the user sends anything, so it is clear and given at or before the first interaction. It is not buried in terms of service. The privacy notice (E3) repeats it as a supplement. The TODO in E4 is about labelling AI-generated outputs (Art. 50(2)), which is a different obligation from this requirement.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)/ present in code: found at web/src/components/ChatWidget.tsx:26",
+   "evidence_ids": [
+    "980f8c66ef17",
+    "8c76f0027e72"
+   ],
+   "gaps": [],
+   "remediation": "No change needed for this requirement. Optionally check that the disclosure meets accessibility requirements (for example aria-live or role attributes and sufficient contrast).",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-03",
+   "status": "non_compliant",
+   "confidence": 0.98,
+   "rationale": "The generated replies are not marked as AI-generated in a machine-readable form. E1 returns the reply text, model, handover and usage with no AI-generated flag, header or metadata. It also carries a TODO (SUP-88) to add labelling later, which does not count. The widget (E4) renders bot messages as plain text with no per-message label. Its general \"You are chatting with an AI assistant\" banner is an Art. 50(1) disclosure, not content marking. The privacy notice (E3) and README (E2) only disclose AI use.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.75] pattern /(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)/ present in code: only commented-out / TODO / disabled matches (ignored: server/src/llm.ts:28 [TODO])",
+   "evidence_ids": [
+    "f8b95dcac447",
+    "980f8c66ef17",
+    "8c76f0027e72",
+    "4249cd02ef44"
+   ],
+   "gaps": [
+    "No machine-readable AI-generated marker (flag, header or metadata) on generated replies",
+    "No per-message visible label in the chat widget",
+    "Labelling is deferred in a TODO (SUP-88)",
+    "pattern /(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)/ present in code"
+   ],
+   "remediation": "In server/src/llm.ts and the /api/chat response, add a field such as `ai_generated: true` plus the model, and send an `X-AI-Generated: true` header. Store the flag with each transcript message. In web/src/components/ChatWidget.tsx, render a visible \"AI-generated\" badge on every bot message. Remove the TODO once this is done, and add tests that check the marker is present.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-WRK-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-REC-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-HUM-03",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-ACC-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-SEC-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-QMS-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-LAW-01",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The privacy notice [E1] names a lawful basis for each processing purpose: support requests rely on Art. 6(1)(b) contract, and answer-quality improvement and complaint handling rely on Art. 6(1)(f) legitimate interest. The RoPA [E2] lists the same purposes (customer support, quality assurance, complaint handling), so every purpose is covered by a documented basis. No purpose relies on consent, so no consent collection or recording is needed.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.55] pattern /(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))/ present in doc, config: found at docs/privacy.md:5, docs/privacy.md:6, docs/privacy.md:7 - documentation only (claim, not implementation)",
+   "evidence_ids": [
+    "8c76f0027e72",
+    "ce80894f927b"
+   ],
+   "gaps": [
+    "The RoPA [E2] does not repeat the lawful basis per purpose (it is only in the privacy notice).",
+    "No legitimate-interest assessment is visible for Art. 6(1)(f)."
+   ],
+   "remediation": "Add a lawful basis column per purpose to docs/ropa.md (PA-CC-07). Optionally add a short legitimate interests assessment for the quality assurance and complaint handling purposes.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-TRN-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "The privacy notice in docs/privacy.md (E1) names the controller with address and contact (privacy@acme-energy.example, DPO). It states purposes and legal bases (Art. 6(1)(b) and (f)), recipients (OpenAI as processor, customer-care team), a 2-year retention period, and the rights to access, rectification, erasure, restriction, objection, portability and complaint. The chat widget links to the notice at /privacy#support-chat, next to the AI disclosure (E4), so it is shown to data subjects at the point of collection.\nRule engine (compliant): 2/2 deterministic checks passed.\n- [PASS 0.70] a file matching **/*privacy*, **/*PRIVACY* exists: found docs/privacy.md\n- [PASS 0.65] pattern /(right to (erasure|access|object|rectification)|your rights)/ present in doc: found at docs/privacy.md:16",
+   "evidence_ids": [
+    "8c76f0027e72",
+    "980f8c66ef17"
+   ],
+   "gaps": [],
+   "remediation": "No action needed for the statement. Optionally, confirm that /privacy#support-chat actually serves the content of docs/privacy.md.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-RET-01",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "Retention is defined and enforced for the main personal data categories. Transcripts are set to 730 days in config/app.yaml (E3), with a purpose of QA and complaint handling. The ROPA records the same limit (E6). E1 shows a nightly purge job (startRetentionJob) that deletes transcript_messages older than the configured number of days. Logs have a 90-day retention in Loki (E3, E9, E6). A 2-year period for QA and dispute handling is a justified, bounded period. The excerpt of the purge job is cut off, but the deletion query and its comment make its intent clear.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]/ present in config, iac, code: found at config/app.yaml:13, config/app.yaml:9, infra/terraform/db.tf:16, server/src/transcripts.ts:33",
+   "evidence_ids": [
+    "fabbf0d24190",
+    "3b4caa9bfa2d",
+    "ce80894f927b",
+    "d318d366bfad",
+    "59c3e78b43fc"
+   ],
+   "gaps": [
+    "The purge job excerpt is truncated, so scheduling and wiring (startRetentionJob called with transcript_days) aren't visible",
+    "chat_sessions rows are not shown to be purged by the retention job",
+    "No visible enforcement of the 90-day log retention in Loki config"
+   ],
+   "remediation": "Confirm startRetentionJob(cfg.retention.transcript_days) is called at startup and also purges orphaned chat_sessions. Add the Loki retention limit (e.g. retention_period: 90d) as IaC or config. Record the justification for the 2-year period in the ROPA or a retention policy.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ERA-01",
+   "status": "compliant",
+   "confidence": 0.77,
+   "rationale": "E1 implements `deleteCustomerData(customerId)`. It deletes one data subject's rows from `transcript_messages` and `chat_sessions`, which are the stores holding the personal data. E3 imports it into the API, and E5 says erasure is restricted to the `support-admin` role. This shows an on-request path that is separate from the nightly retention purge. The only other stores visible are LLM-call logs, which hold session IDs and token counts but no message text (E12), and 7-day DB backups (E13). The provider uses zero data retention (E11). No separate derived-data store is visible.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*/ present in code: found at server/src/transcripts.ts:26",
+   "evidence_ids": [
+    "fabbf0d24190",
+    "6315f29c1ab2",
+    "9c12fa822c41",
+    "8c76f0027e72",
+    "d318d366bfad",
+    "59c3e78b43fc",
+    "d9f8b531d11b"
+   ],
+   "gaps": [
+    "The erase route in index.ts is not visible; E3 is truncated, so it is inferred from the import and E5",
+    "Erasure is keyed on customerId, so anonymous sessions (customerId null) are not erased on request",
+    "No documented erasure procedure or SLA covering logs (session IDs) and backups"
+   ],
+   "remediation": "Add a documented erasure procedure, for example docs/erasure.md. It should cover the admin DELETE endpoint, the response time, and how session-keyed logs and backups are handled. Also support erasure by sessionId for anonymous chats. Add a test that the endpoint removes all of a customer's rows.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ADM-02",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-PBD-01",
+   "status": "non_compliant",
+   "confidence": 0.95,
+   "rationale": "The model features are not a problem: no gender, age or nationality attributes are used, and the data sent to the model is chat text plus history. The privacy-by-design element fails, though. ADR 0001 [E4] states that customer messages are sent to OpenAI \"as typed\" and that redaction of contact details was evaluated but postponed. The code confirms this. server/src/llm.ts [E6] passes the raw message and history to the third-party LLM with no redaction or pseudonymisation. transcripts.ts [E7] stores full message text that may include e-mail, phone and address. The ROPA [E2] confirms free text may contain contact and contract data. The processor arrangement, EU residency, zero data retention and encryption [E2, E4, E8] are good safeguards, but they are not redaction or pseudonymisation before sharing. The guidance names sending raw personal data to a third-party LLM without redaction as non_compliant.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] pattern /(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])/ present in code: no match found",
+   "evidence_ids": [
+    "d9f8b531d11b",
+    "f8b95dcac447",
+    "fabbf0d24190",
+    "ce80894f927b",
+    "6315f29c1ab2"
+   ],
+   "gaps": [
+    "No redaction or pseudonymisation of contact and contract data before sending to OpenAI",
+    "Raw free-text messages are stored in transcripts without minimisation",
+    "Redaction was evaluated and explicitly postponed (ADR 0001)",
+    "No PII detection or masking step in the request pipeline",
+    "pattern /(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])/ present in code"
+   ],
+   "remediation": "Add a PII redaction step in server/src/llm.ts, and before appendMessage in transcripts.ts. It should replace e-mail addresses, phone numbers and street addresses with placeholders. Pseudonymise the customer id, and re-insert values only where needed (for example, order lookups made server-side). Evaluate the effect on delivery-question quality using the existing 600-conversation evaluation. Keep the delivery-relevant fields available through structured lookups instead of raw text. Update ADR 0001, the ROPA and a DPIA to document the measure, and add tests for the redaction.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-01",
+   "status": "compliant",
+   "confidence": 0.91,
+   "rationale": "At rest: the only personal-data store shown is the RDS Postgres transcript DB, with storage_encrypted=true and a KMS key with rotation (E1). In transit: the ingress has TLS with a production Let's Encrypt issuer and an SSL redirect (E2). The DB connection uses TLS with certificate verification (E8), and the parameter group is named \"force-ssl\" (E1). The ROPA lists TLS and KMS-encrypted RDS (E3), but it is only a claim and I did not rely on it. No other stores such as object storage or volumes appear in the excerpts.\nRule engine (compliant): 2/2 deterministic checks passed.\n- [PASS 0.81] encryption at rest configured: found at infra/terraform/db.tf:1, infra/terraform/db.tf:12, infra/terraform/db.tf:13\n- [PASS 0.81] TLS configured: found at infra/k8s/ingress.yaml:11, infra/k8s/ingress.yaml:6, infra/k8s/ingress.yaml:9",
+   "evidence_ids": [
+    "59c3e78b43fc",
+    "560760cbc8e9",
+    "fabbf0d24190",
+    "ce80894f927b"
+   ],
+   "gaps": [
+    "Backup encryption is not explicitly shown. RDS backups inherit instance encryption, so this is a minor point.",
+    "The force-ssl parameter group contents are not visible.",
+    "TLS for the LLM provider call is not shown."
+   ],
+   "remediation": "Add the parameter group definition with rds.force_ssl=1 to the Terraform. Document that backups and snapshots are encrypted. Confirm that the OpenAI API calls and any other personal-data stores use TLS and encryption at rest.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-SEC-02",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "The chat endpoint requires a signed session token (sessionAuth, which verifies a JWT and returns 401 otherwise) [E1][E2]. The admin transcript export route uses requireAdmin, which verifies an RS256 SSO token and checks for the `support-admin` role, returning 401 or 403 otherwise [E1][E2]. The role is a dedicated one, so access is limited to the staff who need it. The DB is private and encrypted [E10], and the RoPA lists admin RBAC [E3]. The excerpt of index.ts is cut off, so the erasure route is not visible. The comment in auth.ts says erasure requires admin, and nothing shows otherwise.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)/ present in code: found at server/src/auth.ts:19, server/src/index.ts:33, server/src/index.ts:37, server/src/index.ts:7",
+   "evidence_ids": [
+    "9c12fa822c41",
+    "6315f29c1ab2",
+    "ce80894f927b",
+    "59c3e78b43fc"
+   ],
+   "gaps": [
+    "Erasure route not visible in the excerpt, so its requireAdmin protection is unconfirmed",
+    "Only a single admin role, with no finer-grained least-privilege roles evident"
+   ],
+   "remediation": "Confirm that the erasure route (deleteCustomerData) is guarded by requireAdmin. Consider adding audit logging of admin access and finer-grained roles, such as separate read and erase roles.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-ROPA-01",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "E1 (docs/ropa.md) is a ROPA entry for SupportBot. It lists the purposes, data subjects, personal data categories, recipients (customer-care team and OpenAI as processor), transfers (none outside the EEA), erasure time limits (transcripts 2 years, logs 90 days) and security measures. These match the statement's elements. The retention limits are consistent with config/app.yaml (E9), and the security measures are consistent with the Terraform (E10). The controller and DPO contact are also present.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.70] a file matching **/*ropa*, **/*ROPA*, **/*processing-record*, **/*processing_record*, **/*records-of-processing*, **/*processing-activities* exists: found docs/ropa.md",
+   "evidence_ids": [
+    "ce80894f927b",
+    "3b4caa9bfa2d",
+    "59c3e78b43fc"
+   ],
+   "gaps": [],
+   "remediation": "Optional: keep the ROPA in sync with config changes. For example, note the 7-day RDS backup retention, and state the legal basis and the controller's postal contact details.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "GDPR-DPIA-01",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "The only interface in the evidence is the support chat widget. E1 shows a visible, always-rendered header disclosure (\"You are chatting with an AI assistant...\") that appears before the first interaction and isn't hidden in a tooltip or the terms. E3 and E4 support this. The TODO in E2 about labelling individual replies is a plan, not evidence. The statement only requires visible disclosure of AI involvement on the interface, and the header covers that. The chatbot isn't a decision-support UI (E4: no decisions about people), so the \"AI recommendation / who decides\" element doesn't apply.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))/ present in code: found at web/src/components/ChatWidget.tsx:26 (ignored: server/src/llm.ts:28 [TODO])",
+   "evidence_ids": [
+    "980f8c66ef17",
+    "8c76f0027e72",
+    "4249cd02ef44",
+    "f8b95dcac447"
+   ],
+   "gaps": [],
+   "remediation": "Optional: finish SUP-88 by adding a per-message AI badge to bot replies. Also make sure any e-mail or notification templates that carry AI-generated text include the same disclosure.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-02",
+   "status": "non_compliant",
+   "confidence": 0.95,
+   "rationale": "Nothing in the excerpts labels individual AI replies as AI-generated. The server only has a TODO to add a label (E1), which doesn't count. The chat widget renders bot messages as plain text with no per-message badge (E2). Its header banner says the user is chatting with an AI, but that is a POL-1 disclosure, not a POL-2 content label. The Reply type and logs carry no machine-readable marker such as a header or metadata field (E1, E8, E10).\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.75] pattern /(ai[-_ ]generated|x-ai-generated)/ present in code: only commented-out / TODO / disabled matches (ignored: server/src/llm.ts:28 [TODO])",
+   "evidence_ids": [
+    "f8b95dcac447",
+    "980f8c66ef17"
+   ],
+   "gaps": [
+    "No visible per-message 'AI-generated' label on bot replies",
+    "No machine-readable marker (response header or metadata field) on generated content",
+    "Labelling is only a TODO (SUP-88)",
+    "pattern /(ai[-_ ]generated|x-ai-generated)/ present in code"
+   ],
+   "remediation": "In web/src/components/ChatWidget.tsx, render an 'AI-generated' badge next to every bot message (including the initial greeting if it counts as generated content). In server/src/llm.ts and the /api/chat handler, add a field such as `aiGenerated: true` to the Reply and the JSON response, and set a header such as `X-AI-Generated: true`. Add the label to any AI-generated e-mails or other media. Then remove the TODO and add a test that checks the label and marker.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-03",
+   "status": "partial",
+   "confidence": 0.9,
+   "rationale": "Structured per-prediction logging exists (E1, E3, E2), with timestamp (pino time), model_version, and a session id. However, retention is set to 90 days in config/app.yaml (E5), below the required 180 days. The log entry does not contain the output or an input reference (only token counts and latency). There is no correlation id beyond sessionId. Nothing evidences tamper-resistant or append-only storage. The transcripts in Postgres (E8) hold content, but they are mutable and deletable, and they are not the prediction log.\nRule engine (partial): 1/2 deterministic checks passed.\n- [PASS 0.65] pattern /model_version/ present in code: found at server/src/logging.ts:11\n- [FAIL 0.60] pattern /(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b/ present in config, iac: no match found",
+   "evidence_ids": [
+    "d318d366bfad",
+    "6355ef659509",
+    "6315f29c1ab2",
+    "3b4caa9bfa2d",
+    "fabbf0d24190"
+   ],
+   "gaps": [
+    "Log retention is 90 days, below the 180-day minimum, and no waiver is evidenced",
+    "Log entries do not include the model output or an input reference (hash or record id)",
+    "No per-request correlation id, only sessionId",
+    "No tamper-resistant or append-only storage evidenced for logs (Loki config has no immutability)",
+    "Reviewer identity and action are not logged when a human handles a handover",
+    "pattern /(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b/ present in config, iac"
+   ],
+   "remediation": "Set logging.retention_days to at least 180 in config/app.yaml and in the Loki retention config. Extend logLlmCall to record a request/correlation id, an input hash or message id, and the output (or a reference to the transcript message id). Ship the logs to append-only or WORM storage, for example an S3 bucket with Object Lock, and document this. Log the reviewer identity and action for handovers.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-04",
+   "status": "non_compliant",
+   "confidence": 0.98,
+   "rationale": "Raw chat transcripts containing personal data are stored in transcript_messages (E1). They are retained for 730 days (2 years) according to config/app.yaml (E5), the RoPA (E3) and the privacy notice (E7). That is far more than 30 days. An automated nightly purge exists (E1), but it runs on the 2-year period. The justification given is QA and complaint handling, not a documented legal retention obligation. The RoPA lists no legal basis for retention beyond 30 days. Application logs are kept for 90 days (E5), which also exceeds the limit, though the logs shown (E6, E12) carry session ids rather than message content.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] pattern /(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b/ present in config, iac, code: no match found",
+   "evidence_ids": [
+    "fabbf0d24190",
+    "ce80894f927b",
+    "3b4caa9bfa2d",
+    "8c76f0027e72"
+   ],
+   "gaps": [
+    "Transcript retention is 730 days, above the 30-day limit",
+    "No documented legal retention obligation justifies the 2-year retention (QA and complaints are not legal obligations)",
+    "Automated purge is configured for 730 days, not 30 days or less",
+    "No anonymisation of transcripts before the 30-day limit",
+    "pattern /(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b/ present in config, iac, code"
+   ],
+   "remediation": "Set retention.transcript_days to 30 or less in config/app.yaml, and make startRetentionJob use that value. Alternatively, anonymise or redact personal data in transcripts at 30 days and keep only the anonymised data for QA. Update docs/ropa.md (\"Erasure time limits\") and docs/privacy.md to match. If a real legal retention duty exists, document it with its legal basis in the RoPA or a retention schedule. Also review the 90-day log retention in case logs ever hold raw message content.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-05",
+   "status": "partial",
+   "confidence": 0.72,
+   "rationale": "The transcripts RDS database (personal data) is encrypted at rest with a customer-managed KMS key and has a force-SSL parameter group (E2). The public ingress uses TLS with cert-manager and an ssl-redirect (E1). The ROPA lists TLS and KMS-encrypted RDS, but that is only a claim (E3). The statement also covers model artefacts and logs. The logs ship to Loki (E10), and nothing shows that Loki storage or the model artefact storage is encrypted. TLS is only shown at the ingress edge. Nothing shows TLS between internal services, for example from the ingress to the supportbot service on port 8080, from the app to Loki, or for the OpenAI calls.\nRule engine (compliant): 2/2 deterministic checks passed.\n- [PASS 0.81] pattern /(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)/ present in iac, config: found at infra/terraform/db.tf:1, infra/terraform/db.tf:12, infra/terraform/db.tf:13\n- [PASS 0.73] pattern /(tls|https)/ present in iac, config: found at infra/k8s/ingress.yaml:11, infra/k8s/ingress.yaml:9",
+   "evidence_ids": [
+    "560760cbc8e9",
+    "59c3e78b43fc",
+    "ce80894f927b",
+    "d318d366bfad"
+   ],
+   "gaps": [
+    "No evidence that log storage (Loki) is encrypted at rest",
+    "No evidence that model artefact storage is encrypted at rest",
+    "No evidence of TLS for internal service-to-service traffic (ingress to backend on 8080, app to Loki)",
+    "No TLS minimum version (1.2+) is configured or shown"
+   ],
+   "remediation": "Add IaC or config showing that Loki and log storage (for example S3 with SSE-KMS, or encrypted PVCs) and any model artefact storage are encrypted at rest with KMS. Enforce TLS 1.2+ on the ingress, for example with the nginx ssl-protocols annotation. Enable TLS or mTLS for internal traffic, for example with a service mesh or backend-protocol HTTPS. Document the TLS requirement for the OpenAI and Loki connections.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-06",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "The inference route POST /api/chat is declared public in config/app.yaml (E3). It is rate-limited with express-rate-limit at 20 per minute (E2, E3), and it also requires a signed session token via sessionAuth (E1, E2). The admin transcript export route uses requireAdmin, which verifies an SSO RS256 token and returns 403 unless the `support-admin` role is present (E1, E2). The ingress exposes only /api/chat (E4). No unauthenticated upload or other admin route is visible; the E2 excerpt is cut off, so the erasure route can't be seen.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)/ present in code: found at server/src/auth.ts:19, server/src/index.ts:33, server/src/index.ts:37, server/src/index.ts:7",
+   "evidence_ids": [
+    "9c12fa822c41",
+    "6315f29c1ab2",
+    "3b4caa9bfa2d",
+    "560760cbc8e9"
+   ],
+   "gaps": [],
+   "remediation": "No action required. Confirm the erasure endpoint, which is not visible in the excerpt, is also protected by requireAdmin.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-07",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-08",
+   "status": "compliant",
+   "confidence": 0.75,
+   "rationale": "MODEL_CARD.md [E1] covers the SupportBot model, which is a third-party model (OpenAI gpt-4o-mini). It gives the provider and model, the owner (Customer Care Engineering), intended use, out-of-scope uses, a product-specific evaluation with metrics (600 labelled conversations), and limitations. The source clause says a third-party card needs the provider, model version and product-specific evaluation, so the missing training data summary is acceptable for a hosted model. The card names the model as `gpt-4o-mini`, pinned via `LLM_MODEL`. It does not give the exact snapshot, which appears only in the logs [E6]. This is a minor imperfection.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.70] a file matching **/MODEL_CARD*, **/model_card*, **/*.modelcard.md exists: found MODEL_CARD.md",
+   "evidence_ids": [
+    "98aa525d2b09",
+    "6355ef659509",
+    "3b4caa9bfa2d"
+   ],
+   "gaps": [
+    "Model version is given only as the alias gpt-4o-mini, not the dated snapshot (gpt-4o-mini-2024-07-18) seen in logs",
+    "No explicit training data summary, such as a pointer to provider documentation, and no note that the model is not fine-tuned"
+   ],
+   "remediation": "In MODEL_CARD.md, add the exact model snapshot (e.g. gpt-4o-mini-2024-07-18). Pin that snapshot in config/app.yaml and server/src/llm.ts. Add a short training data section that links to OpenAI's model documentation and states that no fine-tuning is used, as in ADR 0001.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-09",
+   "status": "compliant",
+   "confidence": 0.97,
+   "rationale": "The only public AI endpoint, /api/chat (declared in E1), is protected by an express-rate-limit middleware in E2. It limits each client per minute, keyed by session ID with an IP fallback. The limit value comes from configuration (E1 rate_limit.chat_per_minute: 20, loaded via cfg). The dependency is declared in E3. The log in E8 shows the limiter rejecting a request (\"rate limit exceeded\"). The admin endpoint is not an AI endpoint, and it requires SSO authentication (E4).\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)/ present in code, config, iac: found at config/app.yaml:7, package.json:7, server/src/index.ts:16, server/src/index.ts:2",
+   "evidence_ids": [
+    "3b4caa9bfa2d",
+    "6315f29c1ab2",
+    "306cb63c1ce4",
+    "6355ef659509"
+   ],
+   "gaps": [],
+   "remediation": "No action required. Optionally add ingress-level throttling (nginx limit-rps annotation) in infra/k8s/ingress.yaml for defence in depth.",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-10",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "E1 (docs/incident-response.md) is an AI-specific incident response procedure in the repository. It covers detection (harmful-reply classifier alerts, handover spikes, tagged complaints), escalation (Customer Care lead and #supportbot-incidents), and reporting. Serious incidents such as harmful or discriminatory output and personal data leaks through the model must be reported to the AI Governance Board at ai-incidents@acme.example within 24 hours. E2 lists the document in the repo layout.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.86] pattern /(ai[- ]incidents?@|incident (response|reporting))/ present in doc: found at README.md:19, docs/incident-response.md:1, docs/incident-response.md:9",
+   "evidence_ids": [
+    "c0a51008370d",
+    "4249cd02ef44"
+   ],
+   "gaps": [],
+   "remediation": "No action required. Optionally add the \"significant performance degradation\" and \"safety event\" incident types to the serious-incident definition for fuller alignment with POL-10(1).",
+   "method": "hybrid",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-11",
+   "status": "not_applicable",
+   "confidence": 0.93,
+   "rationale": "Applies to high risk systems; this system is classified as limited.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  }
+ ],
+ "evidence": [
+  {
+   "id": "98aa525d2b09",
+   "kind": "model_card",
+   "path": "MODEL_CARD.md",
+   "start_line": 1,
+   "end_line": 10,
+   "snippet": "# Model card: SupportBot answer generation\n\n* **Provider / model:** OpenAI `gpt-4o-mini` (API, EU data residency), pinned via `LLM_MODEL`.\n* **Owner:** Customer Care Engineering (care-eng@acme.example).\n* **Intended use:** answering customer questions on orders, deliveries, invoices and tariffs using\n  retrieved help-centre extracts; handing over to a human agent.\n* **Out of scope:** legal, financial or energy-saving advice; contract changes; complaints decisions.\n* **Product evaluation (2026-08, 600 labelled conversations):** answer correctness 91.3%, grounded\n  in retrieved context 95.0%, correct handover 88.0%, harmful/off-policy replies 0.3%.\n* **Limitations:** may hallucinate tariff details not in the help centre; English and German only.",
+   "signal": "model_call,data_documentation",
+   "score": 0.0
+  },
+  {
+   "id": "4249cd02ef44",
+   "kind": "doc",
+   "path": "README.md",
+   "start_line": 1,
+   "end_line": 19,
+   "snippet": "# SupportBot\n\nCustomer-support assistant for the ACME Home Energy web shop. The widget answers questions about\norders, deliveries, invoices and tariffs using an LLM (OpenAI `gpt-4o-mini`) grounded on our help\ncentre articles, and hands over to a human agent on request.\n\n## AI Act position\nSupportBot is a chatbot that interacts directly with customers. It does not take decisions about\npeople and is not in any Annex III area, so it is a **limited-risk** system: the transparency\nobligations of Art. 50 apply (users must know they are talking to an AI).\n\n## Layout\n| Path | |\n|---|---|\n| `server/` | Express + TypeScript API (`/api/chat`, admin transcript tools) |\n| `web/` | Chat widget (React) embedded in the shop |\n| `config/app.yaml` | rate limits, retention, model settings |\n| `infra/` | Terraform (RDS Postgres) and Kubernetes manifests |\n| `docs/` | privacy notice, record of processing, incident response, ADRs |",
+   "signal": "retention_config,model_call,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "980f8c66ef17",
+   "kind": "code",
+   "path": "web/src/components/ChatWidget.tsx",
+   "start_line": 1,
+   "end_line": 41,
+   "snippet": "import React, { useState } from \"react\";\nimport { sendMessage } from \"../api\";\n\ntype Msg = { from: \"user\" | \"bot\"; text: string };\n\nexport function ChatWidget() {\n  const [messages, setMessages] = useState<Msg[]>([\n    { from: \"bot\", text: \"Hi! How can I help you with your order or tariff today?\" },\n  ]);\n  const [draft, setDraft] = useState(\"\");\n\n  async function submit() {\n    const text = draft.trim();\n    if (!text) return;\n    setDraft(\"\");\n    setMessages((m) => [...m, { from: \"user\", text }]);\n    const { reply } = await sendMessage(text);\n    setMessages((m) => [...m, { from: \"bot\", text: reply }]);\n  }\n\n  return (\n    <aside className=\"chat\">\n      <header>\n        <strong>ACME Support</strong>\n        <p className=\"disclosure\">\n          You are chatting with an AI assistant. It can make mistakes; ask for a human agent at any time.\n          See our <a href=\"/privacy#support-chat\">privacy notice</a>.\n        </p>\n      </header>\n      <ol className=\"messages\">\n        {messages.map((m, i) => (\n          <li key={i} className={m.from}>{m.text}</li>\n        ))}\n      </ol>\n      <footer>\n        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === \"Enter\" && submit()} />\n        <button onClick={submit}>Send</button>\n      </footer>\n    </aside>\n  );\n}",
+   "signal": "ai_disclosure",
+   "score": 0.0
+  },
+  {
+   "id": "f8b95dcac447",
+   "kind": "code",
+   "path": "server/src/llm.ts",
+   "start_line": 1,
+   "end_line": 35,
+   "snippet": "import OpenAI from \"openai\";\nimport { searchHelpCentre } from \"./retrieval\";\nimport { history } from \"./transcripts\";\n\nconst client = new OpenAI();\nconst MODEL = process.env.LLM_MODEL ?? \"gpt-4o-mini\";\n\nconst SYSTEM_PROMPT = `You are the ACME Home Energy support assistant. Answer only questions about\norders, deliveries, invoices and tariffs using the provided help-centre extracts. If you are not sure,\nor the customer asks for a person, reply with HANDOVER. Never give legal or financial advice.`;\n\nexport type Reply = { text: string; model: string; handover: boolean; usage: { prompt: number; completion: number } };\n\nexport async function answer(sessionId: string, message: string): Promise<Reply> {\n  const context = await searchHelpCentre(message, 4);\n  const past = await history(sessionId, 12);\n  const completion = await client.chat.completions.create({\n    model: MODEL,\n    temperature: 0.2,\n    messages: [\n      { role: \"system\", content: SYSTEM_PROMPT },\n      { role: \"system\", content: `Help-centre extracts:\\n${context.join(\"\\n---\\n\")}` },\n      ...past,\n      { role: \"user\", content: message },\n    ],\n  });\n  const text = completion.choices[0]?.message?.content ?? \"\";\n  // TODO(SUP-88): label AI-generated replies (AI Act Art. 50(2)) once the design team has a badge.\n  return {\n    text: text.replace(\"HANDOVER\", \"Let me connect you with a colleague.\"),\n    model: completion.model,\n    handover: text.includes(\"HANDOVER\"),\n    usage: { prompt: completion.usage?.prompt_tokens ?? 0, completion: completion.usage?.completion_tokens ?? 0 },\n  };\n}",
+   "signal": "ai_disclosure,model_call",
+   "score": 0.0
+  },
+  {
+   "id": "6315f29c1ab2",
+   "kind": "code",
+   "path": "server/src/index.ts",
+   "start_line": 1,
+   "end_line": 44,
+   "snippet": "import express from \"express\";\nimport rateLimit from \"express-rate-limit\";\nimport helmet from \"helmet\";\nimport { loadConfig } from \"./config\";\nimport { answer } from \"./llm\";\nimport { logLlmCall } from \"./logging\";\nimport { requireAdmin, sessionAuth } from \"./auth\";\nimport { appendMessage, deleteCustomerData, exportTranscript, startRetentionJob } from \"./transcripts\";\n\nconst cfg = loadConfig();\nconst app = express();\napp.use(helmet());\napp.use(express.json({ limit: \"16kb\" }));\n\n// /api/chat is declared public in config/app.yaml (public_endpoints)\nconst chatLimiter = rateLimit({\n  windowMs: 60_000,\n  limit: cfg.rate_limit.chat_per_minute,\n  keyGenerator: (req) => req.header(\"x-session-id\") ?? req.ip ?? \"anon\",\n});\n\napp.post(\"/api/chat\", chatLimiter, sessionAuth, async (req, res) => {\n  const { sessionId, customerId } = res.locals;\n  const text = String(req.body.message ?? \"\").slice(0, 2000);\n  await appendMessage(sessionId, customerId, \"user\", text);\n  const started = Date.now();\n  const reply = await answer(sessionId, text);\n  logLlmCall({ sessionId, model: reply.model, promptTokens: reply.usage.prompt, completionTokens: reply.usage.completion, latencyMs: Date.now() - started, handover: reply.handover });\n  await appendMessage(sessionId, customerId, \"assistant\", reply.text);\n  res.json({ reply: reply.text, handover: reply.handover });\n});\n\napp.get(\"/admin/transcripts/:customerId\", requireAdmin, async (req, res) => {\n  res.json(await exportTranscript(req.params.customerId));\n});\n\napp.delete(\"/admin/customers/:customerId/data\", requireAdmin, async (req, res) => {\n  // data subject erasure request (ticket from the privacy team)\n  await deleteCustomerData(req.params.customerId);\n  res.status(204).end();\n});\n\nstartRetentionJob(cfg.retention.transcript_days);\napp.listen(cfg.port, () => console.info(`supportbot listening on ${cfg.port}`));",
+   "signal": "logging_call,retention_config,model_call,access_control,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "8c76f0027e72",
+   "kind": "doc",
+   "path": "docs/privacy.md",
+   "start_line": 1,
+   "end_line": 17,
+   "snippet": "# Privacy notice: support chat\n\n**Controller:** ACME Home Energy GmbH, Hauptstr. 5, 10115 Berlin. DPO: privacy@acme-energy.example.\n\n**Purpose and legal basis.** We process your chat messages to answer your support request\n(Art. 6(1)(b) GDPR, performance of your contract) and to improve answer quality and handle\ncomplaints (Art. 6(1)(f) GDPR, legitimate interest).\n\n**AI assistant.** Replies are generated by an AI assistant operated on our behalf by OpenAI Ireland\nLtd. (processor). You can ask for a human agent at any time.\n\n**Recipients.** OpenAI (processor, EU region), our customer-care team.\n\n**Retention.** Chat transcripts are stored for 2 years and then deleted automatically.\n\n**Your rights.** Right of access, rectification, erasure, restriction, objection, portability and\nthe right to lodge a complaint with a supervisory authority. Contact privacy@acme-energy.example.",
+   "signal": "ai_disclosure,retention_config,model_call,consent",
+   "score": 0.0
+  },
+  {
+   "id": "ce80894f927b",
+   "kind": "doc",
+   "path": "docs/ropa.md",
+   "start_line": 1,
+   "end_line": 12,
+   "snippet": "# Record of processing activities: SupportBot (entry PA-CC-07)\n\n| Item | Content |\n|---|---|\n| Controller | ACME Home Energy GmbH; DPO privacy@acme-energy.example |\n| Purposes | Customer support via chat; quality assurance; complaint handling |\n| Data subjects | Customers and prospective customers using the chat |\n| Personal data | Chat messages (free text, may contain contact and contract data), customer id, session id |\n| Recipients | Customer-care team; OpenAI Ireland Ltd. (processor) |\n| Transfers | None outside the EEA (EU data residency contract) |\n| Erasure time limits | Transcripts 2 years; application logs 90 days |\n| Security measures | TLS, KMS-encrypted RDS, admin RBAC, rate limiting |",
+   "signal": "model_call,encryption,access_control,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "fabbf0d24190",
+   "kind": "code",
+   "path": "server/src/transcripts.ts",
+   "start_line": 1,
+   "end_line": 36,
+   "snippet": "import { Pool } from \"pg\";\n\nconst pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: true } });\n\nexport async function appendMessage(sessionId: string, customerId: string | null, role: string, content: string) {\n  // full message text is stored as typed by the customer (may include e-mail, phone, address)\n  await pool.query(\n    \"INSERT INTO transcript_messages (session_id, customer_id, role, content, created_at) VALUES ($1,$2,$3,$4,now())\",\n    [sessionId, customerId, role, content],\n  );\n}\n\nexport async function history(sessionId: string, n: number) {\n  const { rows } = await pool.query(\n    \"SELECT role, content FROM transcript_messages WHERE session_id=$1 ORDER BY created_at DESC LIMIT $2\",\n    [sessionId, n],\n  );\n  return rows.reverse();\n}\n\nexport async function exportTranscript(customerId: string) {\n  const { rows } = await pool.query(\"SELECT * FROM transcript_messages WHERE customer_id=$1 ORDER BY created_at\", [customerId]);\n  return rows;\n}\n\nexport async function deleteCustomerData(customerId: string) {\n  await pool.query(\"DELETE FROM transcript_messages WHERE customer_id=$1\", [customerId]);\n  await pool.query(\"DELETE FROM chat_sessions WHERE customer_id=$1\", [customerId]);\n}\n\n/** Transcripts are kept for quality assurance and dispute handling, then purged nightly. */\nexport function startRetentionJob(days: number) {\n  const purge = () =>\n    pool.query(\"DELETE FROM transcript_messages WHERE created_at < now() - ($1 || ' days')::interval\", [days]);\n  setInterval(purge, 24 * 3600 * 1000);\n}",
+   "signal": "retention_config,pii_field,encryption,access_control",
+   "score": 0.0
+  },
+  {
+   "id": "3b4caa9bfa2d",
+   "kind": "config",
+   "path": "config/app.yaml",
+   "start_line": 1,
+   "end_line": 13,
+   "snippet": "port: 8080\nllm:\n  provider: openai\n  model: gpt-4o-mini\npublic_endpoints:\n  - /api/chat\nrate_limit:\n  chat_per_minute: 20\nretention:\n  transcript_days: 730     # 2 years: QA sampling and complaint handling\nlogging:\n  sink: loki\n  retention_days: 90",
+   "signal": "retention_config,model_call,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "d318d366bfad",
+   "kind": "code",
+   "path": "server/src/logging.ts",
+   "start_line": 1,
+   "end_line": 12,
+   "snippet": "import pino from \"pino\";\n\nconst logger = pino({ level: \"info\", base: { service: \"supportbot\" } });\n\nexport type LlmCall = {\n  sessionId: string; model: string; promptTokens: number; completionTokens: number; latencyMs: number; handover: boolean;\n};\n\n/** One structured line per LLM call, shipped to Loki (retention set in config/app.yaml). */\nexport function logLlmCall(call: LlmCall) {\n  logger.info({ event: \"llm_call\", ...call, model_version: call.model }, \"llm reply generated\");\n}",
+   "signal": "logging_call,retention_config,model_call",
+   "score": 0.0
+  },
+  {
+   "id": "59c3e78b43fc",
+   "kind": "iac",
+   "path": "infra/terraform/db.tf",
+   "start_line": 1,
+   "end_line": 19,
+   "snippet": "resource \"aws_kms_key\" \"supportbot\" {\n  description         = \"SupportBot data key\"\n  enable_key_rotation = true\n}\n\nresource \"aws_db_instance\" \"transcripts\" {\n  identifier                 = \"supportbot-transcripts\"\n  engine                     = \"postgres\"\n  engine_version             = \"16.3\"\n  instance_class             = \"db.t4g.medium\"\n  allocated_storage          = 100\n  storage_encrypted          = true\n  kms_key_id                 = aws_kms_key.supportbot.arn\n  db_subnet_group_name       = \"private-data\"\n  publicly_accessible        = false\n  backup_retention_period    = 7\n  deletion_protection        = true\n  parameter_group_name       = \"postgres16-force-ssl\"\n}",
+   "signal": "retention_config,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "9c12fa822c41",
+   "kind": "code",
+   "path": "server/src/auth.ts",
+   "start_line": 1,
+   "end_line": 29,
+   "snippet": "import type { NextFunction, Request, Response } from \"express\";\nimport jwt from \"jsonwebtoken\";\n\nconst SECRET = process.env.SESSION_SIGNING_KEY!;\n\n/** Anonymous chat sessions get a signed session token from the shop; customerId is set when logged in. */\nexport function sessionAuth(req: Request, res: Response, next: NextFunction) {\n  try {\n    const claims = jwt.verify(req.header(\"x-session-token\") ?? \"\", SECRET) as { sid: string; cid?: string };\n    res.locals.sessionId = claims.sid;\n    res.locals.customerId = claims.cid ?? null;\n    next();\n  } catch {\n    res.status(401).json({ error: \"invalid session\" });\n  }\n}\n\n/** Staff SSO token with the `support-admin` role is required for transcript access and erasure. */\nexport function requireAdmin(req: Request, res: Response, next: NextFunction) {\n  try {\n    const claims = jwt.verify((req.header(\"authorization\") ?? \"\").replace(\"Bearer \", \"\"), process.env.SSO_PUBLIC_KEY!, {\n      algorithms: [\"RS256\"],\n    }) as { roles?: string[] };\n    if (!claims.roles?.includes(\"support-admin\")) return res.status(403).end();\n    next();\n  } catch {\n    res.status(401).end();\n  }\n}",
+   "signal": "access_control",
+   "score": 0.0
+  },
+  {
+   "id": "d9f8b531d11b",
+   "kind": "doc",
+   "path": "docs/adr/0001-llm-provider.md",
+   "start_line": 1,
+   "end_line": 9,
+   "snippet": "# ADR 0001: Use a hosted LLM with retrieval instead of fine-tuning\n\n* Status: accepted (2026-02-11)\n\nWe use OpenAI `gpt-4o-mini` through the API with EU data residency and zero data retention on the\nprovider side, grounded with help-centre extracts (top-4 BM25 + embeddings). Fine-tuning was\nrejected: help-centre content changes weekly. Customer messages are sent to the provider as typed;\nredaction of contact details was evaluated but postponed because it reduced answer quality for\ndelivery questions.",
+   "signal": "retention_config,model_call,anonymization",
+   "score": 0.0
+  },
+  {
+   "id": "560760cbc8e9",
+   "kind": "iac",
+   "path": "infra/k8s/ingress.yaml",
+   "start_line": 1,
+   "end_line": 18,
+   "snippet": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: supportbot\n  annotations:\n    cert-manager.io/cluster-issuer: letsencrypt-prod\n    nginx.ingress.kubernetes.io/ssl-redirect: \"true\"\nspec:\n  tls:\n    - hosts: [support-api.acme-energy.example]\n      secretName: supportbot-tls\n  rules:\n    - host: support-api.acme-energy.example\n      http:\n        paths:\n          - path: /api/chat\n            pathType: Prefix\n            backend: {service: {name: supportbot, port: {number: 8080}}}",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "6355ef659509",
+   "kind": "log",
+   "path": "logs/supportbot-2026-10-12.log",
+   "start_line": 1,
+   "end_line": 3,
+   "snippet": "{\"level\":30,\"time\":1760256012345,\"service\":\"supportbot\",\"event\":\"llm_call\",\"sessionId\":\"s-4f1c\",\"model\":\"gpt-4o-mini-2024-07-18\",\"promptTokens\":1412,\"completionTokens\":96,\"latencyMs\":1180,\"handover\":false,\"model_version\":\"gpt-4o-mini-2024-07-18\",\"msg\":\"llm reply generated\"}\n{\"level\":30,\"time\":1760256044871,\"service\":\"supportbot\",\"event\":\"llm_call\",\"sessionId\":\"s-4f1c\",\"model\":\"gpt-4o-mini-2024-07-18\",\"promptTokens\":1630,\"completionTokens\":41,\"latencyMs\":902,\"handover\":true,\"model_version\":\"gpt-4o-mini-2024-07-18\",\"msg\":\"llm reply generated\"}\n{\"level\":40,\"time\":1760256101002,\"service\":\"supportbot\",\"msg\":\"rate limit exceeded\",\"key\":\"s-9a07\"}",
+   "signal": "model_call,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "306cb63c1ce4",
+   "kind": "config",
+   "path": "package.json",
+   "start_line": 1,
+   "end_line": 14,
+   "snippet": "{\n  \"name\": \"supportbot\",\n  \"private\": true,\n  \"scripts\": { \"build\": \"tsc -p server\", \"start\": \"node server/dist/index.js\" },\n  \"dependencies\": {\n    \"express\": \"^4.19.2\",\n    \"express-rate-limit\": \"^7.2.0\",\n    \"helmet\": \"^7.1.0\",\n    \"openai\": \"^4.52.0\",\n    \"pg\": \"^8.12.0\",\n    \"pino\": \"^9.2.0\"\n  },\n  \"devDependencies\": { \"typescript\": \"^5.5.2\", \"@types/express\": \"^4.17.21\" }\n}",
+   "signal": "model_call,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "c0a51008370d",
+   "kind": "doc",
+   "path": "docs/incident-response.md",
+   "start_line": 1,
+   "end_line": 11,
+   "snippet": "# AI incident response\n\n1. **Detect:** alerts on harmful-reply classifier hits, spikes in handover rate, customer complaints\n   tagged `ai-answer`.\n2. **Contain:** on-call engineer can switch the widget to \"human agents only\" via the feature flag\n   `chat.ai_enabled`.\n3. **Escalate:** notify Customer Care lead and #supportbot-incidents.\n4. **Report:** serious incidents (harmful or discriminatory output, personal data leak through the\n   model) are reported to the AI Governance Board at ai-incidents@acme.example within 24 hours;\n   personal data breaches also go to the DPO for the 72-hour GDPR assessment.\n5. **Review:** blameless post-mortem within 10 working days.",
+   "signal": "human_override,consent",
+   "score": 0.0
+  }
+ ],
+ "scorecard": [
+  {
+   "category": "risk_classification",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "transparency",
+   "total": 5,
+   "compliant": 3,
+   "partial": 0,
+   "non_compliant": 2,
+   "needs_review": 0,
+   "score": 60.0
+  },
+  {
+   "category": "record_keeping",
+   "total": 1,
+   "compliant": 0,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "data_governance",
+   "total": 1,
+   "compliant": 0,
+   "partial": 0,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 0.0
+  },
+  {
+   "category": "technical_documentation",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "security",
+   "total": 5,
+   "compliant": 4,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 90.0
+  },
+  {
+   "category": "data_retention",
+   "total": 3,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 1,
+   "needs_review": 0,
+   "score": 66.7
+  },
+  {
+   "category": "other",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  }
+ ],
+ "overall_score": 75.4,
+ "stats": {
+  "mode": "hybrid",
+  "model": "sonnet",
+  "backend": "claude",
+  "timings": {
+   "requirements_s": 0.128,
+   "evidence_s": 0.045,
+   "risk_s": 6.008,
+   "deterministic_s": 0.024,
+   "llm_judge_s": 60.226,
+   "report_s": 0.003,
+   "total_s": 66.435
+  },
+  "llm_calls": 22,
+  "llm_cache_hits": 0,
+  "llm_failures": 0,
+  "input_tokens": 172866,
+  "output_tokens": 13078,
+  "cost_usd": 0.646543,
+  "llm_latency_s": 157.08,
+  "llm_cached_cost_usd": 0.0,
+  "llm_cached_latency_s": 0.0,
+  "llm_cached_input_tokens": 0,
+  "llm_cached_output_tokens": 0,
+  "use_verifier": true,
+  "hybrid_threshold": 1.01,
+  "verify_with_llm": false,
+  "n_requirements": 45,
+  "n_llm_judged": 21,
+  "n_needs_review": 0,
+  "files_scanned": 18,
+  "n_evidence_items": 18,
+  "wall_s": 66.437
+ }
+}

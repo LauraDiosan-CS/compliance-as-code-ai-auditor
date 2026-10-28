@@ -1,0 +1,2974 @@
+{
+ "id": "705541ce5df1",
+ "created_at": "2026-10-28T18:23:30.809218Z",
+ "target": "app/benchmark/apps/hireright-screening",
+ "policies": [
+  "eu-ai-act",
+  "gdpr",
+  "acme-rai"
+ ],
+ "mode": "hybrid",
+ "risk": {
+  "level": "high",
+  "rationale": "The system is a candidate ranker that orders job applications for recruiters, built on CV and requisition data. Its intended purpose is analysing and filtering job applications and evaluating candidates, which falls under Annex III point 4(a) (employment, recruitment and worker management). The README (E3) states this classification directly. The system is decision support: recruiters take every decision and the model never accepts or rejects candidates on its own (E2, E5, E6). That human-review arrangement does not remove the high-risk classification, because the system is still intended to filter and evaluate applicants. It is not a prohibited practice: it is not emotion recognition, social scoring, or biometric categorisation, and the excerpts show no use of photos, video or audio (E2 out-of-scope list; E7 redacts photo and other identity fields). The keyword pre-classifier hint of \"high\" is consistent with this independent assessment.",
+  "triggers": [
+   "Annex III 4(a): AI systems intended to analyse and filter job applications and evaluate candidates",
+   "Recruitment and candidate ranking from CV and requisition data",
+   "Employment context: recruiter shortlisting and prioritisation of applicants"
+  ],
+  "evidence_ids": [
+   "5faa0a3fb1cf",
+   "8fd94043ac69",
+   "c8e04b05d04a",
+   "8c1a0258270f",
+   "2cea6a3f479d",
+   "e81e7fa9d2ff"
+  ],
+  "confidence": 0.96
+ },
+ "requirements": [
+  {
+   "id": "AIA-RISK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.5(1)"
+   ],
+   "category": "risk_classification",
+   "title": "No prohibited AI practices",
+   "statement": "The system does not implement any practice prohibited by Art. 5(1): subliminal or manipulative techniques, exploitation of vulnerabilities, social scoring, crime prediction based solely on profiling, untargeted scraping of facial images, emotion inference in the workplace or in education, or biometric categorisation inferring sensitive traits.",
+   "applies_to": [
+    "prohibited",
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "no emotion recognition / social scoring / face scraping code",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(emotion[_ ]?(recognition|detection|analysis)|infer_emotion|facial[_ ]expression|social[_ ]?scor|scrape[_ ]?faces?|face[_ ]?scrap)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Look for code or documentation showing the system infers emotions (e.g. from video interviews or voice) of employees/candidates/students, scores people on social behaviour, scrapes facial images, or categorises people by biometrics into sensitive traits. A comment or doc stating that such a feature is NOT implemented is evidence of compliance, not a violation. Mark non_compliant only if a prohibited practice is actually implemented or planned for production.",
+   "evidence_queries": [
+    "emotion recognition facial expression",
+    "social score citizen behaviour",
+    "biometric categorisation face embedding",
+    "scrape faces images",
+    "manipulative dark pattern nudge"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-RISK-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.6(2)",
+    "eu-ai-act/Art.6(3)",
+    "eu-ai-act/Art.6(4)",
+    "eu-ai-act/AnnexIII"
+   ],
+   "category": "risk_classification",
+   "title": "Risk classification documented",
+   "statement": "The provider documents the AI Act risk classification of the system with its rationale: the applicable Annex III area/point if high-risk, the Art. 6(3) assessment if an Annex III system is claimed not to be high-risk, or why the system is limited/minimal risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "risk tier stated in documentation",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(annex\\s+iii|high[- ]risk|limited[- ]risk|minimal[- ]risk)\\b.*(ai act|art(icle)?\\.?\\s*\\d|annex|use case|point)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a README section, ADR or compliance document that states the risk tier AND gives a reason (e.g. \"Annex III point 4(a) recruitment\", \"chatbot, transparency obligations under Art. 50\", \"spam filtering, no Annex III use case\"). A bare marketing claim (\"fully compliant\") is not a classification.",
+   "evidence_queries": [
+    "AI Act risk classification",
+    "high-risk Annex III",
+    "limited risk minimal risk",
+    "intended purpose"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-RISK-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(1)",
+    "eu-ai-act/Art.9(2)",
+    "eu-ai-act/Art.9(5)"
+   ],
+   "category": "other",
+   "title": "Risk management system documented",
+   "statement": "A risk management process is documented for the high-risk system: known and reasonably foreseeable risks to health, safety and fundamental rights are identified and evaluated, and targeted mitigation measures with residual-risk acceptance are recorded and kept up to date.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a risk assessment / risk register document exists",
+     "globs": [
+      "**/*risk-assessment*",
+      "**/*risk_assessment*",
+      "**/*risk-register*",
+      "**/*risk_register*",
+      "**/RISK*.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a risk register / risk assessment / model risk management document listing concrete risks (e.g. discrimination, automation bias, data drift), their likelihood/impact and mitigations. A single sentence like \"risks are low\" is not sufficient (partial at most).",
+   "evidence_queries": [
+    "risk assessment",
+    "risk register",
+    "foreseeable misuse",
+    "mitigation residual risk"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)"
+   ],
+   "category": "data_governance",
+   "title": "Training data documented (datasheet)",
+   "statement": "Training, validation and test data sets are documented: origin and collection process, original purpose for personal data, preparation steps (labelling, cleaning, enrichment), assumptions, and the availability/quantity/suitability of the data.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "a datasheet / data card exists",
+     "globs": [
+      "**/DATASHEET*",
+      "**/datasheet*",
+      "**/DATA_CARD*",
+      "**/data_card*",
+      "**/data-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a datasheet / data card / training-data document. Code that loads a CSV is not documentation. Partial if only some of origin, preparation and splits are described.",
+   "evidence_queries": [
+    "datasheet training data",
+    "data collection origin",
+    "labelling cleaning preprocessing",
+    "train validation test split"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DATA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.10(2)",
+    "eu-ai-act/Art.10(3)",
+    "eu-ai-act/Art.10(4)"
+   ],
+   "category": "data_governance",
+   "title": "Bias examination and mitigation of data sets",
+   "statement": "The data sets have been examined for possible biases likely to lead to discrimination (including representativeness for the persons and setting the system is used on), and measures to detect, prevent and mitigate the identified biases are documented with results.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires an actual bias/fairness analysis with results (metrics per group, findings, mitigations). A plan (\"bias audit planned\"), a TODO, or merely excluding protected attributes from the features does NOT satisfy this requirement on its own (proxies may remain). Judge from documents and evaluation code/reports.",
+   "evidence_queries": [
+    "bias evaluation fairness",
+    "disparate impact demographic parity",
+    "protected attributes gender age",
+    "representativeness of data"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.11(1)",
+    "eu-ai-act/AnnexIV(1)",
+    "eu-ai-act/AnnexIV(2)"
+   ],
+   "category": "technical_documentation",
+   "title": "Technical documentation (Annex IV)",
+   "statement": "Technical documentation covering the Annex IV elements exists before deployment: general description and intended purpose, versions, how the system interacts with other software, development methods, design specifications and key design choices, system architecture, and validation/testing procedures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "technical documentation file exists",
+     "globs": [
+      "**/*technical-documentation*",
+      "**/*technical_documentation*",
+      "**/TECHNICAL_DOC*",
+      "**/annex-iv*",
+      "**/annex_iv*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a document (or set of docs) covers most Annex IV(1)-(2) elements. An architecture overview plus a model card without development/validation information is partial.",
+   "evidence_queries": [
+    "technical documentation",
+    "system architecture components",
+    "design choices rationale",
+    "validation and testing procedures"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-DOC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/AnnexIV(3)",
+    "eu-ai-act/Art.11(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for the deployed model",
+   "statement": "A model card documents the deployed model: intended use and out-of-scope uses, version, training data summary, evaluation results, capabilities and known limitations.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md",
+      "**/model-card*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that a model card exists and covers intended use, limitations and evaluation results.",
+   "evidence_queries": [
+    "model card",
+    "intended use limitations",
+    "model version evaluation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-DOC-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(2)",
+    "eu-ai-act/Art.13(3)"
+   ],
+   "category": "transparency",
+   "title": "Instructions for use for deployers",
+   "statement": "Instructions for use are provided to deployers and contain at least: provider identity and contact, intended purpose, level of accuracy and its metrics, known limitations and foreseeable misuse risks, human oversight measures, and how to collect and interpret the logs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "instructions for use document exists",
+     "globs": [
+      "**/*instructions-for-use*",
+      "**/*instructions_for_use*",
+      "**/INSTRUCTIONS*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "instructions mention accuracy metrics",
+     "globs": [
+      "**/*instructions*",
+      "**/*user-guide*",
+      "**/*user_guide*"
+     ],
+     "kinds": [],
+     "pattern": "(accuracy|auc|precision|recall|f1)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if the instructions contain all the listed elements. If a guide exists but misses accuracy metrics, limitations or log interpretation, the status is partial. Sections marked TBD count as missing.",
+   "evidence_queries": [
+    "instructions for use",
+    "user guide deployer",
+    "provider contact",
+    "how to interpret the score"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.13(1)",
+    "eu-ai-act/Art.13(3)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "transparency",
+   "title": "Interpretable outputs for deployers",
+   "statement": "The system provides information that lets deployers interpret each output (e.g. main reasons, feature contributions, reason codes or confidence) rather than a bare score.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that returns explanations/reason codes alongside the score and shows them to the human reviewer. A global feature-importance chart in a notebook alone is partial.",
+   "evidence_queries": [
+    "explanation reasons",
+    "shap feature importance",
+    "reason codes",
+    "confidence score explanation"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-TRA-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(1)",
+    "eu-ai-act/Art.50(5)"
+   ],
+   "category": "transparency",
+   "title": "Disclosure of interaction with an AI system",
+   "statement": "Natural persons interacting directly with the AI system (e.g. a chatbot) are informed, clearly and at the latest at the first interaction, that they are interacting with an AI system.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for user-facing UI strings (React/HTML templates, chat greeting) that tell users they talk to an AI, shown at the start of the conversation. A statement buried in terms of service is not sufficient.",
+   "evidence_queries": [
+    "you are chatting with an AI",
+    "AI assistant disclosure banner",
+    "virtual assistant notice"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-TRA-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.50(2)"
+   ],
+   "category": "transparency",
+   "title": "Marking of AI-generated content",
+   "statement": "Synthetic text, image, audio or video generated by the system is marked as AI-generated in a machine-readable format (and labelled for the recipient where it is published or delivered).",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that adds an AI-generated flag/header/metadata or visible label to each generated message. A TODO or ticket reference to add labelling later means non_compliant. A disclosure that the user talks to an AI (Art. 50(1)) is a different obligation and does not mark the content.",
+   "evidence_queries": [
+    "AI-generated label",
+    "watermark content credential c2pa",
+    "response metadata generated"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-WRK-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.26(7)",
+    "eu-ai-act/Art.26(11)"
+   ],
+   "category": "transparency",
+   "title": "Affected persons informed about high-risk AI use",
+   "statement": "Natural persons subject to decisions made or assisted by the high-risk AI system (candidates, applicants, workers) are informed that such a system is used on them.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "code"
+     ],
+     "pattern": "(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a candidate/applicant notice, privacy notice or e-mail template that tells the person an AI system is used to assess them. Recruiter-facing UI text does not inform the candidate.",
+   "evidence_queries": [
+    "candidate notice automated screening",
+    "applicant information AI used",
+    "privacy notice automated decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-REC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.12(1)",
+    "eu-ai-act/Art.12(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Automatic logging of AI decisions",
+   "statement": "The system automatically records an event for each decision/output over its lifetime, with timestamp, input reference, output, model version and (where applicable) the human reviewer, enabling traceability and post-market monitoring.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for code that writes a structured record for every prediction (custom journal/audit classes count). Commented-out logging calls, TODOs or debug prints do not count. Logging only errors is not decision logging.",
+   "evidence_queries": [
+    "audit log decision",
+    "log prediction model version",
+    "journal record decision",
+    "append-only event store"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-REC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.19(1)",
+    "eu-ai-act/Art.26(6)"
+   ],
+   "category": "record_keeping",
+   "title": "Logs retained for at least six months",
+   "statement": "Automatically generated decision logs are retained for a period appropriate to the intended purpose and of at least six months (>= 180 days).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(log|journal|audit)\\w*[\\s\\S]{0,120}?(retention_days|retention_in_days|retentiondays)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the effective retention of the decision/audit logs (config, Terraform log group, lifecycle rules). Compliant only if >= 180 days. If logs exist but retention is shorter or unbounded deletion is configured, non_compliant. If no logs exist at all, non_compliant.",
+   "evidence_queries": [
+    "log retention days",
+    "retention_in_days cloudwatch",
+    "decision log retention"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(1)",
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Human can override or disregard the AI output",
+   "statement": "Natural persons overseeing the system can decide not to use, disregard, override or reverse an individual output of the system, and the override is recorded.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(override|manual[_ ]review|human[_ ]review|reviewer)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented mechanism (API endpoint, UI action, workflow state) letting a human change the outcome. A flag set to False, a README promise without code, or an override limited to admins for model config does not count.",
+   "evidence_queries": [
+    "override decision reviewer",
+    "manual review",
+    "appeal contest decision",
+    "reverse outcome"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-HUM-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)"
+   ],
+   "category": "human_oversight",
+   "title": "Stop / interrupt mechanism",
+   "statement": "Operators can interrupt the system (a 'stop' button, kill switch or similar procedure) so that it halts in a safe state, e.g. automated processing is suspended and cases fall back to manual handling.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config"
+     ],
+     "pattern": "(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept any implemented switch (feature flag, admin endpoint, config) that stops automated decisions and routes work to humans. Infrastructure scaling to zero without a documented procedure is partial.",
+   "evidence_queries": [
+    "kill switch",
+    "disable model feature flag",
+    "suspend automated processing",
+    "stop button halt"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-HUM-03",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.14(4)",
+    "eu-ai-act/Art.26(2)"
+   ],
+   "category": "human_oversight",
+   "title": "No adverse decision solely on the AI output",
+   "statement": "Decisions adverse to natural persons (e.g. rejection, decline) are not taken automatically on the basis of the AI output alone; a competent human reviews and confirms them, mitigating automation bias.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "auto[_-]?reject",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace the decision flow in code. If any adverse outcome is set without a human step (e.g. score below threshold -> rejected), it is non_compliant; if only a subset of cases gets human review (e.g. above an amount threshold), partial.",
+   "evidence_queries": [
+    "auto reject threshold",
+    "automatic decline",
+    "human confirmation required",
+    "final decision recruiter underwriter"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "AIA-ACC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(1)",
+    "eu-ai-act/Art.15(3)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Accuracy levels and metrics declared",
+   "statement": "The levels of accuracy and the relevant accuracy metrics (e.g. AUC, precision/recall, error rates) are declared in the documentation accompanying the system (instructions for use and/or model card).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "model_card"
+     ],
+     "pattern": "(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\\n]{0,30}\\d\\.\\d+",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Metrics must be declared in documentation shipped with the system, with values. A training script that prints accuracy is not a declaration.",
+   "evidence_queries": [
+    "accuracy auc precision recall",
+    "evaluation results metrics",
+    "performance holdout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-ACC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(4)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Resilience to errors (fallback / fail-safe)",
+   "statement": "The system handles errors, faults and model unavailability safely (e.g. timeouts and exceptions lead to a fail-safe outcome such as routing to manual handling, never to an automatic adverse decision).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for explicit error handling around model inference with a safe fallback. Generic web framework error pages are not sufficient.",
+   "evidence_queries": [
+    "fallback manual queue",
+    "fail-safe error handling",
+    "model unavailable timeout"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Input validation against malformed or adversarial inputs",
+   "statement": "Inputs to the model are validated (schema, types, ranges, size limits, file types) before inference to resist malformed or adversarial inputs.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(BaseModel|Field\\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for schema validation (pydantic/zod/marshmallow), constraints and upload limits on the inference path. Reading raw request bodies directly into the model is non_compliant.",
+   "evidence_queries": [
+    "input validation schema",
+    "pydantic constraints",
+    "max file size content type"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-SEC-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.15(5)"
+   ],
+   "category": "security",
+   "title": "Protection of model endpoints against unauthorised use",
+   "statement": "Inference and model-management endpoints are protected against unauthorised third parties (authentication and authorisation), so that the system's use, outputs or performance cannot be altered by exploiting vulnerabilities.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(Depends\\(\\s*(get_current|verify|require)\\w*|login_required|requires?_role|verify_token|jwt|oauth2)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Every inference and admin route must require authentication; admin/model routes need authorisation. Partial if some sensitive routes are unauthenticated.",
+   "evidence_queries": [
+    "authentication token",
+    "require role admin",
+    "oauth2 jwt api key"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "AIA-QMS-01",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.17(1)",
+    "eu-ai-act/Art.9(2)"
+   ],
+   "category": "other",
+   "title": "Quality management and post-market monitoring procedures",
+   "statement": "Documented procedures cover change management of the model/system, validation before release, post-market monitoring of performance in production (e.g. drift), and serious-incident reporting.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(post[- ]market monitoring|change management|quality management)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "incident",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if the repository documents change management, pre-release validation, production monitoring AND incident reporting; partial if only some are covered.",
+   "evidence_queries": [
+    "release process change management",
+    "post-market monitoring drift",
+    "incident reporting procedure",
+    "quality management"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "AIA-QMS-02",
+   "policy_id": "eu-ai-act",
+   "clause_ids": [
+    "eu-ai-act/Art.9(6)",
+    "eu-ai-act/Art.9(8)",
+    "eu-ai-act/Art.17(1)"
+   ],
+   "category": "accuracy_robustness",
+   "title": "Testing against predefined metrics before release",
+   "statement": "The system is tested before release against prior defined metrics and thresholds appropriate to its intended purpose (e.g. an automated quality gate failing the build below a minimum AUC).",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [
+      "**/test_*.py",
+      "**/*_test.py",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+     ],
+     "kinds": [],
+     "pattern": "assert\\w*\\s*\\(?.*(auc|accuracy|precision|recall|f1|gini)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Smoke tests that only check an HTTP 200 are not model validation; require assertions against metric thresholds on held-out data.",
+   "evidence_queries": [
+    "test model quality threshold",
+    "assert auc greater than",
+    "evaluation gate ci"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-LAW-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.6(1)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "other",
+   "title": "Lawful basis documented for each processing purpose",
+   "statement": "Each purpose for which personal data is processed has a documented lawful basis under Art. 6(1) (consent, contract, legal obligation, vital interests, public task or legitimate interests), and consent is collected and recorded where it is the basis relied on.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc",
+      "config"
+     ],
+     "pattern": "(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for a privacy notice, record of processing or DPIA naming the lawful basis per purpose. A README claim \"fully GDPR compliant\" is not evidence of a lawful basis.",
+   "evidence_queries": [
+    "lawful basis legal basis",
+    "legitimate interest",
+    "consent",
+    "Art. 6(1)"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-TRN-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "transparency",
+   "title": "Privacy notice provided to data subjects",
+   "statement": "Data subjects receive a privacy notice at collection stating the controller and contact details, purposes and lawful basis, recipients, retention period, and their rights (access, rectification, erasure, objection, complaint).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*privacy*",
+      "**/*PRIVACY*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(right to (erasure|access|object|rectification)|your rights)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant if a notice covering controller, purposes, legal basis, retention and rights exists and is shown/linked to data subjects. Partial if key items (e.g. retention or rights) are missing.",
+   "evidence_queries": [
+    "privacy notice",
+    "your rights erasure access",
+    "data controller contact",
+    "how long we keep your data"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-RET-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.5(1)",
+    "gdpr/Art.13(2)"
+   ],
+   "category": "data_retention",
+   "title": "Storage limitation enforced",
+   "statement": "Personal data is kept no longer than necessary for its purpose: a retention period proportionate to the purpose is defined for each data category and enforced automatically (TTL, purge job, lifecycle rule).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check both that a retention period is defined AND enforced in code/IaC, and that it is proportionate (e.g. keeping raw support chats for years without justification is excessive; keeping data \"forever\" is non_compliant). Defined and enforced but disproportionate -> partial.",
+   "evidence_queries": [
+    "retention period days",
+    "purge job delete older than",
+    "lifecycle expiration ttl"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ERA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.17(1)"
+   ],
+   "category": "data_retention",
+   "title": "Right to erasure implemented",
+   "statement": "A mechanism exists to erase a data subject's personal data on request without undue delay (endpoint, admin job or documented procedure covering all stores, including derived data).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an implemented deletion path for a single data subject. Automatic expiry of all data after N days is not an on-request erasure mechanism (partial at most).",
+   "evidence_queries": [
+    "delete user data erasure",
+    "right to be forgotten",
+    "data subject request"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ADM-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.22(1)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "human_oversight",
+   "title": "Safeguards for solely automated decisions",
+   "statement": "Decisions producing legal or similarly significant effects are not based solely on automated processing, or, where an Art. 22(2) exception applies, the data subject can obtain human intervention, express their point of view and contest the decision.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Compliant if no significant decision is fully automated, OR if automated decisions come with an implemented contest/appeal path leading to human review. Non_compliant if decisions are fully automated with no recourse.",
+   "evidence_queries": [
+    "contest decision appeal",
+    "human intervention review",
+    "automated rejection"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "GDPR-ADM-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.13(2)",
+    "gdpr/Art.22(3)"
+   ],
+   "category": "transparency",
+   "title": "Meaningful information about the logic involved",
+   "statement": "Data subjects are informed of the existence of automated decision-making/profiling and receive meaningful information about the logic involved and its envisaged consequences.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for an applicant/candidate-facing explanation of the main factors used and the consequences. Internal model documentation does not inform data subjects.",
+   "evidence_queries": [
+    "logic involved automated decision",
+    "how the score is calculated",
+    "factors that influence the decision"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-PBD-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.25(1)",
+    "gdpr/Art.25(2)",
+    "gdpr/Art.5(1)"
+   ],
+   "category": "data_governance",
+   "title": "Data minimisation and privacy by design",
+   "statement": "Only personal data necessary for the purpose is collected and used (no unnecessary sensitive or protected attributes as model features), and privacy-by-design measures such as pseudonymisation or redaction are applied before processing or sharing with third parties.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect model features and data flows. Using gender/age/nationality as features, or sending raw personal data to a third-party LLM without redaction, is non_compliant. Look for explicit redaction/pseudonymisation code.",
+   "evidence_queries": [
+    "pseudonymisation redaction",
+    "features gender age nationality",
+    "data minimisation drop columns",
+    "mask PII before sending"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)"
+   ],
+   "category": "security",
+   "title": "Encryption of personal data at rest and in transit",
+   "statement": "Personal data is encrypted at rest (databases, object storage, volumes, backups) and in transit (TLS) as appropriate to the risk.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "encryption at rest configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms_key|sse_algorithm|server_side_encryption|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true|aws:kms)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "TLS configured",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https|ssl_certificate|cert-manager)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at-rest and in-transit encryption must be evidenced for all stores holding personal data. Only one of the two -> partial. Self-signed dev certificates in docker-compose do not count for production.",
+   "evidence_queries": [
+    "kms encryption at rest",
+    "storage_encrypted",
+    "tls certificate https ingress",
+    "server_side_encryption"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-SEC-02",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.32(1)",
+    "gdpr/Art.32(4)"
+   ],
+   "category": "security",
+   "title": "Access control to personal data",
+   "statement": "Access to personal data and to administrative functions is restricted to authenticated and authorised personnel (authentication, role-based authorisation, least privilege).",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check that endpoints exposing personal data require authentication and that admin/export routes check roles. Unauthenticated upload/listing endpoints are non_compliant.",
+   "evidence_queries": [
+    "authentication middleware",
+    "role based access admin",
+    "network policy least privilege"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "GDPR-ROPA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.30(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Record of processing activities",
+   "statement": "A record of processing activities is maintained for the system listing purposes, categories of data subjects and personal data, recipients, transfers, retention limits and security measures.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*ropa*",
+      "**/*ROPA*",
+      "**/*processing-record*",
+      "**/*processing_record*",
+      "**/*records-of-processing*",
+      "**/*processing-activities*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Accept a ROPA entry in the repo (markdown/yaml). A DPIA or privacy notice alone is not a ROPA but may be partial if it contains the Art. 30(1) items.",
+   "evidence_queries": [
+    "record of processing activities",
+    "ROPA",
+    "categories of data subjects recipients"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "GDPR-DPIA-01",
+   "policy_id": "gdpr",
+   "clause_ids": [
+    "gdpr/Art.35(1)",
+    "gdpr/Art.35(3)",
+    "gdpr/Art.35(7)"
+   ],
+   "category": "technical_documentation",
+   "title": "Data protection impact assessment",
+   "statement": "A DPIA has been carried out for the processing (systematic and extensive evaluation of personal aspects based on automated processing) and contains a description of the processing, necessity and proportionality assessment, risk assessment and mitigation measures.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/*dpia*",
+      "**/*DPIA*",
+      "**/*impact-assessment*",
+      "**/*impact_assessment*"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Compliant only if a DPIA document with the Art. 35(7) elements exists.",
+   "evidence_queries": [
+    "DPIA data protection impact assessment",
+    "necessity proportionality",
+    "risks to rights and freedoms"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-01",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-1(1)",
+    "acme-rai/POL-1(2)"
+   ],
+   "category": "transparency",
+   "title": "AI use disclosed in user interfaces",
+   "statement": "Every interface where a person interacts with the AI system or sees an AI-produced score, ranking, classification or text visibly discloses AI involvement; decision-support UIs state that the output is an AI recommendation and who decides.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Inspect UI components, e-mail templates and notification texts. Neutral names like \"Smart Score\" do not disclose AI involvement.",
+   "evidence_queries": [
+    "AI-generated recommendation label",
+    "powered by AI disclosure",
+    "final decision made by",
+    "classified automatically"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-02",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-2(1)",
+    "acme-rai/POL-2(2)"
+   ],
+   "category": "transparency",
+   "title": "AI-generated content labelled",
+   "statement": "AI-generated text/media delivered to customers carries a visible \"AI-generated\" label and, where feasible, a machine-readable marker.",
+   "applies_to": [
+    "limited"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(ai[-_ ]generated|x-ai-generated)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A banner saying the user chats with an AI is POL-1, not POL-2. Look for per-message labelling or metadata. TODO comments do not count.",
+   "evidence_queries": [
+    "AI-generated badge",
+    "X-AI-Generated header",
+    "generated content label"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-03",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-3(1)",
+    "acme-rai/POL-3(2)"
+   ],
+   "category": "record_keeping",
+   "title": "Prediction logging with 180-day retention",
+   "statement": "Every production prediction/response is logged with timestamp, correlation id, model version, input reference and output, in tamper-resistant storage retained for at least 180 days.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "model_version",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac"
+     ],
+     "pattern": "(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both parts are needed: structured per-prediction logging AND >= 180 days retention. Logging with shorter retention -> partial. No logging -> non_compliant.",
+   "evidence_queries": [
+    "prediction log model version request id",
+    "log retention days",
+    "append-only audit"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-04",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-4(1)",
+    "acme-rai/POL-4(2)"
+   ],
+   "category": "data_retention",
+   "title": "Raw personal-data inputs deleted within 30 days",
+   "statement": "Raw inputs containing personal data (documents, messages, transcripts, payloads) are automatically deleted or anonymised within 30 days, unless a documented legal retention obligation applies.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "config",
+      "iac",
+      "code"
+     ],
+     "pattern": "(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Find the retention of each raw-input store. Any raw store kept > 30 days without a documented legal obligation is non_compliant; no automated deletion at all is non_compliant.",
+   "evidence_queries": [
+    "raw input retention 30 days",
+    "transcript retention",
+    "purge uploaded documents",
+    "lifecycle expiration"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-05",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-5(1)",
+    "acme-rai/POL-5(2)"
+   ],
+   "category": "security",
+   "title": "Encryption at rest and TLS in transit",
+   "statement": "Storage of personal data, model artefacts and logs is encrypted at rest, and all service traffic uses TLS 1.2+.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    },
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "iac",
+      "config"
+     ],
+     "pattern": "(tls|https)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Both at rest and in transit must be shown; one of the two -> partial.",
+   "evidence_queries": [
+    "kms encrypted storage",
+    "tls ingress certificate",
+    "min tls version"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-06",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-6(1)",
+    "acme-rai/POL-6(2)"
+   ],
+   "category": "security",
+   "title": "Access control on model endpoints",
+   "statement": "Inference and model-management endpoints require authentication (or are declared public and rate-limited), and administrative endpoints enforce role-based authorisation.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Enumerate routes. Any undeclared unauthenticated inference/upload route, or an admin route without a role check, is non_compliant.",
+   "evidence_queries": [
+    "authentication required endpoint",
+    "admin role check",
+    "public endpoints declared"
+   ],
+   "severity": "high"
+  },
+  {
+   "id": "ACME-07",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-7(1)",
+    "acme-rai/POL-7(2)"
+   ],
+   "category": "human_oversight",
+   "title": "Human approval of adverse decisions",
+   "statement": "Adverse decisions about natural persons (rejection, decline, closure) are approved by a human reviewer who sees the AI output and reasons and can change the outcome, and the approval is logged.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code"
+     ],
+     "pattern": "(auto[_-]?reject|auto[_-]?decline)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "absent"
+    }
+   ],
+   "llm_guidance": "Trace adverse outcomes in code. Human approval for only part of the cases (e.g. above an amount threshold) is partial. Automatic rejection is non_compliant.",
+   "evidence_queries": [
+    "reviewer approval reject",
+    "auto decline",
+    "human confirmation required"
+   ],
+   "severity": "critical"
+  },
+  {
+   "id": "ACME-08",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-8(1)"
+   ],
+   "category": "technical_documentation",
+   "title": "Model card for every deployed model",
+   "statement": "Each deployed model (including third-party models) has a model card covering intended and out-of-scope use, version, training data summary, evaluation metrics, limitations and owner.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "file_exists",
+     "description": "",
+     "globs": [
+      "**/MODEL_CARD*",
+      "**/model_card*",
+      "**/*.modelcard.md"
+     ],
+     "kinds": [],
+     "pattern": null,
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Check presence and completeness of the model card(s) against the listed fields.",
+   "evidence_queries": [
+    "model card",
+    "intended use out of scope",
+    "owner team limitations"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-09",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-9(1)"
+   ],
+   "category": "security",
+   "title": "Rate limiting on AI endpoints",
+   "statement": "AI endpoints reachable from untrusted networks enforce per-client rate limiting configured in code or configuration.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "code",
+      "config",
+      "iac"
+     ],
+     "pattern": "(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "Look for rate-limit middleware (express-rate-limit, slowapi), gateway throttling or ingress annotations. Public endpoints without it are non_compliant.",
+   "evidence_queries": [
+    "rate limit",
+    "throttling",
+    "requests per minute"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-10",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-10(1)",
+    "acme-rai/POL-10(2)"
+   ],
+   "category": "other",
+   "title": "AI incident response procedure",
+   "statement": "The repository contains an AI incident response procedure (detection, escalation, reporting) that requires reporting serious incidents to the AI Governance Board within 24 hours.",
+   "applies_to": [
+    "high",
+    "limited",
+    "minimal"
+   ],
+   "checks": [
+    {
+     "type": "pattern",
+     "description": "",
+     "globs": [],
+     "kinds": [
+      "doc"
+     ],
+     "pattern": "(ai[- ]incidents?@|incident (response|reporting))",
+     "path": null,
+     "equals": null,
+     "rego": null,
+     "expect": "present"
+    }
+   ],
+   "llm_guidance": "A generic ops runbook without AI incidents or without the 24h governance reporting is partial.",
+   "evidence_queries": [
+    "incident response",
+    "escalation on-call",
+    "ai-incidents report 24 hours"
+   ],
+   "severity": "medium"
+  },
+  {
+   "id": "ACME-11",
+   "policy_id": "acme-rai",
+   "clause_ids": [
+    "acme-rai/POL-11(1)"
+   ],
+   "category": "data_governance",
+   "title": "Bias and fairness evaluation before release",
+   "statement": "A documented bias and fairness evaluation (metrics and results per protected group, mitigations) exists for the released model and is referenced from the model card.",
+   "applies_to": [
+    "high"
+   ],
+   "checks": [],
+   "llm_guidance": "Requires actual results. \"Planned\", TODOs or excluding protected features only is non_compliant.",
+   "evidence_queries": [
+    "fairness evaluation report",
+    "disparate impact ratio",
+    "bias audit results per group"
+   ],
+   "severity": "high"
+  }
+ ],
+ "verdicts": [
+  {
+   "requirement_id": "AIA-RISK-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "No element of the Art. 5(1) prohibited-practices statement is implemented. The system only ranks parsed CV text for recruiters, and E1 explicitly states that emotion recognition and video or voice analysis are not supported. E4 and E5 corroborate this: the model does not accept or reject candidates, and video, audio and photos are out of scope. Nothing in the excerpts shows social scoring, crime prediction, facial image scraping, subliminal or manipulative techniques, or biometric categorisation into sensitive traits. The evidence is documentary and comment-based rather than a code-level scan, which is why confidence is not higher.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.60] no emotion recognition / social scoring / face scraping code: confirmed absent (ignored: src/hireright/api.py:4 [comment])",
+   "evidence_ids": [
+    "0b4c5b4bf809",
+    "8c1a0258270f",
+    "c8e04b05d04a",
+    "8fd94043ac69",
+    "ba8a47944ba1",
+    "5faa0a3fb1cf"
+   ],
+   "gaps": [
+    "No code-level scan of the full repository shown in excerpts for emotion, face or biometric processing",
+    "Non-implementation of emotion recognition is stated in a module docstring rather than enforced by a technical control"
+   ],
+   "remediation": "Add an automated CI check (for example a grep or import-linter rule) that fails the build on imports or endpoints for emotion recognition, face detection, face scraping or biometric categorisation libraries. Keep the Art. 5 non-applicability statement in docs/risk-assessment.md and reference it from README.md so the position is auditable beyond a code comment.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-RISK-02",
+   "status": "compliant",
+   "confidence": 0.78,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.78] risk tier stated in documentation: found at README.md:10, docs/risk-assessment.md:5",
+   "evidence_ids": [
+    "c8e04b05d04a",
+    "9f897644c74f"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-RISK-03",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.70] a risk assessment / risk register document exists: found docs/risk-assessment.md",
+   "evidence_ids": [
+    "9f897644c74f"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-DATA-01",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.70] a datasheet / data card exists: found DATASHEET.md",
+   "evidence_ids": [
+    "5faa0a3fb1cf"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-DATA-02",
+   "status": "non_compliant",
+   "confidence": 0.85,
+   "rationale": "The statement requires that the data sets were examined for bias and that detection, prevention and mitigation measures are documented with results. The evidence says the opposite: the datasheet states \"Bias examination: not yet performed on this version\" (E3, section 5), the model card says \"A group-level fairness evaluation has not been completed for this release\" (E1), and the risk register keeps R-03 open at medium residual with the fairness evaluation \"pending (HR-412)\" (E2). The only mitigation evidenced is removal of protected fields (E3, E7, E4), which the guidance says does not satisfy the requirement on its own, and no representativeness analysis per person group or setting is documented. The noted under-representation of DE/AT engineering applications (E3) is a disclosed data gap, not a bias examination with results, so the missing artefact is not partially covered.\nRule engine (needs_review): No deterministic checks defined for this requirement; human or LLM review needed.",
+   "evidence_ids": [
+    "8fd94043ac69",
+    "9f897644c74f",
+    "5faa0a3fb1cf",
+    "ba8a47944ba1",
+    "e81e7fa9d2ff"
+   ],
+   "gaps": [
+    "No group-level fairness or bias analysis with metrics per group",
+    "No documented bias findings for this release",
+    "No documented mitigation measures with results (only protected-field removal, proxies unassessed)",
+    "No representativeness analysis for affected persons and deployment settings (countries, roles, languages)",
+    "Risk R-03 open at medium residual, not accepted",
+    "Bias examination deferred to Q4 2026 (HR-412)",
+    "Automated checks inconclusive; manual verification required."
+   ],
+   "remediation": "Complete the bias examination (HR-412) before release: run a group-level fairness evaluation on the 2025-H2 hold-out, with selection-rate and ranking-quality metrics per group (e.g. country, language, role family, and proxy-based age/origin groups where lawful), and record the results in a new document such as docs/bias-assessment.md. Add a representativeness analysis of the training data against the deployment population and settings, and document the mitigations applied (for example reweighting, threshold or calibration changes) with before/after results. Update DATASHEET.md section 5 and MODEL_CARD.md Fairness section with these results, close or re-rate R-03 in docs/risk-assessment.md, and add a CI gate in tests/test_model_quality.py or the release process that blocks model release without a signed bias report.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-DOC-01",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.70] technical documentation file exists: found docs/technical-documentation.md",
+   "evidence_ids": [
+    "ba8a47944ba1"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-DOC-02",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.70] a file matching **/MODEL_CARD*, **/model_card*, **/*.modelcard.md, **/model-card* exists: found MODEL_CARD.md",
+   "evidence_ids": [
+    "8fd94043ac69"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-DOC-03",
+   "status": "partial",
+   "confidence": 0.9,
+   "rationale": "The instructions for use (E1) evidence the provider identity and contact (ACME Corp address and support email), the intended purpose, human oversight measures (Move, admin suspension, mandatory training), and the recruiter-decides principle. However, Section 4 \"Performance and limitations\" is marked TBD, so the accuracy level, metrics, known limitations and performance information are missing, and Section 5 \"Logs\" is also TBD, so how to collect and interpret logs is missing. Foreseeable misuse is not stated in the visible E1 content; E5 says misuse is covered \"in model card and instructions\", but that is not evidenced in E1. Per the guidance, TBD sections count as missing, so the status is partial rather than compliant. The journal design (E9) exists but is not explained to deployers in the instructions.\nRule engine (partial): 1/2 deterministic checks passed.\n- [PASS 0.70] instructions for use document exists: found docs/instructions-for-use.md\n- [FAIL 0.60] instructions mention accuracy metrics: no match found",
+   "evidence_ids": [
+    "8c1a0258270f",
+    "9f897644c74f",
+    "9b8eb854516a"
+   ],
+   "gaps": [
+    "accuracy level and metrics (Section 4 TBD)",
+    "known limitations of performance (Section 4 TBD)",
+    "foreseeable misuse risks not stated in instructions",
+    "log collection instructions (Section 5 TBD)",
+    "log interpretation guidance for deployers (Section 5 TBD)",
+    "instructions mention accuracy metrics"
+   ],
+   "remediation": "Complete docs/instructions-for-use.md: (1) Section 4 with accuracy and validation metrics (e.g. group-CV ranking metrics from Talent Data Science), expected performance, known limitations (e.g. unranked applications, CV parsing errors, drift), and foreseeable misuse such as internal promotion decisions (R-06); (2) Section 5 explaining how deployers access the DecisionJournal (Athena view, per ADR 0002), which fields each entry contains (event, model_version, input_digest, result, actor), the 400-day retention, and how to read the \u25b2/\u25bc reasons and event types. Remove all TBD markers before release.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-TRA-01",
+   "status": "compliant",
+   "confidence": 0.81,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.81] pattern /(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)/ present in code: found at src/hireright/model.py:10, src/hireright/model.py:33, src/hireright/model.py:43",
+   "evidence_ids": [
+    "e81e7fa9d2ff"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-TRA-02",
+   "status": "not_applicable",
+   "confidence": 0.96,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-TRA-03",
+   "status": "not_applicable",
+   "confidence": 0.96,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "AIA-WRK-01",
+   "status": "compliant",
+   "confidence": 0.75,
+   "rationale": "Rule engine and LLM judge disagree; the LLM judge is markedly more confident (0.85 vs 0.60) and is followed.\nLLM judge (compliant): The candidate-facing privacy notice shown on the careers portal states the purpose as assessing the applicant's application and says \"We use an AI system to rank applications by relevance to the job description\" (E3). This tells the candidate that an AI system is used to assess them, which satisfies the statement's test for applicants. E2 also records that candidates are informed through this notice. The recruiter-facing notice in E5 does not count toward compliance, and it is not relied on. The deterministic rule-engine FAIL is a false negative: the E3 wording matches the pattern when case is ignored, so the hint should not drive the outcome. The workers element is not triggered on this evidence, because the model card (E4) excludes internal employee ranking. The excerpt is truncated, so delivery timing and placement are not verified, but the statement does not require them.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] pattern /(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)/ present in doc, code: no match found",
+   "evidence_ids": [
+    "2cea6a3f479d",
+    "c8e04b05d04a",
+    "8fd94043ac69"
+   ],
+   "gaps": [
+    "Presentation of the notice at submission time is not shown in the excerpt (not required by the statement)",
+    "No evidence that the notice is sent to candidates through rejection or outreach emails",
+    "pattern /(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\\n]{0,80}(assess|screen|evaluat|scor|rank)/ present in doc, code"
+   ],
+   "remediation": "No blocking fix is required. Optionally, add a configuration or template check that links the privacy notice (docs/privacy-notice.md) from the application form and outreach e-mail templates, and keep a record of the version shown to candidates. Make the rule-engine pattern case-insensitive so it matches the notice wording.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-REC-01",
+   "status": "compliant",
+   "confidence": 0.72,
+   "rationale": "Rule engine and LLM judge disagree; the LLM judge is markedly more confident (0.82 vs 0.60) and is followed.\nLLM judge (compliant): The decision-logging mechanism is a custom append-only DecisionJournal rather than a logger call, which the guidance accepts. Each JournalEntry carries a timestamp (`at`, E4), an input reference (`input_digest`, E4/E5), the output (`result` with score and reasons, E5), the model version (E4/E5, with MODEL_VERSION defined in E1), and the acting human or system (`actor`, E4/E5). The ranking endpoint writes a \"ranked\" event on each ranking, and reviewer decisions and overrides are journaled with the reviewer's id (E5). Records are written automatically through S3WormSink (E8) and retained under the configured journal retention (E3, E9), which supports traceability and post-market monitoring. The deterministic regex hint failed only because it looks for logger calls, not the journal.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] pattern /(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)/ present in code: no match found",
+   "evidence_ids": [
+    "e81e7fa9d2ff",
+    "9b8eb854516a",
+    "a7cb4cee542b",
+    "6d8cbde474b9",
+    "2bbc653c8a3a",
+    "9f337e6b7664"
+   ],
+   "gaps": [
+    "Lifetime retention is set by a bucket lifecycle rule whose deployed value is not visible in the excerpts (E9 note); the 400-day value in E3 is documented, not verified in deployed config",
+    "pattern /(audit_?log(ger)?|logger|logging)\\.(info|warning|log)\\s*\\(.*(predict|decision|score|output)/ present in code"
+   ],
+   "remediation": "Add a test that asserts every ranking and reviewer action path calls DecisionJournal.record, and confirm in infra config that the journal bucket lifecycle rule matches config/retention.yaml decision_journal.retention_days. Optionally extend the rule-engine pattern to recognise DecisionJournal.record calls so this check is not a false negative.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-REC-02",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The statement requires automatically generated decision logs to be kept for a period appropriate to the intended purpose and of at least 180 days. The decision journal, which holds one entry per ranking and per human action, has a configured retention of 400 days with object-lock storage (E1), and the ADR records the same 400-day value and the Object Lock compliance mode (E4). Journal entries with model version, input digest, result and actor are present (E5), and the nightly retention job does not delete journal segments; their expiry is left to the bucket lifecycle rule (E3). The 400-day period exceeds the 180-day minimum. The lifecycle rule itself is not in the excerpts, so the effective expiry is shown by configuration and documentation rather than by the deployed rule. The 14-day expiry of general application logs (E4) is not the designated decision record, so it does not defeat the requirement, but a reviewer should confirm that no decision output is kept only in those logs.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(log|journal|audit)\\w*[\\s\\S]{0,120}?(retention_days|retention_in_days|retentiondays)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b/ present in config, iac: found at config/retention.yaml:6",
+   "evidence_ids": [
+    "a41266dbf4b1",
+    "9f337e6b7664",
+    "9b8eb854516a",
+    "7436412b05e0"
+   ],
+   "gaps": [
+    "Bucket lifecycle rule for the journal bucket not shown in the excerpts; effective expiry is inferred from config",
+    "Confirmation that decision outputs are not kept only in the 14-day application logs"
+   ],
+   "remediation": "Add the Terraform for the journal S3 bucket (Object Lock compliance mode and a lifecycle expiration of 400 days, sourced from config/retention.yaml) to the repository so the effective retention can be verified. Document in the logging section of the instructions for use (currently TBD) that the DecisionJournal is the system of record for decision logs and that its retention is 400 days.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-HUM-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(override|manual[_ ]review|human[_ ]review|reviewer)/ present in code: found at src/hireright/api.py:49, src/hireright/api.py:58, src/hireright/api.py:63, src/hireright/api.py:67 (ignored: src/hireright/journal.py:23 [comment], src/hireright/journal.py:23 [comment])",
+   "evidence_ids": [
+    "af48eeff649f",
+    "6d8cbde474b9",
+    "e81e7fa9d2ff",
+    "23969d9eb309"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-HUM-02",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "Rule engine and LLM judge disagree; the LLM judge is markedly more confident (0.80 vs 0.60) and is followed.\nLLM judge (compliant): A working interrupt mechanism exists. The admin suspend handler sets `settings.automated_ranking_enabled = False` and journals a \"suspended\" event (E9), and the `/score` endpoint checks that flag and, when it is off, marks the application unranked and queues it for manual review without running the model (E4). E8 documents that screening admins can suspend ranking for all requisitions, with the queue falling back to manual handling, and E6 defines the suspended/resumed journal events. The suspend handler's decorator and signature fall outside the excerpt, so its role check cannot be confirmed here, and the flag's propagation across the two EKS pods (E5) is not visible. Those are verification points rather than missing elements.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.60] pattern /(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))/ present in code, config: no match found",
+   "evidence_ids": [
+    "af48eeff649f",
+    "16895092e9b7",
+    "8c1a0258270f",
+    "9b8eb854516a"
+   ],
+   "gaps": [
+    "Suspend route decorator and role check not visible in the excerpt (only the resume route is shown as role-gated)",
+    "Confirm the suspension flag is shared across both pods rather than held per process",
+    "No test or runbook evidence showing the kill switch has been exercised",
+    "pattern /(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))/ present in code, config"
+   ],
+   "remediation": "Show the suspend route's decorator and require_role check in api.py, and confirm settings.automated_ranking_enabled is backed by shared storage (e.g. a config store or database) so a suspension applies to every pod. Add an automated test that suspends ranking and asserts /score returns queued_for_manual_review. Document the suspend/resume procedure in the instructions for use (E8 section 3) with the exact endpoint and who may call it. Consider a rule-engine pattern covering automated_ranking_enabled, since the current regex missed this mechanism.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-HUM-03",
+   "status": "compliant",
+   "confidence": 0.85,
+   "rationale": "The only status-changing path is the `/decision` endpoint, which requires an authenticated recruiter and whose docstring states it is \"the only way a candidate's status changes\" (E2). The ranking endpoint (E2) returns scores and saves the ranking without setting an outcome, and the automated-ranking kill switch routes applications to manual review rather than rejecting them (E3). The recruiter UI states that the recruiter makes the final decision and can move candidates against the ranking (E4), and the privacy notice says no decision is made solely by automated means (E5). Reject outcomes also require a written reason of at least 10 characters (E3), and the grep check found no auto-reject pattern. The excerpts do not show the full `set_status` or `save_ranking` implementations, but nothing in the visible flow sets an adverse outcome without a human step.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.60] pattern /auto[_-]?reject/ absent in code: confirmed absent",
+   "evidence_ids": [
+    "9f897644c74f",
+    "6d8cbde474b9",
+    "af48eeff649f",
+    "23969d9eb309",
+    "2cea6a3f479d",
+    "9b8eb854516a"
+   ],
+   "gaps": [
+    "Full body of applications.set_status and save_ranking not visible in excerpts (truncated), so the absence of any automatic reject path is inferred from the visible flow",
+    "Recruiter competence and training evidence is only referenced as a risk mitigation (quarterly training in E1), not as a verifiable record"
+   ],
+   "remediation": "Add a regression test asserting that no code path other than the authenticated /decision endpoint sets a reject or decline status, and that the ranking and suspension flows never write a final outcome. Add a training-records document or procedure for recruiters who make decisions on AI-ranked candidates, to evidence the competence element. Confirm the truncated set_status and save_ranking implementations in code review.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-ACC-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\\n]{0,30}\\d\\.\\d+/ present in doc, model_card: found at MODEL_CARD.md:25, MODEL_CARD.md:26, MODEL_CARD.md:27, MODEL_CARD.md:31, docs/release-process.md:11",
+   "evidence_ids": [
+    "8fd94043ac69",
+    "849664b662d4"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-ACC-02",
+   "status": "needs_review",
+   "confidence": 0.55,
+   "rationale": "The system shows some resilience: E1 wraps feature building, prediction and SHAP explanation in a try block in Ranker.rank(), and E7 routes requests to manual review when automated ranking is switched off. E7 and E4 also show that no automatic adverse decision is taken, since a human recruiter must issue the decision. E6 (R-04) and E9 state that parse failures yield an unranked application routed to manual handling. However, the except branch in E1 is cut off at line 50, so the fail-safe outcome for exceptions is not visible in the code. The score endpoint in E7/E8 does not show error handling around ranker.rank(), and no timeout or model-unavailability handling appears anywhere in the excerpts. These elements are therefore not evidenced, so the status is partial rather than compliant.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.55] pattern /(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)/ present in code: only in explanatory comments/docstrings at src/hireright/model.py:48 (claim, verify the code) (ignored: src/hireright/model.py:48 [comment])\nLow confidence (0.55) for 'partial': routed to human review.",
+   "evidence_ids": [
+    "e81e7fa9d2ff",
+    "8fd94043ac69",
+    "9f897644c74f",
+    "6d8cbde474b9",
+    "af48eeff649f",
+    "ba8a47944ba1"
+   ],
+   "gaps": [
+    "Except/fallback branch of Ranker.rank() not visible (E1 truncated), so the exception outcome is unverified",
+    "No error handling around ranker.rank() in the score endpoint (E7/E8); exceptions would surface as generic framework errors",
+    "No timeout or model-unavailability handling evidenced for inference or SHAP calls",
+    "No tests evidencing the failure path routes to manual handling"
+   ],
+   "remediation": "In src/hireright/api.py score(), wrap ranker.rank() in try/except (including timeout and model-load errors). On failure, call applications.mark_unranked(), journal a 'ranking_failed' event, and return status 'queued_for_manual_review' instead of a score. Add an explicit timeout to model and SHAP inference in src/hireright/model.py, and make the except branch in Ranker.rank() return Ranking(score=None, needs_manual_review=True). Add unit tests that inject exceptions and timeouts and assert that no score or adverse status is produced. Document this fail-safe behaviour in docs/technical-documentation.md and reference it from the risk register entry R-04.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-SEC-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(BaseModel|Field\\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)/ present in code: found at src/hireright/api.py:13, src/hireright/api.py:31, src/hireright/api.py:32, src/hireright/api.py:33",
+   "evidence_ids": [
+    "0b4c5b4bf809",
+    "af48eeff649f",
+    "a7cb4cee542b"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-SEC-02",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(Depends\\(\\s*(get_current|verify|require)\\w*|login_required|requires?_role|verify_token|jwt|oauth2)/ present in code: found at src/hireright/api.py:17, src/hireright/api.py:55, src/hireright/api.py:71, src/hireright/api.py:80, src/hireright/api.py:89",
+   "evidence_ids": [
+    "0b4c5b4bf809",
+    "af48eeff649f",
+    "6d8cbde474b9",
+    "16895092e9b7",
+    "3b1779728b03"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-QMS-01",
+   "status": "compliant",
+   "confidence": 0.95,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.90] pattern /(post[- ]market monitoring|change management|quality management)/ present in doc: found at README.md:31, docs/release-process.md:1, docs/release-process.md:15, docs/release-process.md:3\n- [PASS 0.90] pattern /incident/ present in doc: found at README.md:31, docs/release-process.md:20, docs/release-process.md:21, docs/release-process.md:22, docs/release-process.md:23",
+   "evidence_ids": [
+    "c8e04b05d04a",
+    "849664b662d4"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "AIA-QMS-02",
+   "status": "compliant",
+   "confidence": 0.725,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.70] a file matching **/test_*.py, **/*_test.py, **/*.test.ts, **/*.spec.ts exists: found tests/test_model_quality.py\n- [PASS 0.65] pattern /assert\\w*\\s*\\(?.*(auc|accuracy|precision|recall|f1|gini)/ present in **/test_*.py, **/*_test.py, **/*.test.ts, **/*.spec.ts: found at tests/test_model_quality.py:19",
+   "evidence_ids": [
+    "44f0721a6796"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-LAW-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "The primary purpose (assessing applications) has a documented Art. 6(1) basis: E1 names Art. 6(1)(b) and Art. 6(1)(f) and the notice is the controller's disclosure. However, E2 says the re-use of candidate data for model development relies on an LIA dated 2025-11-03, and that LIA is not in the evidence. E1 does not list model training as a purpose or name a basis for it, so the basis for that purpose is not demonstrably documented. Consent is not relied on in E1, so the consent-recording element does not apply. The rule-engine hint (compliant) is based only on a keyword match and does not cover the secondary purpose.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.55] pattern /(lawful basis|legal basis|legitimate interests?|art(icle)?\\.?\\s*6\\s*\\(1\\))/ present in doc, config: found at docs/privacy-notice.md:13, docs/privacy-notice.md:14 - documentation only (claim, not implementation)",
+   "evidence_ids": [
+    "2cea6a3f479d",
+    "5faa0a3fb1cf"
+   ],
+   "gaps": [
+    "No lawful basis documented for the model-development/training purpose in the privacy notice",
+    "LIA of 2025-11-03 referenced in DATASHEET.md is not present in the repository",
+    "No record of processing (ROPA) mapping each purpose to its Art. 6(1) basis",
+    "Decision journal retention (400 days) purpose not mapped to a stated lawful basis in the notice",
+    "Consent: none relied on, so no consent-recording mechanism is evidenced (not required if consent is not the basis)"
+   ],
+   "remediation": "Add a record of processing (e.g. docs/ropa.md) listing each purpose (candidate assessment, model training/re-use, decision journal/AI Act record-keeping, erasure handling) with its Art. 6(1) basis and, for re-use, the Art. 6(4) compatibility assessment. Add the LIA of 2025-11-03 to the repository (e.g. docs/lia/2025-11-03-model-reuse.md) and link it from DATASHEET.md. Update docs/privacy-notice.md so that the model-training purpose and its legitimate-interests basis are disclosed, and state the basis for the decision journal retention. If consent is ever relied on, add a consent record mechanism.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-TRN-01",
+   "status": "compliant",
+   "confidence": 0.725,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.70] a file matching **/*privacy*, **/*PRIVACY* exists: found docs/privacy-notice.md\n- [PASS 0.65] pattern /(right to (erasure|access|object|rectification)|your rights)/ present in doc: found at docs/privacy-notice.md:22",
+   "evidence_ids": [
+    "2cea6a3f479d"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-RET-01",
+   "status": "compliant",
+   "confidence": 0.81,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.81] pattern /(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\\s*[:=]/ present in config, iac, code: found at config/retention.yaml:3, config/retention.yaml:5, config/retention.yaml:7",
+   "evidence_ids": [
+    "a41266dbf4b1"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-ERA-01",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "An on-request erasure endpoint exists: DELETE /candidates/{candidate_id} is restricted to the privacy-officer role, returns 404 for unknown candidates, and calls candidates.delete_everywhere to remove the CV, parsed profile and rankings (E1). The privacy notice documents an erasure right and a DPO contact (E5). However, coverage of all stores is not fully shown. The decision journal, which holds application_id and actor per event, is kept in S3 Object Lock for 400 days (E2, E6), and the endpoint itself states that the journal keeps digests rather than being erased (E1). The excerpts do not show the body of delete_everywhere, so coverage of derived data and backups cannot be verified, and no documented erasure procedure or response timeframe is evidenced.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(def |function |async function |const )\\w*(erase|forget|delete)\\w*(candidate|customer|applicant|subject|user|person)\\w*/ present in code: found at src/hireright/api.py:104",
+   "evidence_ids": [
+    "16895092e9b7",
+    "9b8eb854516a",
+    "2cea6a3f479d",
+    "a41266dbf4b1"
+   ],
+   "gaps": [
+    "Journal entries linked to application_id and actor are not erased and are locked for 400 days, with no documented Art. 17(3) justification",
+    "Implementation of candidates.delete_everywhere not evidenced; coverage of S3 raw CV objects, derived data and backups unverified",
+    "No documented erasure procedure or handling timeframe (without undue delay)"
+   ],
+   "remediation": "Add a documented erasure procedure (e.g. docs/erasure-procedure.md) that lists every store (raw CV S3 objects, profiles, rankings, derived features, backups) and how each is erased, with a response timeframe. Add tests showing delete_everywhere removes data from every store. For the decision journal, either pseudonymise application_id and actor so entries are no longer linkable after erasure, or document a legal-basis assessment under Art. 17(3)(b)/(e) that justifies retaining journal entries under Object Lock, and reflect that in the privacy notice.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-ADM-01",
+   "status": "compliant",
+   "confidence": 0.78,
+   "rationale": "The statement's first branch is met: no decision is shown to be solely automated. The privacy notice says a recruiter takes all decisions (E2), and the decision endpoint is described as the only way a candidate's status changes and requires a human recruiter (E1). The AI output is labelled a recommendation the recruiter must override or accept (E5, E6). Human intervention is operationally evidenced in the journal, with reviewer_decision and override events attributed to a named recruiter (E4, E8). Automated ranking can also be suspended by an admin (E3, E6). Gaps: no candidate-facing contest or appeal route is documented, since the privacy notice lists only access, rectification, erasure, restriction, objection, portability and complaint rights (E2). This is not strictly required here because the first branch is satisfied, but a human should confirm that the ranking cannot drive rejection without a recruiter decision.\nRule engine (needs_review): No deterministic checks defined for this requirement; human or LLM review needed.",
+   "evidence_ids": [
+    "6d8cbde474b9",
+    "2cea6a3f479d",
+    "af48eeff649f",
+    "9b8eb854516a",
+    "23969d9eb309",
+    "8c1a0258270f",
+    "7436412b05e0"
+   ],
+   "gaps": [
+    "No documented candidate-facing right to contest, express a point of view, or request human intervention (only needed if an Art. 22(2) exception applies)",
+    "Instructions section 4 (performance and limitations) and section 5 (logs) are TBD (E6)",
+    "Automated checks inconclusive; manual verification required."
+   ],
+   "remediation": "Add a candidate-facing contest procedure to the privacy notice (E2) and the instructions for use (E6): how to request human re-review, express a point of view, and contest a decision, with a named contact and response deadline. Complete the TBD sections of E6 and document that the ranking cannot change candidate status without a recorded recruiter decision.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-ADM-02",
+   "status": "partial",
+   "confidence": 0.6,
+   "rationale": "E1 informs candidates that an AI system ranks applications, that a recruiter takes all decisions, and names the main ranking factors (match of skills, experience and education to the role requirements), which evidences the existence notice and part of the logic. E1 does not state the envisaged consequences of the ranking for the candidate, such as ranking determining review order, unranked applications being queued for manual review (E4, E5), or the effect on how the application is handled. The privacy notice is therefore only partly evidenced against the statement, and the deterministic pass is based only on a keyword match that does not check the consequences element.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))/ present in doc: found at docs/privacy-notice.md:9",
+   "evidence_ids": [
+    "2cea6a3f479d",
+    "c8e04b05d04a",
+    "6d8cbde474b9",
+    "8c1a0258270f"
+   ],
+   "gaps": [
+    "No candidate-facing statement of the envisaged consequences of the ranking (e.g., effect on review order or on the chance of being reviewed)",
+    "No explanation of how an unranked or manually queued application is handled for the candidate",
+    "Logic description is high-level; no indication of how the relevance score or main reasons are produced for candidates"
+   ],
+   "remediation": "Extend docs/privacy-notice.md (the careers-portal notice) with a dedicated automated-ranking section that states: (1) that AI ranking/profiling is applied and what it does (ordering the recruiter review queue); (2) the main factors and how they influence the relevance score, in plain language; (3) the consequences for the candidate (e.g., position in the review queue, applications marked unranked are reviewed manually, no automatic rejection); and (4) how to request human intervention, express a point of view or contest the outcome. Keep the notice in sync with docs/instructions-for-use.md and the risk assessment.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-PBD-01",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])/ present in code: found at src/hireright/model.py:19, src/hireright/model.py:36, src/hireright/model.py:37, src/hireright/model.py:41, src/hireright/retention.py:19 (ignored: src/hireright/model.py:18 [comment])",
+   "evidence_ids": [
+    "e81e7fa9d2ff",
+    "9f337e6b7664"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-SEC-01",
+   "status": "compliant",
+   "confidence": 0.825,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.65] encryption at rest configured: found at infra/k8s/deployment.yaml:54\n- [PASS 0.90] TLS configured: found at config/app.yaml:7, infra/k8s/deployment.yaml:20, infra/k8s/deployment.yaml:24, infra/k8s/deployment.yaml:25",
+   "evidence_ids": [
+    "c1d986badeb7",
+    "0255bba410ef",
+    "1d93ff719ddc"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-SEC-02",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|mtls|client_cert)/ present in code: found at src/hireright/api.py:17, src/hireright/api.py:55, src/hireright/api.py:71, src/hireright/api.py:80, src/hireright/api.py:89",
+   "evidence_ids": [
+    "0b4c5b4bf809",
+    "af48eeff649f",
+    "6d8cbde474b9",
+    "16895092e9b7",
+    "3b1779728b03"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-ROPA-01",
+   "status": "non_compliant",
+   "confidence": 0.8,
+   "rationale": "No record of processing activities exists in the repository. The deterministic file check found no ROPA-named file, and the README's documentation index (E2) lists no ROPA, only the model card, technical documentation, instructions for use, and release process. The candidate privacy notice (E7) covers some Art. 30(1) items: controller and DPO contact, purposes, recipients (ACME recruiters, AWS EU hosting), and retention periods (30 / 180 / 400 days). Security measures are described separately in the risk register (E5: OIDC, RBAC, KMS encryption), and E1 describes the system. None of these is a ROPA, and the guidance says a privacy notice may be partial but does not replace the record. Because the required artefact is absent, the status is non_compliant rather than partial.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.65] a file matching **/*ropa*, **/*ROPA*, **/*processing-record*, **/*processing_record*, **/*records-of-processing*, **/*processing-activities* exists: no matching file",
+   "evidence_ids": [
+    "c8e04b05d04a",
+    "2cea6a3f479d",
+    "9f897644c74f",
+    "ba8a47944ba1"
+   ],
+   "gaps": [
+    "No ROPA file (markdown/yaml) in the repository",
+    "No Art. 30(1)(a) entry for controller/DPO contact details in a record format",
+    "No explicit description of categories of data subjects and personal data in a record",
+    "No Art. 30(1)(e) statement on third-country transfers (none identified in evidence)",
+    "No consolidated Art. 30(1)(g) security measures summary within a processing record",
+    "a file matching **/*ropa*, **/*ROPA*, **/*processing-record*, **/*processing_record*, **/*records-of-processing*, **/*processing-activities* exists"
+   ],
+   "remediation": "Add docs/ropa.md (or docs/records-of-processing.yaml) for the HireRight Screening processing activity with the Art. 30(1) fields: controller and DPO contacts (from docs/privacy-notice.md); purposes (candidate assessment, Art. 6(1)(b) and (f)); data subject and data categories (applicants; CV, parsed profile, application ranking and recruiter decisions); recipients (ACME recruiters and hiring managers; AWS EU hosting); transfers (state explicitly whether any third-country transfer occurs); retention (CV 30 days, profile 180 days, rankings/decisions 400 days, as per the privacy notice and retention.py); and security measures (OIDC, RBAC, KMS encryption, network policies from docs/risk-assessment.md R-05). Link the file from README.md's documentation section and keep it under version control with a review owner.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "GDPR-DPIA-01",
+   "status": "non_compliant",
+   "confidence": 0.87,
+   "rationale": "No DPIA document exists in the repository: the deterministic file check for DPIA/impact-assessment files failed, and none of the excerpts is a DPIA. E3 is an AI Act classification and risk register with mitigations, but it has no GDPR necessity and proportionality assessment and no description of the processing framed under Art. 35(7). E5 only mentions a legitimate interest assessment (LIA of 2025-11-03) for re-use of data, which is not a DPIA. Under the rules, these fragments in other documents do not make a missing DPIA partial.\nRule engine (non_compliant): 0/1 deterministic checks passed.\n- [FAIL 0.65] a file matching **/*dpia*, **/*DPIA*, **/*impact-assessment*, **/*impact_assessment* exists: no matching file",
+   "evidence_ids": [
+    "c8e04b05d04a",
+    "9f897644c74f",
+    "5faa0a3fb1cf",
+    "2cea6a3f479d"
+   ],
+   "gaps": [
+    "No DPIA document (no file matching *dpia*, *DPIA*, *impact-assessment* or *impact_assessment*)",
+    "No systematic description of the processing and purposes framed for Art. 35(7)(a)",
+    "No GDPR necessity and proportionality assessment (Art. 35(7)(b))",
+    "No assessment of risks to data subjects' rights and freedoms under GDPR (E3 covers AI Act risks only)",
+    "Mitigation measures not documented as a DPIA (Art. 35(7)(d)); the LIA referenced in E5 is not a DPIA",
+    "a file matching **/*dpia*, **/*DPIA*, **/*impact-assessment*, **/*impact_assessment* exists"
+   ],
+   "remediation": "Create docs/dpia.md (or equivalent, matching the dpia naming pattern) for the HireRight profiling and ranking processing. Structure it around Art. 35(7): (a) describe the processing, data categories, data flows (ATS to ats-bridge to model to dashboard), purposes and the legitimate interest, citing docs/privacy-notice.md and the LIA of 2025-11-03; (b) assess necessity and proportionality, including data minimisation (E5 removed fields) and retention (E7); (c) assess GDPR risks to data subjects, reusing and extending the R-01 to R-06 register in docs/risk-assessment.md with the Art. 22 and automated-decision aspects; (d) list safeguards: human review, the override and suspension controls, RBAC/KMS, the fairness evaluation HR-412, and drift monitoring. Get the DPO (dpo@acme.example) to review and sign off, and record the review date and version.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-01",
+   "status": "compliant",
+   "confidence": 0.75,
+   "rationale": "The recruiter ranking component (E1) shows a visible notice at the top of the section stating it is an \"AI-suggested ranking\" produced by an AI model, and that the recruiter makes the final decision for every candidate, so both the disclosure and the decision-support statement elements are evidenced. The candidate-facing privacy notice (E4) also discloses that an AI system ranks applications and that a recruiter takes all decisions. The instructions for use (E6) repeat that the ranking is a recommendation. No evidence shows an AI-driven interface without disclosure. Confidence is moderate because the excerpts do not cover every surface the statement names (e-mail templates, notification texts, the admin page).\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))/ present in code: found at web/src/components/CandidateRanking.tsx:23",
+   "evidence_ids": [
+    "23969d9eb309",
+    "2cea6a3f479d",
+    "8c1a0258270f"
+   ],
+   "gaps": [
+    "No evidence reviewed for e-mail templates or notification texts that may show AI rankings",
+    "Admin page controls for suspending automated ranking were not inspected for an AI disclosure",
+    "Scope of 'every interface' is not fully verified beyond the recruiter dashboard and careers privacy notice"
+   ],
+   "remediation": "Confirm that any e-mail templates, notifications and admin screens that display AI scores or rankings carry the same AI-recommendation disclosure and the statement of who decides as the CandidateRanking notice. Add a short AI-disclosure line to those templates and keep the wording in a shared component or i18n string so it stays consistent.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-02",
+   "status": "not_applicable",
+   "confidence": 0.96,
+   "rationale": "Applies to limited risk systems; this system is classified as high.",
+   "evidence_ids": [],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": true
+  },
+  {
+   "requirement_id": "ACME-03",
+   "status": "compliant",
+   "confidence": 0.865,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.90] pattern /model_version/ present in code: found at src/hireright/api.py:62, src/hireright/api.py:66, src/hireright/journal.py:26\n- [PASS 0.73] pattern /(retention_days|retention_in_days)\\s*[:=]\\s*\"?(1[89]\\d|[2-9]\\d\\d|\\d{4,})\\b/ present in config, iac: found at config/retention.yaml:5, config/retention.yaml:7",
+   "evidence_ids": [
+    "af48eeff649f",
+    "6d8cbde474b9",
+    "a7cb4cee542b",
+    "e81e7fa9d2ff",
+    "a41266dbf4b1"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-04",
+   "status": "needs_review",
+   "confidence": 0.55,
+   "rationale": "The primary raw-input store is covered. E1 sets raw_cv retention_days to 30 for uploaded CV files and parsed text, E2 runs an automated delete_raw_documents call using that cutoff, and E9 schedules the nightly CronJob that runs it. E8 publishes the same 30-day period to candidates. The journal (E4, E7) holds only SHA-256 digests, so it is not a raw-input store. However, E3 describes a training dataset built from ATS/CV exports, stored in s3://acme-hireright-datasets/ and refreshed yearly, with no retention entry in E1 and no deletion logic in E2. It is unclear whether this dataset counts as raw personal-data input, so a human should decide.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.65] pattern /(raw|cv|upload|transcript|payload|quarantine)\\w*[\\s\\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\\s*[:=]\\s*\"?([1-9]|[12]\\d|30)\\b/ present in config, iac, code: found at config/retention.yaml:2",
+   "evidence_ids": [
+    "a41266dbf4b1",
+    "9f337e6b7664",
+    "7129851645f9",
+    "2cea6a3f479d",
+    "5faa0a3fb1cf",
+    "9b8eb854516a"
+   ],
+   "gaps": [
+    "Retention period or deletion job for the training dataset bucket s3://acme-hireright-datasets/ is not documented",
+    "No evidence that the training dataset (CV-derived content, pseudonymised) is covered by the 30-day rule or a documented legal basis for longer retention"
+   ],
+   "remediation": "Decide whether the ML training dataset contains raw inputs. If it does, add a dataset entry to config/retention.yaml with a retention_days value of 30 or less, or document the legal retention basis (for example the LIA of 2025-11-03) in the data retention schedule. Add a lifecycle rule or purge step for s3://acme-hireright-datasets/ and cover it in src/hireright/retention.py. Update docs/privacy-notice.md and DATASHEET.md to match.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-05",
+   "status": "compliant",
+   "confidence": 0.865,
+   "rationale": "2/2 deterministic checks passed.\n- [PASS 0.73] pattern /(kms|sse_algorithm|storage_encrypted\\s*=\\s*true|encrypted:\\s*\"?true)/ present in iac, config: found at infra/k8s/deployment.yaml:54, infra/k8s/deployment.yaml:55\n- [PASS 0.90] pattern /(tls|https)/ present in iac, config: found at config/app.yaml:7, infra/k8s/deployment.yaml:20, infra/k8s/deployment.yaml:24, infra/k8s/deployment.yaml:25",
+   "evidence_ids": [
+    "c1d986badeb7",
+    "0255bba410ef",
+    "1d93ff719ddc"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-06",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(requireAdmin|requires?_role|has_role|Depends\\(\\s*(get_current|verify|require)\\w*|login_required|verify_token|client_cert)/ present in code: found at src/hireright/api.py:17, src/hireright/api.py:55, src/hireright/api.py:71, src/hireright/api.py:80, src/hireright/api.py:89",
+   "evidence_ids": [
+    "0b4c5b4bf809",
+    "af48eeff649f",
+    "6d8cbde474b9",
+    "16895092e9b7",
+    "3b1779728b03"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-07",
+   "status": "compliant",
+   "confidence": 0.8,
+   "rationale": "Adverse outcomes (reject) are set only through the `/applications/{id}/decision` endpoint, which requires an authenticated recruiter, accepts a reviewer-chosen outcome (advance/reject/hold) with a mandatory written reason, and writes a `reviewer_decision` journal entry with the actor before updating status (E2, E3, E6). The recruiter dashboard shows the AI ranking, its main reasons, and states that the recruiter makes the final decision, with the ability to move candidates via override (E4, E7). The risk register records that rejection requires an explicit recruiter action and written reason, plus training (E1). No automatic rejection path was found, and the deterministic pattern check is absent. Residual uncertainty: the training requirement rests on a risk-register statement rather than enforced code, and the dashboard's reject action is cut off in E4.\nRule engine (compliant): 1/1 deterministic checks passed.\n- [PASS 0.60] pattern /(auto[_-]?reject|auto[_-]?decline)/ absent in code: confirmed absent",
+   "evidence_ids": [
+    "9f897644c74f",
+    "6d8cbde474b9",
+    "af48eeff649f",
+    "23969d9eb309",
+    "9b8eb854516a",
+    "c8e04b05d04a"
+   ],
+   "gaps": [
+    "Reviewer training is documented in the risk register but no training record or enforcement was evidenced",
+    "API does not enforce that the reviewer viewed the AI ranking before submitting a decision",
+    "Reject action in the dashboard UI not fully visible in the excerpt"
+   ],
+   "remediation": "Add training completion records for recruiters (e.g. a docs/ training log or LMS export) linked from the instructions for use. Optionally have the decision endpoint require a prior ranking view or reference the ranking id it was based on, and keep an automated test asserting that no code path changes application status to reject without a reviewer_decision journal entry.",
+   "method": "hybrid",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-08",
+   "status": "compliant",
+   "confidence": 0.7,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.70] a file matching **/MODEL_CARD*, **/model_card*, **/*.modelcard.md exists: found MODEL_CARD.md",
+   "evidence_ids": [
+    "8fd94043ac69"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-09",
+   "status": "compliant",
+   "confidence": 0.9,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.90] pattern /(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)/ present in code, config, iac: found at config/app.yaml:5, src/hireright/api.py:14, src/hireright/api.py:15, src/hireright/api.py:24",
+   "evidence_ids": [
+    "0255bba410ef",
+    "0b4c5b4bf809"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-10",
+   "status": "compliant",
+   "confidence": 0.73,
+   "rationale": "1/1 deterministic checks passed.\n- [PASS 0.73] pattern /(ai[- ]incidents?@|incident (response|reporting))/ present in doc: found at docs/release-process.md:20, docs/release-process.md:23",
+   "evidence_ids": [
+    "849664b662d4"
+   ],
+   "gaps": [],
+   "remediation": "",
+   "method": "deterministic",
+   "verified": false
+  },
+  {
+   "requirement_id": "ACME-11",
+   "status": "non_compliant",
+   "confidence": 0.92,
+   "rationale": "The statement requires a documented bias and fairness evaluation with metrics and results per protected group, plus mitigations, referenced from the model card. The model card states that \"A group-level fairness evaluation has not been completed for this release\" (E1). The datasheet says bias examination is \"not yet performed on this version\" with the ticket planned for Q4 2026 (E2), and the risk register lists the group fairness evaluation as \"pending (HR-412)\" with residual risk not accepted (E3). The only protected-attribute handling evidenced is removal of identity and protected fields before feature extraction (E6, E2), which the guidance says is insufficient on its own. The release process and CI gate check only ROC-AUC, NDCG and unranked rate, with no fairness metric (E4, E5), and the instructions for use leave performance and limitations as TBD (E7). The required artefact does not exist.\nRule engine (needs_review): No deterministic checks defined for this requirement; human or LLM review needed.",
+   "evidence_ids": [
+    "8fd94043ac69",
+    "5faa0a3fb1cf",
+    "9f897644c74f",
+    "849664b662d4",
+    "44f0721a6796",
+    "ba8a47944ba1",
+    "8c1a0258270f"
+   ],
+   "gaps": [
+    "No group-level bias/fairness metrics for any protected characteristic or suitable proxy",
+    "No per-group results from an evaluation on the released model",
+    "No documented mitigations for fairness findings",
+    "No evaluation report stored in the repository",
+    "Model card Fairness section does not reference an evaluation report (states it is not completed)",
+    "Release gate (CI and release process) has no fairness check",
+    "Ticket HR-412 is planned, not delivered",
+    "Model ranker-2.4.1 is already in use (decision journal entries dated 2026-10-01), so the evaluation was not completed before release",
+    "Automated checks inconclusive; manual verification required."
+   ],
+   "remediation": "Run a group-level fairness evaluation for ranker-2.4.1 on the frozen 2025-H2 hold-out, covering the protected characteristics or proxies named in R-03 (gender, age, origin proxies). Report the metrics used (for example selection-rate ratios and equal-opportunity differences, plus per-group NDCG@10 and ROC-AUC), the results per group, and the mitigations taken or justified. Save the report in the repository (for example docs/fairness/ranker-2.4.1-fairness-report.md or artifacts committed alongside the model), and link it from the MODEL_CARD.md Fairness section in place of the \"not completed\" statement. Add a fairness-metric check to tests/test_model_quality.py and a fairness sign-off step to docs/release-process.md. Update DATASHEET.md section 5 and TBD sections 4-5 of docs/instructions-for-use.md with the results. Close HR-412 and record the residual risk decision for R-03 in docs/risk-assessment.md.",
+   "method": "hybrid",
+   "verified": false
+  }
+ ],
+ "evidence": [
+  {
+   "id": "0b4c5b4bf809",
+   "kind": "code",
+   "path": "src/hireright/api.py",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "\"\"\"HireRight Screening API.\n\nThe ranker only orders the recruiter queue. Advancing or rejecting a candidate is always an explicit\nrecruiter action (POST /applications/{id}/decision). Emotion recognition, video or voice analysis are\ndeliberately not supported by this product (AI Act Art. 5(1)(f)); only the parsed CV text is used.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import Literal\n\nfrom fastapi import Depends, FastAPI, HTTPException, Request\nfrom pydantic import BaseModel, Field\nfrom slowapi import Limiter\nfrom slowapi.util import get_remote_address\n\nfrom .auth import Principal, get_current_recruiter, require_role\nfrom .journal import DecisionJournal, JournalEntry, S3WormSink\nfrom .model import Ranker\nfrom .settings import settings\nfrom .store import applications, candidates, s3\n\napp = FastAPI(title=\"HireRight Screening\", version=\"2.4.1\")\nlimiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])\napp.state.limiter = limiter\n\nranker = Ranker(settings.model_path)\njournal = DecisionJournal(S3WormSink(s3, settings.journal_bucket))\n\n\nclass ParsedCV(BaseModel):\n    skills: list[str] = Field(max_length=200)\n    experience_years: float = Field(ge=0, le=60)\n    education_level: Literal[\"none\", \"secondary\", \"bachelor\", \"master\", \"phd\"]\n    languages: list[str] = Field(default_factory=list, max_length=20)\n    summary: str = Field(default=\"\", max_length=8000)\n\n\nclass ScoreRequest(BaseModel):\n    requisition_id: str = Field(pattern=r\"^REQ-\\d{6}$\")",
+   "signal": "access_control,rate_limit",
+   "score": 0.0
+  },
+  {
+   "id": "8c1a0258270f",
+   "kind": "doc",
+   "path": "docs/instructions-for-use.md",
+   "start_line": 1,
+   "end_line": 26,
+   "snippet": "# HireRight Screening: instructions for use (recruiting teams)\n\n**Provider:** ACME Corp, Talent Technology, Rue de la Loi 1, 1000 Brussels;\nsupport: hireright-support@acme.example.\n\n## 1. Intended purpose\nOrdering applications for an open requisition so that you review the most relevant ones first.\nThe ranking is a recommendation. You remain responsible for every decision.\n\n## 2. How to use the ranking\n* Read the main reasons shown next to each score (\u25b2 increased / \u25bc decreased the score).\n* Applications marked \"unranked\" could not be scored; review them like any other application.\n* Every candidate must be opened before you advance or reject them; rejections require a written\n  reason.\n\n## 3. Human oversight\n* **Move** lets you disregard the ranking for a candidate.\n* Screening admins can suspend automated ranking for all requisitions from the admin page; the queue\n  then falls back to chronological order.\n* Mandatory training \"Working with AI recommendations\" (45 min) before getting the recruiter role.\n\n## 4. Performance and limitations\nTBD (to be completed with Talent Data Science before the next release).\n\n## 5. Logs\nTBD.",
+   "signal": "human_override,data_documentation",
+   "score": 0.0
+  },
+  {
+   "id": "c8e04b05d04a",
+   "kind": "doc",
+   "path": "README.md",
+   "start_line": 1,
+   "end_line": 38,
+   "snippet": "# HireRight Screening\n\nHireRight Screening ranks incoming job applications for ACME Talent Acquisition so recruiters can\nprioritise their review queue. The model reads the parsed CV and the job requisition and produces a\nrelevance score (0-1) plus the main reasons behind it. **Recruiters take every decision**; the\nsystem never rejects or advances a candidate on its own.\n\n## Regulatory position\n\n* EU AI Act: **high-risk AI system** under Annex III, point 4(a) (AI systems intended to be used to\n  analyse and filter job applications and to evaluate candidates). ACME acts as provider and deployer.\n  See `docs/risk-assessment.md` for the classification rationale and the risk register.\n* GDPR: ACME is controller; candidates are informed through `docs/privacy-notice.md`.\n\n## Components\n\n| Path | Purpose |\n|---|---|\n| `src/hireright/api.py` | FastAPI service: scoring, reviewer decisions, admin controls, erasure |\n| `src/hireright/model.py` | Gradient-boosted ranker + per-candidate explanations |\n| `src/hireright/journal.py` | `DecisionJournal`, append-only record of every score and human action |\n| `src/hireright/retention.py` | Nightly purge of raw CVs and expired journal segments |\n| `web/` | Recruiter dashboard (React) |\n| `infra/k8s/` | Deployment manifests (EKS) |\n\n## Documentation\n\n* `MODEL_CARD.md`, `DATASHEET.md`\n* `docs/technical-documentation.md` (Annex IV structure)\n* `docs/instructions-for-use.md` (for recruiting teams)\n* `docs/release-process.md` (change management, monitoring, incidents)\n\n## Running locally\n\n```bash\npip install -e .\nuvicorn hireright.api:app --reload\n```",
+   "signal": "human_override,retention_config,consent,data_documentation,risk_management,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "8fd94043ac69",
+   "kind": "model_card",
+   "path": "MODEL_CARD.md",
+   "start_line": 1,
+   "end_line": 36,
+   "snippet": "# Model card: HireRight candidate ranker\n\n| Field | Value |\n|---|---|\n| Model | `ranker-2.4.1` (LightGBM LambdaRank, 400 trees) |\n| Owner | Talent Data Science (talent-ds@acme.example) |\n| Released | 2026-06-30 |\n\n## Intended use\nOrdering applications for a single requisition so that recruiters review the most relevant CVs\nfirst. Decision support only: the model does not accept or reject candidates.\n\n## Out-of-scope uses\nRanking internal employees for promotion or termination; use outside ACME recruitment; any use\nwithout a recruiter reviewing every candidate; use on video, audio or photos.\n\n## Training data\n512k historical (application, requisition, recruiter-shortlist) triples from ACME EU offices,\n2021-2025. See `DATASHEET.md`.\n\n## Evaluation (hold-out 2025-H2, 41k applications)\n| Metric | Value |\n|---|---|\n| NDCG@10 | 0.71 |\n| ROC-AUC (shortlisted vs not) | 0.87 |\n| Precision@10 | 0.64 |\n| Recall@50 | 0.82 |\n\n## Limitations\n* Learns from historical shortlisting decisions, which may carry human bias.\n* Lower quality for requisitions with fewer than 20 applicants and for non-English CVs (AUC 0.79).\n* CV parsing errors propagate to the score.\n\n## Fairness\nA group-level fairness evaluation has not been completed for this release; see risk R-03 in\n`docs/risk-assessment.md`.",
+   "signal": "data_documentation,bias_fairness,accuracy_metrics,risk_management",
+   "score": 0.0
+  },
+  {
+   "id": "ba8a47944ba1",
+   "kind": "doc",
+   "path": "docs/technical-documentation.md",
+   "start_line": 1,
+   "end_line": 33,
+   "snippet": "# HireRight Screening: technical documentation (AI Act Art. 11, Annex IV)\n\n## 1. General description\n* **Intended purpose:** ranking job applications per requisition to support recruiters at ACME.\n  Provider and deployer: ACME Corp, Talent Technology. System version 2.4.1 (model `ranker-2.4.1`),\n  previous version 2.3.0 used a logistic-regression scorer.\n* **Interaction with other systems:** consumes parsed CVs from the ATS (Workday) through the\n  `ats-bridge` service; returns rankings to the recruiter dashboard. No other AI systems are called.\n* **Software versions:** Python 3.12, LightGBM 4.3, SHAP 0.45, FastAPI 0.111.\n* **Forms of deployment:** internal REST API on EKS (eu-central-1); not sold externally.\n* **Hardware:** 2x c7g.xlarge pods; no GPU required.\n* **User interface:** recruiter dashboard (`web/`) showing ranking, main reasons and actions.\n\n## 2. Development process and design\n* **Methods:** supervised learning-to-rank (LambdaRank) on historical shortlisting decisions;\n  hyper-parameters tuned with 5-fold group CV by requisition.\n* **Design choices:** decision support only; protected attributes and identity fields removed\n  before feature extraction; per-candidate SHAP explanations exposed to recruiters; failures yield\n  an unranked application rather than a low score.\n* **Architecture:** `api.py` (FastAPI) \u2192 `model.py` (feature builder + LightGBM + SHAP) \u2192\n  `journal.py` (append-only DecisionJournal on S3 Object Lock) ; recruiter UI reads rankings via the\n  API; `retention.py` CronJob enforces the retention schedule.\n* **Data:** see `DATASHEET.md`.\n* **Human oversight:** recruiter decision and override endpoints; admin suspend switch\n  (`/admin/ranking/suspend`); see `docs/instructions-for-use.md`.\n* **Validation and testing:** offline evaluation on hold-out (see `MODEL_CARD.md`), CI quality gate\n  `tests/test_model_quality.py`, shadow deployment for two weeks before every release.\n\n## 3. Monitoring and control\nWeekly performance report and PSI-based drift alerts (`config/app.yaml: monitoring`).\n\n## 4. Risk management\nSee `docs/risk-assessment.md`.",
+   "signal": "human_override,retention_config,data_documentation,risk_management,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "5faa0a3fb1cf",
+   "kind": "model_card",
+   "path": "DATASHEET.md",
+   "start_line": 1,
+   "end_line": 29,
+   "snippet": "# Datasheet: HireRight ranking dataset v5\n\n## 1. Motivation\nBuilt to train and evaluate the candidate ranker (`MODEL_CARD.md`).\n\n## 2. Composition\n* 512,340 (application, requisition, label) triples; 38,912 requisitions; 14 EU countries.\n* Label: 1 if a recruiter shortlisted the application, else 0.\n* Splits: train 2021-01..2024-12 (80%), validation 2025-H1 (10%), test 2025-H2 (10%), split by\n  requisition to avoid leakage.\n\n## 3. Collection and personal data\n* Source: ACME ATS (Workday) exports; original purpose of collection: recruitment for the\n  advertised role. Re-use for model development assessed in the LIA of 2025-11-03.\n* Removed before storage in the training bucket: name, e-mail, phone, photo, date of birth, gender,\n  nationality, address. Candidate ids are replaced by salted hashes.\n\n## 4. Preparation\n* CV parsing with `cvparse 3.2`; documents failing parsing (4.1%) were dropped.\n* Deduplication of re-applications within 30 days; skill normalisation against ESCO v1.2.\n* Label noise review on a 2,000-sample audit (agreement 0.91).\n\n## 5. Assumptions and known gaps\n* Assumes recruiter shortlisting is a reasonable proxy for relevance.\n* Under-representation of applications for engineering roles in DE/AT before 2023.\n* Bias examination: not yet performed on this version (ticket HR-412, planned for Q4 2026).\n\n## 6. Maintenance\nRefreshed yearly by Talent Data Science; versions stored in `s3://acme-hireright-datasets/`.",
+   "signal": "pii_field,data_documentation,bias_fairness",
+   "score": 0.0
+  },
+  {
+   "id": "9f897644c74f",
+   "kind": "doc",
+   "path": "docs/risk-assessment.md",
+   "start_line": 1,
+   "end_line": 17,
+   "snippet": "# Risk assessment and AI Act classification\n\n## Classification\nHireRight Screening is intended to \"analyse and filter job applications, and to evaluate\ncandidates\" and therefore falls under **Annex III, point 4(a)** of the AI Act. The Art. 6(3)\nderogation does not apply: the ranking materially influences which candidates are reviewed first,\nand the system profiles natural persons. **Result: high-risk.**\n\n## Risk register (reviewed 2026-06-20)\n| ID | Risk | Likelihood | Impact | Mitigation | Residual |\n|---|---|---|---|---|---|\n| R-01 | Recruiters over-rely on the ranking (automation bias) | medium | high | Ranking labelled as AI suggestion, reasons shown, decision requires explicit recruiter action and written reason for rejection, quarterly training | low |\n| R-02 | Model degrades after market changes (drift) | medium | medium | PSI drift alerts, weekly performance report, yearly retraining | low |\n| R-03 | Historical shortlisting bias reproduced (gender, age, origin proxies) | medium | high | Identity/protected fields removed; **group fairness evaluation pending (HR-412)** | medium (not accepted yet) |\n| R-04 | CV parsing errors penalise unusual CV formats | medium | medium | Parse failures routed unranked to manual queue | low |\n| R-05 | Unauthorised access to candidate data | low | high | OIDC auth, RBAC, KMS encryption, network policies | low |\n| R-06 | Misuse for internal promotion decisions | low | high | Out-of-scope in model card and instructions; requisition id required | low |",
+   "signal": "pii_field,encryption,access_control,data_documentation,bias_fairness,risk_management,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "e81e7fa9d2ff",
+   "kind": "code",
+   "path": "src/hireright/model.py",
+   "start_line": 1,
+   "end_line": 50,
+   "snippet": "\"\"\"Candidate ranker: LightGBM LambdaRank model over CV/requisition features, with explanations.\"\"\"\n\nfrom __future__ import annotations\n\nimport logging\nfrom dataclasses import dataclass\n\nimport lightgbm as lgb\nimport numpy as np\nimport shap\n\nfrom .features import build_features\n\nlog = logging.getLogger(__name__)\n\nMODEL_VERSION = \"ranker-2.4.1\"\n# Fields removed before feature extraction: identity and protected characteristics are never\n# visible to the model (data minimisation, see DATASHEET.md section 3).\nREDACTED_FIELDS = (\"name\", \"email\", \"phone\", \"photo\", \"date_of_birth\", \"gender\", \"nationality\", \"address\")\n\n\n@dataclass\nclass Ranking:\n    score: float | None\n    reasons: list[tuple[str, float]]\n    model_version: str\n    needs_manual_review: bool = False\n\n\nclass Ranker:\n    def __init__(self, path: str) -> None:\n        self.booster = lgb.Booster(model_file=path)\n        self.explainer = shap.TreeExplainer(self.booster)\n\n    @staticmethod\n    def redact(cv: dict) -> dict:\n        return {k: v for k, v in cv.items() if k not in REDACTED_FIELDS}\n\n    def rank(self, cv: dict, requisition: dict) -> Ranking:\n        try:\n            x = build_features(self.redact(cv), requisition)\n            score = float(self.booster.predict(np.array([x]))[0])\n            contrib = self.explainer.shap_values(np.array([x]))[0]\n            names = self.booster.feature_name()\n            top = sorted(zip(names, contrib), key=lambda t: abs(t[1]), reverse=True)[:5]\n            return Ranking(score=score, reasons=[(n, float(c)) for n, c in top], model_version=MODEL_VERSION)\n        except Exception:  # noqa: BLE001\n            # Fallback: never guess. The application goes to the recruiter queue unranked.\n            log.exception(\"ranker failed; application queued unranked\")\n            return Ranking(score=None, reasons=[], model_version=MODEL_VERSION, needs_manual_review=True)",
+   "signal": "logging_call,human_override,pii_field,model_call,data_documentation,anonymization",
+   "score": 0.0
+  },
+  {
+   "id": "9b8eb854516a",
+   "kind": "doc",
+   "path": "docs/adr/0002-decision-journal.md",
+   "start_line": 1,
+   "end_line": 17,
+   "snippet": "# ADR 0002: DecisionJournal instead of application logs for traceability\n\n* Status: accepted (2025-09-18)\n\n## Context\nWe need a reliable trace of every ranking and every human action (AI Act Art. 12, 19 and 26(6)).\nApplication logs are sampled, mutable and expire after 14 days in our logging platform.\n\n## Decision\nIntroduce `DecisionJournal` (`src/hireright/journal.py`): one JSON entry per event (`ranked`,\n`reviewer_decision`, `override`, `suspended`, `resumed`) with model version, input digest, result and\nactor, written to an S3 bucket with Object Lock in compliance mode. Retention: 400 days\n(`config/retention.yaml`). CV content is never written to the journal; only a SHA-256 digest.\n\n## Consequences\n* Auditors can reconstruct who saw which ranking and what was decided.\n* Journal lines are not visible in Kibana; a small Athena view is provided for investigations.",
+   "signal": "human_override,retention_config",
+   "score": 0.0
+  },
+  {
+   "id": "2cea6a3f479d",
+   "kind": "doc",
+   "path": "docs/privacy-notice.md",
+   "start_line": 1,
+   "end_line": 24,
+   "snippet": "# Candidate privacy notice (excerpt shown on the careers portal)\n\n**Controller:** ACME Corp, Rue de la Loi 1, 1000 Brussels. DPO: dpo@acme.example.\n\n**What we use your data for.** To assess your application for the role you applied for. We use an\nAI system to rank applications by relevance to the job description; a recruiter reviews every\napplication and takes all decisions. No decision is made solely by automated means.\n\n**How the ranking works.** The main factors are the match between your skills, experience and\neducation and the requirements of the role. Your name, photo, age, gender, nationality and contact\ndetails are not used by the model.\n\n**Legal basis.** Steps prior to entering into a contract (Art. 6(1)(b) GDPR) and our legitimate\ninterest in an efficient recruitment process (Art. 6(1)(f) GDPR).\n\n**Recipients.** ACME recruiters and hiring managers; our hosting provider (AWS, EU region).\n\n**How long we keep your data.** Your CV file: 30 days. Your structured profile: 180 days after the\nrecruitment round closes, then anonymised. Records of AI rankings and recruiter decisions: 400 days,\nwithout your CV content.\n\n**Your rights.** You have the right to access, rectification, erasure, restriction, objection and\ndata portability, and the right to lodge a complaint with your supervisory authority. Contact\ndpo@acme.example.",
+   "signal": "pii_field,consent,anonymization",
+   "score": 0.0
+  },
+  {
+   "id": "a7cb4cee542b",
+   "kind": "code",
+   "path": "src/hireright/journal.py",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "\"\"\"DecisionJournal: append-only record of what the ranker produced and what humans did with it.\n\nEach entry is one JSON line written to an object-locked S3 prefix (WORM). Entries are never updated;\ncorrections are new entries referencing the original `entry_id`. See docs/adr/0002-decision-journal.md.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport json\nimport uuid\nfrom dataclasses import asdict, dataclass, field\nfrom datetime import datetime, timezone\nfrom typing import Any, Protocol\n\n\nclass Sink(Protocol):\n    def append(self, line: str) -> None: ...\n\n\n@dataclass\nclass JournalEntry:\n    event: str  # \"ranked\" | \"reviewer_decision\" | \"override\" | \"suspended\" | \"resumed\"\n    application_id: str\n    requisition_id: str | None = None\n    model_version: str | None = None\n    input_digest: str | None = None\n    result: dict[str, Any] = field(default_factory=dict)\n    actor: str = \"system\"\n    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)\n    at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())\n\n\nclass DecisionJournal:\n    def __init__(self, sink: Sink) -> None:\n        self._sink = sink\n\n    @staticmethod\n    def digest(payload: dict[str, Any]) -> str:\n        \"\"\"Reference to the input without storing the CV itself in the journal.\"\"\"",
+   "signal": "human_override,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "6d8cbde474b9",
+   "kind": "code",
+   "path": "src/hireright/api.py",
+   "start_line": 61,
+   "end_line": 100,
+   "snippet": "        event=\"ranked\", application_id=application_id, requisition_id=body.requisition_id,\n        model_version=r.model_version, input_digest=DecisionJournal.digest(body.model_dump()),\n        result={\"score\": r.score, \"reasons\": r.reasons, \"manual\": r.needs_manual_review}, actor=user.id,\n    ))\n    applications.save_ranking(application_id, r)\n    return {\"score\": r.score, \"reasons\": r.reasons, \"model_version\": r.model_version,\n            \"needs_manual_review\": r.needs_manual_review}\n\n\n@app.post(\"/applications/{application_id}/decision\")\ndef decide(application_id: str, body: RecruiterDecision, user: Principal = Depends(get_current_recruiter)):\n    \"\"\"The only way a candidate's status changes. Requires a human recruiter.\"\"\"\n    journal.record(JournalEntry(event=\"reviewer_decision\", application_id=application_id,\n                                result=body.model_dump(), actor=user.id))\n    applications.set_status(application_id, body.outcome, decided_by=user.id)\n    return {\"ok\": True}\n\n\n@app.post(\"/applications/{application_id}/override\")\ndef override_ranking(application_id: str, body: Override, user: Principal = Depends(get_current_recruiter)):\n    \"\"\"Recruiters may disregard the AI ranking and move the application to another bucket.\"\"\"\n    journal.record(JournalEntry(event=\"override\", application_id=application_id,\n                                result=body.model_dump(), actor=user.id))\n    applications.set_bucket(application_id, body.new_rank_bucket)\n    return {\"ok\": True}\n\n\n@app.post(\"/admin/ranking/suspend\")\ndef suspend_automated_ranking(user: Principal = Depends(require_role(\"screening-admin\"))):\n    \"\"\"Stops all automated ranking immediately; new applications go to the manual queue.\"\"\"\n    settings.automated_ranking_enabled = False\n    journal.record(JournalEntry(event=\"suspended\", application_id=\"*\", actor=user.id))\n    return {\"automated_ranking_enabled\": False}\n\n\n@app.post(\"/admin/ranking/resume\")\ndef resume_automated_ranking(user: Principal = Depends(require_role(\"screening-admin\"))):\n    settings.automated_ranking_enabled = True\n    journal.record(JournalEntry(event=\"resumed\", application_id=\"*\", actor=user.id))\n    return {\"automated_ranking_enabled\": True}",
+   "signal": "human_override,access_control",
+   "score": 0.0
+  },
+  {
+   "id": "2bbc653c8a3a",
+   "kind": "code",
+   "path": "src/hireright/journal.py",
+   "start_line": 31,
+   "end_line": 57,
+   "snippet": "    at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())\n\n\nclass DecisionJournal:\n    def __init__(self, sink: Sink) -> None:\n        self._sink = sink\n\n    @staticmethod\n    def digest(payload: dict[str, Any]) -> str:\n        \"\"\"Reference to the input without storing the CV itself in the journal.\"\"\"\n        raw = json.dumps(payload, sort_keys=True, default=str).encode()\n        return hashlib.sha256(raw).hexdigest()\n\n    def record(self, entry: JournalEntry) -> str:\n        self._sink.append(json.dumps(asdict(entry), separators=(\",\", \":\")))\n        return entry.entry_id\n\n\nclass S3WormSink:\n    \"\"\"Writes journal lines to a bucket with Object Lock (compliance mode).\"\"\"\n\n    def __init__(self, client: Any, bucket: str, prefix: str = \"journal/\") -> None:\n        self.client, self.bucket, self.prefix = client, bucket, prefix\n\n    def append(self, line: str) -> None:\n        key = f\"{self.prefix}{datetime.now(timezone.utc):%Y/%m/%d}/{uuid.uuid4().hex}.json\"\n        self.client.put_object(Bucket=self.bucket, Key=key, Body=line.encode(), ServerSideEncryption=\"aws:kms\")",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "9f337e6b7664",
+   "kind": "code",
+   "path": "src/hireright/retention.py",
+   "start_line": 1,
+   "end_line": 22,
+   "snippet": "\"\"\"Nightly retention job (CronJob `hireright-retention`, see infra/k8s/deployment.yaml).\"\"\"\n\nfrom __future__ import annotations\n\nfrom datetime import datetime, timedelta, timezone\n\nimport yaml\n\nfrom .store import candidates, s3\n\n\ndef run(config_path: str = \"config/retention.yaml\") -> dict[str, int]:\n    cfg = yaml.safe_load(open(config_path))\n    now = datetime.now(timezone.utc)\n    removed = {}\n    raw_cutoff = now - timedelta(days=cfg[\"raw_cv\"][\"retention_days\"])\n    removed[\"raw_cv\"] = candidates.delete_raw_documents(older_than=raw_cutoff)\n    profile_cutoff = now - timedelta(days=cfg[\"candidate_profile\"][\"retention_days\"])\n    removed[\"profiles\"] = candidates.anonymise_profiles(older_than=profile_cutoff)\n    # Journal segments are object-locked; expiry is handled by the bucket lifecycle rule whose\n    # value is taken from decision_journal.retention_days at deploy time.\n    return removed",
+   "signal": "retention_config,anonymization",
+   "score": 0.0
+  },
+  {
+   "id": "a41266dbf4b1",
+   "kind": "config",
+   "path": "config/retention.yaml",
+   "start_line": 1,
+   "end_line": 8,
+   "snippet": "# Data retention schedule for HireRight Screening (reviewed by DPO 2026-05-12)\nraw_cv:                 # uploaded CV files (PDF/DOCX) and parsed text\n  retention_days: 30\ncandidate_profile:      # structured profile used for the ongoing recruitment round\n  retention_days: 180   # recruitment round + challenge period; then anonymised\ndecision_journal:       # AI rankings and recruiter actions, AI Act Art. 12/19/26(6)\n  retention_days: 400\n  storage: s3-object-lock",
+   "signal": "retention_config,anonymization",
+   "score": 0.0
+  },
+  {
+   "id": "7436412b05e0",
+   "kind": "log",
+   "path": "logs/decision-journal-2026-10-01.jsonl",
+   "start_line": 1,
+   "end_line": 4,
+   "snippet": "{\"event\":\"ranked\",\"application_id\":\"APP-883120\",\"requisition_id\":\"REQ-004512\",\"model_version\":\"ranker-2.4.1\",\"input_digest\":\"9f2c0d6e51b7a8c4e0f3d2b19a7c6e5f4d3c2b1a09f8e7d6c5b4a3928170615\",\"result\":{\"score\":0.81,\"reasons\":[[\"skill_match_ratio\",0.31],[\"years_relevant_experience\",0.12],[\"language_de_c1\",0.07],[\"employment_gap_months\",-0.04],[\"education_level\",0.02]],\"manual\":false},\"actor\":\"u-rec-114\",\"entry_id\":\"5d1f0a2e6b9c4f3e8a7d6c5b4a392817\",\"at\":\"2026-10-01T08:14:22.481Z\"}\n{\"event\":\"ranked\",\"application_id\":\"APP-883127\",\"requisition_id\":\"REQ-004512\",\"model_version\":\"ranker-2.4.1\",\"input_digest\":\"1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80\",\"result\":{\"score\":null,\"reasons\":[],\"manual\":true},\"actor\":\"u-rec-114\",\"entry_id\":\"7e2a1b3c4d5e6f708192a3b4c5d6e7f8\",\"at\":\"2026-10-01T08:14:25.112Z\"}\n{\"event\":\"override\",\"application_id\":\"APP-883099\",\"requisition_id\":null,\"model_version\":null,\"input_digest\":null,\"result\":{\"new_rank_bucket\":\"top\",\"justification\":\"Relevant open-source work not captured by parser\"},\"actor\":\"u-rec-114\",\"entry_id\":\"0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f\",\"at\":\"2026-10-01T09:02:10.007Z\"}\n{\"event\":\"reviewer_decision\",\"application_id\":\"APP-883120\",\"requisition_id\":null,\"model_version\":null,\"input_digest\":null,\"result\":{\"outcome\":\"advance\",\"reason\":\"Strong match, invite to phone screen\"},\"actor\":\"u-rec-114\",\"entry_id\":\"2f3e4d5c6b7a89012f3e4d5c6b7a8901\",\"at\":\"2026-10-01T09:30:44.950Z\"}",
+   "signal": "human_override,pii_field",
+   "score": 0.0
+  },
+  {
+   "id": "af48eeff649f",
+   "kind": "code",
+   "path": "src/hireright/api.py",
+   "start_line": 31,
+   "end_line": 70,
+   "snippet": "class ParsedCV(BaseModel):\n    skills: list[str] = Field(max_length=200)\n    experience_years: float = Field(ge=0, le=60)\n    education_level: Literal[\"none\", \"secondary\", \"bachelor\", \"master\", \"phd\"]\n    languages: list[str] = Field(default_factory=list, max_length=20)\n    summary: str = Field(default=\"\", max_length=8000)\n\n\nclass ScoreRequest(BaseModel):\n    requisition_id: str = Field(pattern=r\"^REQ-\\d{6}$\")\n    cv: ParsedCV\n\n\nclass RecruiterDecision(BaseModel):\n    outcome: Literal[\"advance\", \"reject\", \"hold\"]\n    reason: str = Field(min_length=10, max_length=2000)\n\n\nclass Override(BaseModel):\n    new_rank_bucket: Literal[\"top\", \"middle\", \"bottom\"]\n    justification: str = Field(min_length=10, max_length=2000)\n\n\n@app.post(\"/applications/{application_id}/score\")\ndef score(application_id: str, body: ScoreRequest, user: Principal = Depends(get_current_recruiter)):\n    if not settings.automated_ranking_enabled:\n        applications.mark_unranked(application_id)\n        return {\"status\": \"queued_for_manual_review\", \"reason\": \"automated ranking suspended\"}\n    r = ranker.rank(body.cv.model_dump(), {\"id\": body.requisition_id})\n    journal.record(JournalEntry(\n        event=\"ranked\", application_id=application_id, requisition_id=body.requisition_id,\n        model_version=r.model_version, input_digest=DecisionJournal.digest(body.model_dump()),\n        result={\"score\": r.score, \"reasons\": r.reasons, \"manual\": r.needs_manual_review}, actor=user.id,\n    ))\n    applications.save_ranking(application_id, r)\n    return {\"score\": r.score, \"reasons\": r.reasons, \"model_version\": r.model_version,\n            \"needs_manual_review\": r.needs_manual_review}\n\n\n@app.post(\"/applications/{application_id}/decision\")",
+   "signal": "human_override",
+   "score": 0.0
+  },
+  {
+   "id": "23969d9eb309",
+   "kind": "code",
+   "path": "web/src/components/CandidateRanking.tsx",
+   "start_line": 1,
+   "end_line": 49,
+   "snippet": "import React from \"react\";\nimport { Application, Reason } from \"../types\";\nimport { postDecision, postOverride } from \"../api\";\n\ntype Props = { applications: Application[]; onChange: () => void };\n\nfunction ReasonList({ reasons }: { reasons: Reason[] }) {\n  return (\n    <ul className=\"reasons\">\n      {reasons.map(([feature, weight]) => (\n        <li key={feature} className={weight >= 0 ? \"pos\" : \"neg\"}>\n          {weight >= 0 ? \"\u25b2\" : \"\u25bc\"} {feature.replaceAll(\"_\", \" \")}\n        </li>\n      ))}\n    </ul>\n  );\n}\n\nexport function CandidateRanking({ applications, onChange }: Props) {\n  return (\n    <section>\n      <div className=\"notice\" role=\"note\">\n        AI-suggested ranking. The order below is a recommendation produced by an AI model\n        (ranker {applications[0]?.modelVersion ?? \"n/a\"}). You, the recruiter, make the final\n        decision for every candidate. Use \u201cMove\u201d to disregard the ranking.\n      </div>\n      <table>\n        <thead>\n          <tr><th>#</th><th>Candidate</th><th>Score</th><th>Main reasons</th><th>Actions</th></tr>\n        </thead>\n        <tbody>\n          {applications.map((a, i) => (\n            <tr key={a.id}>\n              <td>{i + 1}</td>\n              <td>{a.candidateRef}</td>\n              <td>{a.needsManualReview ? \"unranked\" : a.score?.toFixed(2)}</td>\n              <td><ReasonList reasons={a.reasons} /></td>\n              <td>\n                <button onClick={() => postDecision(a.id, \"advance\").then(onChange)}>Advance</button>\n                <button onClick={() => postDecision(a.id, \"reject\").then(onChange)}>Reject\u2026</button>\n                <button onClick={() => postOverride(a.id).then(onChange)}>Move</button>\n              </td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </section>\n  );\n}",
+   "signal": "ai_disclosure,human_override",
+   "score": 0.0
+  },
+  {
+   "id": "16895092e9b7",
+   "kind": "code",
+   "path": "src/hireright/api.py",
+   "start_line": 91,
+   "end_line": 109,
+   "snippet": "    settings.automated_ranking_enabled = False\n    journal.record(JournalEntry(event=\"suspended\", application_id=\"*\", actor=user.id))\n    return {\"automated_ranking_enabled\": False}\n\n\n@app.post(\"/admin/ranking/resume\")\ndef resume_automated_ranking(user: Principal = Depends(require_role(\"screening-admin\"))):\n    settings.automated_ranking_enabled = True\n    journal.record(JournalEntry(event=\"resumed\", application_id=\"*\", actor=user.id))\n    return {\"automated_ranking_enabled\": True}\n\n\n@app.delete(\"/candidates/{candidate_id}\")\ndef erase_candidate_data(candidate_id: str, user: Principal = Depends(require_role(\"privacy-officer\"))):\n    \"\"\"GDPR Art. 17 request: delete CV, parsed profile and rankings. Journal keeps only digests.\"\"\"\n    if not candidates.exists(candidate_id):\n        raise HTTPException(404)\n    candidates.delete_everywhere(candidate_id)\n    return {\"erased\": candidate_id}",
+   "signal": "consent,access_control",
+   "score": 0.0
+  },
+  {
+   "id": "849664b662d4",
+   "kind": "doc",
+   "path": "docs/release-process.md",
+   "start_line": 1,
+   "end_line": 24,
+   "snippet": "# Release process and quality management\n\n## Change management\nEvery change to the model, features, thresholds or UI text goes through a pull request with two\napprovals (one from Talent Data Science, one from Talent Technology). Model releases additionally\nrequire sign-off by the AI Governance Board representative. Release notes record the model version\nand the evaluation report.\n\n## Validation before release\n1. Offline evaluation on the frozen hold-out set; CI gate `tests/test_model_quality.py`\n   (ROC-AUC >= 0.85, NDCG@10 >= 0.68).\n2. Two-week shadow deployment: new model scores in parallel, rankings not shown.\n3. Go/no-go meeting with recruiting leads.\n\n## Post-market monitoring\n* Weekly performance report: shortlist rate per score decile, override rate, unranked rate.\n* Drift: PSI on top-20 features, alert at 0.2 (PagerDuty `hireright-ml`).\n* Quarterly review of overrides with recruiting leads.\n\n## Incident reporting\nAI incidents (discriminatory behaviour, data leak, severe degradation) are raised in\n#hireright-incidents, triaged by the on-call ML engineer and reported to the AI Governance Board\n(ai-incidents@acme.example) within 24 hours. Serious incidents under AI Act Art. 73 are notified to\nthe market surveillance authority by Legal.",
+   "signal": "human_override,accuracy_metrics,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "3b1779728b03",
+   "kind": "code",
+   "path": "src/hireright/auth.py",
+   "start_line": 1,
+   "end_line": 38,
+   "snippet": "\"\"\"OIDC bearer-token authentication (Keycloak realm `hr`) and role checks.\"\"\"\n\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\n\nimport jwt\nfrom fastapi import Depends, HTTPException\nfrom fastapi.security import OAuth2PasswordBearer\n\nfrom .settings import settings\n\noauth2 = OAuth2PasswordBearer(tokenUrl=f\"{settings.auth_issuer}/protocol/openid-connect/token\")\n\n\n@dataclass\nclass Principal:\n    id: str\n    roles: set[str]\n\n\ndef get_current_recruiter(token: str = Depends(oauth2)) -> Principal:\n    try:\n        claims = jwt.decode(token, settings.jwks_key, algorithms=[\"RS256\"], audience=settings.auth_audience)\n    except jwt.PyJWTError as exc:\n        raise HTTPException(401, \"invalid token\") from exc\n    roles = set(claims.get(\"realm_access\", {}).get(\"roles\", []))\n    if \"recruiter\" not in roles and \"screening-admin\" not in roles:\n        raise HTTPException(403, \"recruiter role required\")\n    return Principal(id=claims[\"sub\"], roles=roles)\n\n\ndef require_role(role: str):\n    def dep(p: Principal = Depends(get_current_recruiter)) -> Principal:\n        if role not in p.roles:\n            raise HTTPException(403, f\"{role} role required\")\n        return p\n    return dep",
+   "signal": "access_control",
+   "score": 0.0
+  },
+  {
+   "id": "44f0721a6796",
+   "kind": "code",
+   "path": "tests/test_model_quality.py",
+   "start_line": 1,
+   "end_line": 27,
+   "snippet": "\"\"\"CI quality gate: the release candidate must meet predefined metrics on the frozen hold-out.\"\"\"\n\nimport json\nfrom pathlib import Path\n\nimport pytest\n\nREPORT = Path(\"artifacts/eval/holdout_report.json\")\nMIN_AUC = 0.85\nMIN_NDCG10 = 0.68\n\n\n@pytest.fixture(scope=\"module\")\ndef report():\n    return json.loads(REPORT.read_text())\n\n\ndef test_auc_threshold(report):\n    assert report[\"roc_auc\"] >= MIN_AUC, f\"ROC-AUC {report['roc_auc']:.3f} below gate\"\n\n\ndef test_ndcg_threshold(report):\n    assert report[\"ndcg@10\"] >= MIN_NDCG10\n\n\ndef test_unranked_rate_is_low(report):\n    assert report[\"unranked_rate\"] < 0.06",
+   "signal": "accuracy_metrics",
+   "score": 0.0
+  },
+  {
+   "id": "c1d986badeb7",
+   "kind": "iac",
+   "path": "infra/k8s/deployment.yaml",
+   "start_line": 31,
+   "end_line": 70,
+   "snippet": "  namespace: talent\n  annotations:\n    cert-manager.io/cluster-issuer: acme-internal-ca\n    nginx.ingress.kubernetes.io/backend-protocol: HTTPS\nspec:\n  tls:\n    - hosts: [hireright.internal.acme.example]\n      secretName: hireright-tls\n  rules:\n    - host: hireright.internal.acme.example\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend: {service: {name: hireright-screening, port: {number: 443}}}\n---\napiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: gp3-encrypted\nprovisioner: ebs.csi.aws.com\nparameters:\n  type: gp3\n  encrypted: \"true\"\n  kmsKeyId: alias/hireright-data\n---\napiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: hireright-retention\n  namespace: talent\nspec:\n  schedule: \"15 2 * * *\"\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:\n            - name: retention",
+   "signal": "retention_config,encryption",
+   "score": 0.0
+  },
+  {
+   "id": "0255bba410ef",
+   "kind": "config",
+   "path": "config/app.yaml",
+   "start_line": 1,
+   "end_line": 12,
+   "snippet": "service: hireright-screening\nmodel_path: models/ranker-2.4.1.txt\njournal_bucket: acme-hireright-journal-prod\nautomated_ranking_enabled: true\nrate_limit: \"120/minute\"\nauth:\n  issuer: https://login.acme.example/realms/hr\n  audience: hireright\n  roles: [recruiter, screening-admin, privacy-officer]\nmonitoring:\n  drift_psi_alert: 0.2\n  weekly_performance_report: true",
+   "signal": "encryption,access_control,rate_limit,monitoring",
+   "score": 0.0
+  },
+  {
+   "id": "1d93ff719ddc",
+   "kind": "iac",
+   "path": "infra/k8s/deployment.yaml",
+   "start_line": 1,
+   "end_line": 40,
+   "snippet": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: hireright-screening\n  namespace: talent\nspec:\n  replicas: 2\n  selector:\n    matchLabels: {app: hireright-screening}\n  template:\n    metadata:\n      labels: {app: hireright-screening}\n    spec:\n      serviceAccountName: hireright\n      containers:\n        - name: api\n          image: 123456789012.dkr.ecr.eu-central-1.amazonaws.com/hireright:2.4.1\n          ports: [{containerPort: 8443}]\n          volumeMounts:\n            - {name: tls, mountPath: /etc/tls, readOnly: true}\n          envFrom:\n            - secretRef: {name: hireright-oidc}\n      volumes:\n        - name: tls\n          secret: {secretName: hireright-tls}\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: hireright\n  namespace: talent\n  annotations:\n    cert-manager.io/cluster-issuer: acme-internal-ca\n    nginx.ingress.kubernetes.io/backend-protocol: HTTPS\nspec:\n  tls:\n    - hosts: [hireright.internal.acme.example]\n      secretName: hireright-tls\n  rules:\n    - host: hireright.internal.acme.example",
+   "signal": "encryption",
+   "score": 0.0
+  },
+  {
+   "id": "7129851645f9",
+   "kind": "iac",
+   "path": "infra/k8s/deployment.yaml",
+   "start_line": 61,
+   "end_line": 72,
+   "snippet": "  namespace: talent\nspec:\n  schedule: \"15 2 * * *\"\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:\n            - name: retention\n              image: 123456789012.dkr.ecr.eu-central-1.amazonaws.com/hireright:2.4.1\n              command: [\"python\", \"-m\", \"hireright.retention\"]",
+   "signal": "retention_config",
+   "score": 0.0
+  }
+ ],
+ "scorecard": [
+  {
+   "category": "risk_classification",
+   "total": 2,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "transparency",
+   "total": 6,
+   "compliant": 4,
+   "partial": 2,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 83.3
+  },
+  {
+   "category": "record_keeping",
+   "total": 3,
+   "compliant": 3,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "human_oversight",
+   "total": 5,
+   "compliant": 5,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "data_governance",
+   "total": 4,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 2,
+   "needs_review": 0,
+   "score": 50.0
+  },
+  {
+   "category": "technical_documentation",
+   "total": 5,
+   "compliant": 3,
+   "partial": 0,
+   "non_compliant": 2,
+   "needs_review": 0,
+   "score": 60.0
+  },
+  {
+   "category": "accuracy_robustness",
+   "total": 3,
+   "compliant": 2,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 1,
+   "score": 66.7
+  },
+  {
+   "category": "security",
+   "total": 7,
+   "compliant": 7,
+   "partial": 0,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 100.0
+  },
+  {
+   "category": "data_retention",
+   "total": 3,
+   "compliant": 1,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 1,
+   "score": 50.0
+  },
+  {
+   "category": "other",
+   "total": 4,
+   "compliant": 3,
+   "partial": 1,
+   "non_compliant": 0,
+   "needs_review": 0,
+   "score": 87.5
+  }
+ ],
+ "overall_score": 81.5,
+ "stats": {
+  "mode": "hybrid",
+  "model": "haiku",
+  "backend": "claude",
+  "timings": {
+   "requirements_s": 0.122,
+   "evidence_s": 0.071,
+   "risk_s": 0.012,
+   "deterministic_s": 0.028,
+   "llm_judge_s": 0.01,
+   "report_s": 0.001,
+   "total_s": 0.244
+  },
+  "llm_calls": 0,
+  "llm_cache_hits": 20,
+  "llm_failures": 0,
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "cost_usd": 0.0,
+  "llm_latency_s": 0.0,
+  "llm_cached_cost_usd": 0.042564,
+  "llm_cached_latency_s": 203.287,
+  "llm_cached_input_tokens": 158542,
+  "llm_cached_output_tokens": 32717,
+  "use_verifier": false,
+  "hybrid_threshold": 0.675,
+  "verify_with_llm": false,
+  "n_requirements": 45,
+  "n_llm_judged": 19,
+  "n_needs_review": 2,
+  "files_scanned": 20,
+  "n_evidence_items": 26,
+  "wall_s": 0.245
+ }
+}

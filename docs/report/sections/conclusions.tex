@@ -9,8 +9,18 @@ human-in-the-loop gate. It turns three policies (selected EU AI Act provisions, 
 into 45 testable requirements and produces auditable reports in JSON, Markdown, SARIF and a web dashboard, with CI
 regression gating and policy-version impact analysis.
 
-\resultsTODO{two or three sentences with the main quantitative findings (RQ1--RQ4) and the recommended default
-configuration.}
+On a benchmark of five hand-labelled AI applications (165 applicable labels), the main findings are:
+\begin{itemize}[leftmargin=*]
+  \item the hybrid mode is the most accurate (94.5\% accuracy, 86.6\% macro-F1), ahead of deterministic (82.4\%) and
+        LLM-only (90.9\%);
+  \item it needs 39\% fewer LLM calls than LLM-only, costs 41\% less and runs 45\% faster;
+  \item it misses only 2 of 65 gaps, and all citations are valid;
+  \item LLM-only mode is the most conservative (no false compliance), at the price of more false alarms.
+\end{itemize}
+Analysing the baseline errors improved accuracy by 3 (deterministic), 8 (hybrid) and 19 (LLM-only) points. The improvements were
+comment-aware rules, graded rule confidence with a routing threshold chosen out-of-sample, and a rubric-aligned judge.
+We recommend hybrid with Sonnet and $\tau=0.675$ as the default, LLM-only for high-stakes audits, and deterministic
+mode for free, offline pre-commit checks.
 
 \paragraph{Most important points.} (1) Rules and LLMs fail in complementary ways, so routing between them is worth more
 than either alone; (2) the costliest auditor error, false compliance, can be controlled structurally (citations,
@@ -19,8 +29,9 @@ decided each verdict, on which evidence, is as important as the verdict.
 
 \paragraph{Future work.}
 \begin{itemize}[leftmargin=*]
-  \item \emph{Routing}: route confident negative rule verdicts too, or learn the routing policy from review outcomes
-        (active learning from the human queue).
+  \item \emph{Routing}: always route value-bearing checks (retention periods, amount thresholds) to the judge, which
+        would remove the two remaining false compliances; learn the routing policy from review outcomes (active
+        learning from the human queue).
   \item \emph{Requirements}: evaluate PolicyAnalyst-derived requirements against the curated ones; cover the full AI Act
         and harmonised standards; multilingual policies and repositories.
   \item \emph{Evidence}: dense or hybrid retrieval, cross-file reasoning (call graphs), runtime evidence (logs, metrics,

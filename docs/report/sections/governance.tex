@@ -10,7 +10,8 @@ dimensions; Table~\ref{tab:agency} summarises its agency.
 The main ethical risk is \emph{false assurance}: a report that says ``compliant'' where the law is not met can harm the
 people affected by the audited system (rejected candidates, declined borrowers) and shift blame to a tool. We therefore
 (i) treat a false compliance as the worst error in both the metrics and the design (no positive verdict without a
-verified citation; disagreement $\Rightarrow$ human); (ii) state in every report that it is decision support for an
+verified citation; unresolved disagreement $\Rightarrow$ human); on the benchmark the
+hybrid mode wrongly declared 2 of 65 gaps compliant, which is why reports must remain decision support; (ii) state in every report that it is decision support for an
 internal audit~\cite{raji2020closing}, not a conformity assessment or legal advice; (iii) never let generated artefacts
 invent facts (explicit \texttt{[TODO]} placeholders). \emph{Privacy:} the auditor reads source repositories that may
 contain secrets or personal data in sample logs; only bounded excerpts are sent to the LLM, through the user's own Claude
@@ -48,8 +49,9 @@ information acquisition and analysis fully, \emph{recommends} decisions, and \em
 \midrule
 Autonomous & collect evidence, classify risk tier, mark \stat{na}, emit \stat{c}/\stat{p}/\stat{nc} verdicts,
 draft remediation and artefacts, fail a CI build on a regression & verdict verified, confidence $\ge \beta$, no rule/LLM
-conflict; CI failure is reversible and threshold set by the team \\
-Human-in-the-loop & any verdict with confidence $< \beta$, any rule vs.\ LLM conflict, any \stat{c} claim without valid
+conflict unless one side is $\ge\delta$ more confident (both rationales recorded); CI failure is reversible and threshold
+set by the team \\
+Human-in-the-loop & any verdict with confidence $< \beta$, any rule vs.\ LLM conflict within the margin $\delta$, any \stat{c} claim without valid
 citation, contested verdicts & routed to the review queue as \stat{nr}; a named reviewer decides \\
 Never & modify the audited repository, commit or merge, file anything with a regulator, declare legal conformity,
 decide applicability by LLM alone & out of scope by design (no write tools; judge cannot output \stat{na}) \\

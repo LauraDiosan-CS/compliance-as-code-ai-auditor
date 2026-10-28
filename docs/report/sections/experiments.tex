@@ -111,125 +111,210 @@ deterministic checks (right).}
 \label{fig:eda-signals}
 \end{figure}
 
+
 \section{Protocol}
 \label{section:protocol}
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{Configurations.} \emph{deterministic}; \emph{hybrid} and \emph{llm} with Claude Sonnet (default) and
-        Claude Haiku (smaller, cheaper); all three policies at once on each app (45 requirements per audit).
-  \item \textbf{Runs.} \texttt{app/benchmark/evaluate.py} audits the five apps in parallel processes (3 concurrent LLM
-        calls per audit), stores every full report, the per-item predictions and a $5\times5$ confusion matrix per
-        configuration. Temperature cannot be set through the CLI; variance is estimated by repeating cold (uncached)
-        runs. \resultsTODO{number of repetitions and seeds.}
-  \item \textbf{Ablations.} (a) Verifier disabled (\texttt{--no-verifier}); (b) LLM claim-support check enabled
-        (\texttt{--verify-llm}); (c) model size (Sonnet vs.\ Haiku); (d) routing threshold $\tau$ / routing of confident
-        \stat{nc} rule verdicts; (e) cache: cold run vs.\ warm re-audit of unchanged code.
-  \item \textbf{Statistics.} 95\% bootstrap confidence intervals over items (1\,000 resamples) for accuracy, macro-F1 and
-        FCR, and McNemar's exact test on paired per-item correctness between modes.
-  \item \textbf{Hardware.} \todo{CPU / RAM / OS of the machine}; LLM inference runs on Anthropic's servers via the
-        Claude Code CLI \todo{CLI version}, so local memory is dominated by the Python process.
+        Claude Haiku (smaller, cheaper). Each audit checks one app against all three policies (45 requirements).
+  \item \textbf{Runs.} \texttt{app/benchmark/evaluate.py} audits the five apps in parallel processes, with 3 concurrent
+        LLM calls per audit. For each configuration it stores the full reports, the per-item predictions and a
+        $5\times5$ confusion matrix. Each configuration was run once cold, i.e.\ without cache. LLM outputs are cached by
+        prompt hash, so every reported number can be replayed exactly. The CLI does not expose the temperature, so a
+        new cold run could differ slightly; the confidence intervals below account only for sampling of the items.
+  \item \textbf{Two system versions.} \emph{v0} is the baseline described in Chapter~\ref{chapter:approach} with fixed
+        rule confidences. \emph{v1} adds the general improvements of Section~\ref{section:v1}, which were designed after
+        analysing the v0 errors. No benchmark file or label was changed.
+  \item \textbf{Ablations.}
+        \begin{enumerate}[label=(\alph*), leftmargin=*]
+          \item Verifier disabled (\texttt{--no-verifier});
+          \item LLM claim-support check enabled (\texttt{--verify-llm});
+          \item model size (Sonnet vs.\ Haiku);
+          \item routing threshold $\tau$, swept over $[0.5, 1.01]$ and chosen by leave-one-app-out (LOAO);
+          \item cache: cold run vs.\ warm re-audit of unchanged code.
+        \end{enumerate}
+  \item \textbf{Statistics.} We compute 95\% percentile bootstrap confidence intervals (10\,000 resamples of the 165
+        applicable items, seed 0) for accuracy, macro-F1 and FCR, and run an exact two-sided McNemar test on paired
+        per-item correctness (\texttt{app/benchmark/stats\_tests.py}).
+  \item \textbf{Hardware.} Apple M4 (10-core CPU), 16\,GB RAM, macOS 15.6.1, Python 3.14, Claude Code CLI 2.1.312. LLM
+        inference runs on Anthropic's servers, so local memory is only that of the Python process.
 \end{itemize}
+
+\section{From v0 to v1: what the errors taught us}
+\label{section:v1}
+
+The v0 results (Table~\ref{tab:main-results}, upper block) exposed three systematic problems.
+\begin{enumerate}[leftmargin=*]
+  \item The rule engine was fooled by decoys: commented-out code and TODOs.
+  \item In hybrid mode, confident but wrong rule verdicts were never routed to the judge. Only 23 calls were made and
+        the false-compliance rate stayed at the deterministic 12.3\%.
+  \item The LLM judge was over-strict: 41 of the 47 errors of v0 \emph{llm} were compliant items labelled
+        \stat{p}. The judge demanded things the statement does not require, or penalised excerpts that were truncated
+        at a chunk boundary.
+\end{enumerate}
+v1 makes five general changes:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Comment-aware rules.} Pattern checks run on text in which comments, docstrings and TODO lines are
+        blanked out (line numbers are preserved). Commented-out code is treated as non-evidence. An explanatory prose
+        comment counts only as a weak claim (0.55, which is routed to the LLM). Switched-off flags such as
+        \texttt{override\_allowed = False} do not satisfy a ``present'' check.
+  \item \textbf{Graded rule confidence} replaces the fixed priors. Each check gets a strength that depends on the
+        number of matching lines and files, on the evidence kind (a technical requirement satisfied only by
+        documentation is a claim, 0.55) and on the check type (regex miss 0.6, ``absent'' pass 0.6, file exists 0.7,
+        \dots). A verdict's confidence is the mean strength of its decisive checks, plus 0.05 when at least two
+        independent checks agree.
+  \item \textbf{Routing and arbitration.} The routing threshold $\tau$ applies to the graded confidence and is chosen
+        by LOAO. On a hard rules-vs-LLM disagreement, the side that is at least 0.15 more confident wins, with its
+        confidence reduced by 0.1 and both rationales kept. Otherwise the item goes to \stat{nr}.
+  \item \textbf{Risk heuristic.} Negated mentions are ignored (``does not interact with people as a chatbot''), and
+        self-descriptions in the README or model card weigh more than code. This fixes \texttt{spamshield} (now
+        \emph{minimal}) and three wrong applicability decisions.
+  \item \textbf{Judge rubric.} The prompt now states the labelling protocol: the statement is the test; truncation is
+        not a gap; claims and TODOs are not evidence; a missing artefact is \stat{nc}.
+\end{enumerate}
 
 \section{Results}
 \label{section:results}
 
-\IfFileExists{results_tables.tex}{\input{results_tables.tex}}{%
-Table~\ref{tab:main-results} is filled from \texttt{app/benchmark/results/SUMMARY.md}.
-
-\begin{table}[htbp]
-\caption{Main results on the 165 applicable labels (percentages; cost and latency per app audit).}
-\label{tab:main-results}
-\centering\scriptsize
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{@{}lrrrrrrrrrr@{}}
-\toprule
-\textbf{Config} & \textbf{Acc} & \textbf{M-F1} & \textbf{Gap P} & \textbf{Gap R} & \textbf{FCR}$\downarrow$ & \textbf{NR} & \textbf{Acc@def} & \textbf{Cit.\ valid} & \textbf{LLM calls} & \textbf{Cost \$ / s} \\
-\midrule
-deterministic        & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & 0 & 0 / \res{} \\
-hybrid (Sonnet)      & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
-llm (Sonnet)         & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
-hybrid (Haiku)       & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
-\midrule
-hybrid, no Verifier  & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
-hybrid, LLM verifier & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\resultsTODO{fill Table~\ref{tab:main-results} (or provide \texttt{docs/report/results\_tables.tex}, which replaces this
-block automatically), add bootstrap CIs and McNemar p-values.}
-}
+\input{results_tables.tex}
 
 \begin{figure}[htbp]
 \centering
-\maybefig{mode_comparison}{Bar chart: accuracy, macro-F1, gap F1, FCR, needs-review per configuration.}
-\caption{Quality metrics per configuration.}
-\label{fig:mode-comparison}
+\includegraphics[width=\linewidth]{figures/results_v0_v1.pdf}
+\caption{v0 (light) vs.\ v1 (solid) per mode: accuracy, macro-F1, gap recall and false-compliance rate.}
+\label{fig:v0v1}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\maybefig[0.48\linewidth]{confusion_hybrid}{Confusion matrix (truth $\times$ prediction) of the hybrid mode.}\hfill
-\maybefig[0.48\linewidth]{confusion_llm}{Confusion matrix of the LLM-only mode.}
-\caption{Confusion matrices (rows: ground truth, columns: prediction) for hybrid (left) and LLM-only (right).}
+\includegraphics[width=\linewidth]{figures/results_confusion.pdf}
+\caption{Confusion matrices (rows: ground truth, columns: prediction) of the three modes in v0 (top) and v1 (bottom),
+on all 225 labels.}
 \label{fig:confusion}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\maybefig[0.7\linewidth]{cost_quality}{Scatter: cost (USD) or LLM calls per audit vs.\ accuracy / FCR, one point per configuration.}
-\caption{Cost--quality trade-off of the configurations.}
+\includegraphics[width=0.85\linewidth]{figures/results_cost_quality.pdf}
+\caption{Cost--quality trade-off: macro-F1 vs.\ equivalent LLM cost for the five audits (log scale; deterministic
+placed at the left edge).}
 \label{fig:cost-quality}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\maybefig{per_category}{Heat map or grouped bars: accuracy per requirement category and mode.}
-\caption{Accuracy per requirement category.}
+\includegraphics[width=0.85\linewidth]{figures/results_threshold_sweep.pdf}
+\caption{Hybrid routing-threshold sweep (v1, Sonnet). Lines show accuracy, macro-F1 and FCR; bars show the share of
+applicable items sent to the LLM. The dashed line marks the LOAO choice $\tau=0.675$.}
+\label{fig:threshold}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/results_per_category.pdf}
+\caption{Accuracy per requirement category for each mode, v0 and v1.}
 \label{fig:per-category}
 \end{figure}
+
+\paragraph{RQ1: quality.} The v1 hybrid mode is the most accurate configuration: 94.5\% accuracy (95\% CI
+[90.9, 97.6]) and 86.6\% macro-F1. It is significantly better than the deterministic mode (22 vs.\ 2 discordant items,
+$p=3.6\times10^{-5}$). It is better than LLM-only on point estimates (94.5 vs.\ 90.9\%), but that difference is not
+significant on 165 items ($p=0.21$). The rules decide 67 items alone at 97.0\% accuracy, and the 98 routed items reach
+92.9\%. Routing \emph{every} item to the judge ($\tau>1$) is \emph{worse} than routing 59\% of them (90.9\%,
+$p=0.07$): where the rules are confident they are more often right than the judge. Per category
+(Figure~\ref{fig:per-category}), the rules are weakest on data governance (35.7\%) and human oversight (60\%), whose
+evidence is mostly prose. The judge lifts these to 92.9\% and 86.7\%.
+
+\paragraph{RQ2: safety.} The LLM-only modes never produced a false compliance (FCR 0\%, gap recall 100\%), at the
+price of more false alarms (gap precision 85.5\%). The v1 hybrid mode misses 2 of the 65 gaps (FCR 3.1\%, CI
+[0.0, 7.9]), down from 12.3\% in v0. Both misses are high-confidence rule passes where only the \emph{proportionality}
+of a value decides: a 2-year transcript retention, and logs without tamper protection. The human workload is low: one
+item (0.6\%) was deferred, namely a rules-vs-LLM disagreement within the 0.15 margin.
+
+\paragraph{RQ3: cost and latency.} A v1 hybrid audit of the five apps used 103 calls and \$2.77 equivalent. That is 39\%
+fewer calls and 41\% lower cost than LLM-only (170 calls, \$4.68), and it is 45\% faster (50 vs.\ 91\,s per app). Haiku
+is 15$\times$ cheaper (\$0.19), but loses 11 accuracy points in hybrid mode. As LLM-only it is no better than the v0
+Sonnet judge (71.5\%), because it remains over-strict. The rules and the routing give Haiku most of its accuracy.
+
+\paragraph{RQ4: safeguards.} \emph{Verifier off}: identical results for both models. With short aliases and
+schema-constrained output, neither model ever cited a non-existent id on this benchmark, so the deterministic Verifier is
+a safety net that did not trigger here; unit tests with injected bad citations cover it. \emph{LLM claim-support
+check}: 53 more calls, needs-review up from 0.6\% to 6.7\%, accuracy down to 88.5\% ($p=0.002$) and the same FCR. It
+mostly defers verdicts that were correct, so it is off by default. \emph{Threshold}: every LOAO fold picked $\tau$ in
+[0.625, 0.675]. The pooled held-out accuracy (93.3\%) is close to the in-sample 94.5\%, so the single tuned parameter
+does not overfit much (Figure~\ref{fig:threshold}).
 
 \section{Complexity and sustainability}
 \label{section:complexity}
 
-\paragraph{Time and memory.} The deterministic mode is CPU-only and runs in well under a second per application; memory
-is bounded by the evidence index (a few thousand chunks for our apps). In LLM modes wall-clock time is dominated by the
-judge calls and scales with the number of routed requirements divided by the concurrency.
-\resultsTODO{per-stage timings (requirements, evidence, risk, deterministic, LLM judge, report) and peak RSS.}
+\paragraph{Time and memory.} The benchmark apps have 13--20 files and 14--26 evidence chunks. A deterministic audit
+takes 0.2\,s per app: 0.12\,s loading the requirements, 0.05\,s collecting evidence, the rest under 0.03\,s. Peak RSS
+is 53\,MB. In LLM modes the wall-clock time is dominated by the judge: 91\,s per app for LLM-only and 50\,s for hybrid
+with 3 concurrent calls. The time grows linearly with the number of routed requirements.
 
-\paragraph{Cost and energy.} Cost is measured as the equivalent USD reported by the CLI per call
-(\texttt{total\_cost\_usd}; the subscription itself is a flat fee) together with input/output tokens. We cannot meter the
-energy of a hosted model directly, so tokens and the number of calls are used as proxies: inference energy grows with
-generated and processed tokens~\cite{luccioni2024power,strubell2019energy}. Three design choices reduce them: (1)
-\emph{routing} -- the LLM sees only the requirements the rules cannot settle; (2) \emph{bounded prompts} -- at most 14
-evidence items and 12\,000 characters per judgement, one requirement per call, no tool use; (3) a \emph{content-addressed
-cache}, so a re-audit of an unchanged repository (the common CI case) costs no new calls.
-\resultsTODO{cold vs.\ warm cost and calls per audit; tokens per configuration.}
+\paragraph{Cost and energy.} We measure cost as the equivalent USD reported by the CLI (\texttt{total\_cost\_usd}).
+The subscription itself is a flat fee. All roughly 900 real LLM calls of the project's experiments are worth about \$27
+at API prices. We cannot meter the energy of a hosted model, so we use tokens as a proxy, since inference energy grows
+with the number of processed and generated tokens~\cite{luccioni2024power,strubell2019energy}. A v1 hybrid audit of the
+five apps uses 0.71\,M input and 0.06\,M output tokens, against 1.21\,M and 0.11\,M for LLM-only, about 42\% fewer.
+Three design choices keep this low:
+\begin{enumerate}[leftmargin=*]
+  \item \emph{routing}: the LLM sees only what the rules cannot settle;
+  \item \emph{bounded prompts}: at most 14 evidence items and 12\,000 characters, one requirement per call, no tools;
+  \item \emph{the content-addressed cache}: a warm re-audit of unchanged code (the common CI case) made 0 new calls
+        (20 cache hits for \texttt{hireright}) and took 0.3\,s with 53\,MB peak RSS.
+\end{enumerate}
 
 \section{Explainability}
 \label{section:explainability}
 
-Every verdict is explainable by construction: it carries the rule-check trace (which check passed or failed and where),
-the judge's rationale that refers to evidence aliases, the cited \texttt{file:line} snippets, the gaps and the
-remediation; conflicts keep both the rule and the LLM rationale. \texttt{ccauditor explain} and the dashboard side sheet
-render this justification for a single requirement, and SARIF places the finding on the cited lines in code review.
+Every verdict can be explained by construction. It carries:
+\begin{itemize}[leftmargin=*]
+  \item the rule-check trace, with each check's outcome, strength and location;
+  \item the judge's rationale, which refers to evidence aliases;
+  \item the cited \texttt{file:line} snippets;
+  \item the gaps and the remediation.
+\end{itemize}
+When rules and LLM conflict, both rationales are kept together with the arbitration reason.
+Figure~\ref{fig:dashboard} shows how the dashboard renders this. \texttt{ccauditor explain} prints the same
+justification on the command line, and SARIF places each finding on the cited lines in code review.
 
 \section{Discussion}
 \label{section:discussion}
 
-\resultsTODO{answer RQ1--RQ4 with the numbers: is the hybrid hypothesis supported; where does each mode fail (per
-category, per app); effect of the Verifier and of model size; statistical significance; cost per correct verdict.}
+\paragraph{Is the hybrid hypothesis supported?} Yes, with a caveat. Rules and LLMs fail in complementary ways:
+\begin{itemize}[leftmargin=*]
+  \item rules are precise where the requirement has a syntactic signature, but miss indirect evidence and
+        proportionality;
+  \item the v0 judge was over-strict and the v1 judge slightly over-flags gaps.
+\end{itemize}
+Routing by \emph{graded} rule confidence, with a threshold chosen out-of-sample, combines the two: hybrid beats both
+pure modes on accuracy and gap precision at 59\% of the LLM cost. The caveat is safety. LLM-only is the only mode with 0
+false compliances, so for a high-stakes audit where false alarms are cheap, LLM-only is the conservative choice. The two
+remaining hybrid misses are exactly the ``present but disproportionate'' controls that no regex can judge. The obvious
+fix is to route value-bearing checks (retention, thresholds) to the judge regardless of confidence.
 
-Independently of the final numbers, the design implies the following expected failure modes, which the analysis should
-confirm or refute: (i) the rule engine is precise on decoy-free, syntactic requirements but propagates confident false
-negatives on indirect evidence (Section~\ref{section:example}); (ii) the LLM-only mode recovers indirect evidence but
-tends to be stricter, flagging more items as gaps (higher gap recall, lower gap precision) and costing an order of
-magnitude more calls; (iii) the hybrid mode inherits the rule engine's confident errors because they are never routed,
-which bounds its accuracy from above and is the main target for threshold tuning; (iv) data-governance and
-human-oversight requirements are the hardest for rules, because their evidence is mostly prose.
+\paragraph{Remaining errors.} Of the 9 hybrid errors (out of 165):
+\begin{itemize}[leftmargin=*]
+  \item 5 lie on the \stat{p}/\stat{nc} boundary, e.g.\ automatic expiry but no on-request erasure process, or human
+        review only above EUR 25\,000. On these items the labelling itself requires judgement;
+  \item 2 are the proportionality passes discussed above;
+  \item 1 is \stat{c} predicted as \stat{p};
+  \item 1 was deferred to a human.
+\end{itemize}
+The v0 confident false negative of the worked example (\texttt{AIA-REC-01}) is now routed and resolved in favour of the
+judge.
 
-\paragraph{Threats to validity.} The benchmark is small (5 apps, 225 labels), synthetic and labelled by the authors who
-also wrote the rules, which risks optimistic results for the deterministic mode on the patterns we anticipated; we
-mitigated this by labelling before running the rules and by planting traps against our own rules. Policies are selected
-provisions, requirements are curated, and the AI Act will be complemented by harmonised standards that may change what
-counts as sufficient evidence.
+\paragraph{Threats to validity.}
+\begin{itemize}[leftmargin=*]
+  \item The benchmark is small: 5 apps and 165 applicable labels, so the CIs are about $\pm4$ points around 90\%
+        accuracy.
+  \item It is synthetic and was labelled by the team that built the auditor. We labelled before running the rules and
+        planted traps against our own rules, but this still risks optimism.
+  \item The v1 changes were designed after inspecting the v0 errors on the same apps, so the v1 numbers carry tuning
+        bias. No change refers to a specific file, and the only tuned parameter, $\tau$, is reported with LOAO.
+  \item Reruns from the cache are deterministic, but a cold rerun could differ slightly.
+  \item The policies cover selected provisions only, and the requirements are curated. Future harmonised standards may
+        change what counts as sufficient evidence.
+\end{itemize}

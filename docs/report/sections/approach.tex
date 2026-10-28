@@ -98,7 +98,10 @@ Applicability depends on the AI Act tier. A deterministic pre-classifier matches
 (Art.~5: social scoring, manipulation, workplace emotion recognition, untargeted facial scraping, predictive policing,
 real-time remote biometric identification), Annex~III high-risk areas (biometrics, critical infrastructure, education,
 employment, credit scoring, \dots) and Art.~50 transparency cases (chatbots, generative content, deep fakes) mostly in
-documentation, and returns the most severe tier with the triggering evidence. In LLM modes the \textbf{RiskClassifier}
+documentation. Negated mentions are ignored (``the system does not interact with people as a chatbot'') and matches
+are weighted by where they occur: a self-description in the README or model card counts 2.0, other documents 1.0 and
+code 0.5, capped at 1.0 for code alone. A tier needs a score of at least 2. The classifier returns the most severe tier
+together with the triggering evidence. In LLM modes the \textbf{RiskClassifier}
 agent receives this result as a hint plus retrieved descriptions of the intended purpose, and returns tier, triggers and
 cited evidence. Requirements whose $A_r$ excludes the tier get \stat{na} deterministically (Eq.~\ref{eq:applic}); the
 judge is not allowed to output \stat{na}.
@@ -110,9 +113,21 @@ Each check returns \emph{pass}, \emph{fail} or \emph{unknown}: \texttt{pattern} 
 selected by glob or evidence kind), \texttt{file\_exists}, \texttt{yaml\_path} (a key exists or equals a value in
 YAML/JSON) and \texttt{rego} (evaluated with OPA~\cite{opa} if installed, otherwise unknown). Results are aggregated per
 requirement: all resolved checks pass $\Rightarrow$ \stat{c}; none pass $\Rightarrow$ \stat{nc}; mixed $\Rightarrow$
-\stat{p}; no resolved check $\Rightarrow$ \stat{nr}. The rule engine has a fixed prior confidence per status
-($0.9$ \stat{c}, $0.8$ \stat{nc}, $0.5$ \stat{p}, $0.2$ \stat{nr}), cites the matching chunks and lists the failed checks
-as gaps.
+\stat{p}; no resolved check $\Rightarrow$ \stat{nr}. The engine cites the matching chunks and lists the failed
+checks as gaps.
+
+\paragraph{Comment awareness.} Pattern checks run on a copy of each file in which comments, docstrings and
+TODO/FIXME/TBD lines are blanked out; line numbers are preserved. Python is handled with \texttt{tokenize}; C-like,
+hash, HCL, SQL and markup comments are handled by a string-aware scanner. Commented-out code and TODOs are treated as
+non-evidence. Explanatory prose comments count only as a weak claim. Switched-off flags such as
+\texttt{override\_allowed = False} do not satisfy a ``present'' check.
+
+\paragraph{Graded confidence.} Each check outcome carries a strength. It depends on the number of matching lines and
+files, on the evidence kind (a technical requirement satisfied only by documentation is a \emph{claim}, 0.55) and on
+the check type (regex miss 0.6, ``absent'' pass 0.6, file exists 0.7, \dots). The verdict's confidence is the mean
+strength of its decisive checks, plus $0.05$ when at least two independent checks agree, capped at $0.95$. \stat{p} and
+\stat{nr} keep defaults of $0.5$ and $0.2$. The baseline (v0) instead used fixed priors: $0.9$ for \stat{c} and $0.8$
+for \stat{nc}.
 
 \section{LLM judge}
 \label{section:judge}
@@ -120,28 +135,46 @@ as gaps.
 The \textbf{ComplianceJudge} receives one requirement (statement, guidance, the text of its source clauses), the scout's
 evidence rendered with short aliases (\texttt{[E1]}, \texttt{[E2]}, \dots, which are far less error-prone than hash ids),
 and, in hybrid mode, the rule-engine verdict explicitly labelled as a hint that ``can be wrong (regexes are shallow)''.
-The system prompt fixes the contract: decide only from the excerpts; cite only given ids; absence of evidence is not
-compliance; use \stat{nr} for genuinely ambiguous evidence; report a calibrated confidence (use $<0.6$ when unsure);
-list concrete gaps and an actionable remediation. The answer must follow a JSON schema
+The system prompt fixes the contract:
+\begin{itemize}[leftmargin=*]
+  \item decide only from the excerpts and cite only the given ids;
+  \item absence of evidence is not compliance;
+  \item use \stat{nr} only for genuinely ambiguous evidence;
+  \item report a calibrated confidence (below 0.6 when unsure);
+  \item list concrete gaps and an actionable remediation.
+\end{itemize}
+It also states the labelling rubric:
+\begin{itemize}[leftmargin=*]
+  \item the statement is the test, so the judge must not demand more than it says;
+  \item an excerpt truncated at a chunk boundary is not a gap;
+  \item claims and TODOs are not evidence;
+  \item \stat{c}, \stat{p} and \stat{nc} have explicit meanings, and a missing artefact is \stat{nc}.
+\end{itemize} The answer must follow a JSON schema
 (\texttt{status, confidence, rationale, evidence\_ids, gaps, remediation}); aliases are mapped back to evidence ids, and
 unknown ids are kept verbatim so that the Verifier can remove them.
 
 \section{Hybrid orchestration}
 \label{section:hybrid}
 
-Algorithm~\ref{alg:hybrid} gives the orchestration. Two thresholds control the trade-off between cost and quality: the
-routing threshold $\tau=0.75$ (a deterministic verdict with lower confidence is sent to the judge, which in practice
-routes every \stat{p} and \stat{nr} rule verdict) and the human-review threshold $\beta=0.6$. Requirements with judge
-guidance but no checks are always routed. The \textsc{Combine} step never lets the LLM silently overrule the rules: a
-hard disagreement (\stat{c} vs.\ \stat{nc}) becomes \stat{nr} with both rationales shown to the reviewer; agreement raises
-the confidence by $0.05$.
+Algorithm~\ref{alg:hybrid} gives the orchestration. Two thresholds control the trade-off between cost and quality.
+\begin{itemize}[leftmargin=*]
+  \item The \emph{routing threshold} $\tau=0.675$ applies to the graded rule confidence. It was chosen by
+        leave-one-app-out cross-validation (Section~\ref{section:results}) and sends about 60\% of the applicable items
+        to the judge. Every \stat{p} or \stat{nr} rule verdict, and every requirement that has judge guidance but no
+        checks, is always routed.
+  \item The \emph{human-review threshold} is $\beta=0.6$.
+\end{itemize}
+The \textsc{Combine} step arbitrates transparently. On a hard disagreement (\stat{c} vs.\ \stat{nc}), the side that is
+at least $\delta=0.15$ more confident wins; its confidence is lowered by $0.1$ and both rationales are recorded.
+Otherwise the item becomes \stat{nr} for a reviewer. When the rules and the judge agree, the confidence rises by
+$0.05$.
 
 \algsetup{indent=1.5em, linenosize=\footnotesize}
 \begin{algorithm}[htbp]
 \caption{Hybrid audit orchestration (\texttt{pipeline.run\_audit}, mode = hybrid)}
 \label{alg:hybrid}
 \begin{algorithmic}[1]
-\REQUIRE repository $D$, policy ids, LLM backend $B$, thresholds $\tau=0.75$, $\beta=0.6$
+\REQUIRE repository $D$, policy ids, LLM backend $B$, thresholds $\tau=0.675$, $\beta=0.6$, margin $\delta=0.15$
 \ENSURE audit report with verdicts $V$, scorecard, statistics
 \STATE $\Req \leftarrow$ curated requirements, or \textsc{PolicyAnalyst}$_B$(clauses) if none
 \STATE $\Ev \leftarrow \varphi(D)$; build BM25 index over $\Ev$
@@ -163,7 +196,11 @@ the confidence by $0.05$.
   \STATE $\ell_r \leftarrow$ \textsc{ComplianceJudge}$_B$($r$, $\Ev_r$, hint $=d_r$)
   \STATE $\ell_r \leftarrow$ \textsc{Verifier}($r$, $\ell_r$, $\Ev_r \cup d_r$.ids) \COMMENT{Algorithm~\ref{alg:verifier}}
   \IF{$\{d_r.\text{status}, \ell_r.\text{status}\} = \{\stat{c},\stat{nc}\}$}
-    \STATE $v \leftarrow (\stat{nr}, \min(0.5, d_r.\text{conf}, \ell_r.\text{conf}))$, keep both rationales
+    \IF{$|\ell_r.\text{conf} - d_r.\text{conf}| \ge \delta$}
+      \STATE $v \leftarrow$ more confident side, conf $- 0.1$, keep both rationales
+    \ELSE
+      \STATE $v \leftarrow (\stat{nr}, \min(0.5, d_r.\text{conf}, \ell_r.\text{conf}))$, keep both rationales
+    \ENDIF
   \ELSIF{$d_r.\text{status} = \ell_r.\text{status}$}
     \STATE $v \leftarrow \ell_r$ with conf $\leftarrow \min(1, \max(d_r.\text{conf}, \ell_r.\text{conf}) + 0.05)$
   \ELSE
@@ -254,25 +291,42 @@ The Next.js dashboard (over the REST API: \texttt{/policies}, \texttt{/audit}, \
 an audit (mode, policies, model), and inspect a report in four tabs: \emph{overview} (score gauge, per-category charts, risk
 tier and triggers), \emph{requirements} (filterable table; a side sheet shows the statement, source clauses, rationale,
 cited code snippets, gaps and remediation), \emph{review} (the human-in-the-loop queue with a decision form) and
-\emph{traceability} (clause $\to$ requirement $\to$ evidence links). \resultsTODO{add one or two dashboard screenshots
-(\texttt{figures/dashboard\_*.png}).}
+\emph{traceability} (clause $\to$ requirement $\to$ evidence links). Figure~\ref{fig:dashboard} shows the report of
+\texttt{hireright-screening} in hybrid mode.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\linewidth]{figures/dashboard_overview.png}\hfill
+\includegraphics[width=0.38\linewidth]{figures/dashboard_requirement.png}
+\caption{Web dashboard, \texttt{hireright-screening} audited in hybrid mode. Left: the overview, with the risk tier, its
+triggers and cited files, the severity-weighted score and the category scorecard. Right: the requirement drawer for
+\texttt{AIA-REC-01}, showing the statement, the source clauses, the verdict with its confidence and the arbitration
+rationale (rule engine vs.\ LLM judge), verified citations and gaps. Further down the drawer are the cited code and
+the human-review form.}
+\label{fig:dashboard}
+\end{figure}
 
 \section{Worked example}
 \label{section:example}
 
-Consider requirement \texttt{AIA-REC-01} (Art.~12(1)--(2), automatic logging of every decision with timestamp, input
-reference, output and model version) on \texttt{hireright-screening}, a high-risk (Annex~III 4(a)) CV-ranking service.
-The ground truth is \stat{c}: every ranking is recorded by a custom \texttt{DecisionJournal.record(...)} on S3 Object
-Lock, not by a \texttt{logger} call.
+Consider requirement \texttt{AIA-REC-01} on \texttt{hireright-screening}, a high-risk CV-ranking service (Annex~III
+4(a)). The requirement derives from Art.~12(1)--(2): every decision must be logged automatically with a timestamp, an
+input reference, the output and the model version. The ground truth is \stat{c}, because every ranking is recorded by a
+custom \texttt{DecisionJournal.record(...)} on S3 Object Lock, and no \texttt{logger} call is used.
 \begin{enumerate}[leftmargin=*]
-  \item The tier is \emph{high} (recruitment trigger in the README and model card), so $r$ applies.
-  \item The rule check is a regex for a \texttt{logger} / \texttt{audit\_log} call that mentions a prediction, decision,
-        score or output in code; it fails, so the rule engine says \stat{nc} with confidence $0.8$.
-  \item Since $0.8 \geq \tau$, Algorithm~\ref{alg:hybrid} keeps this confident but wrong rule verdict in hybrid mode,
-        whereas in LLM mode the scout's queries ``journal record decision'' and ``audit log decision'' retrieve
-        \texttt{journal.py} and the call sites in \texttt{api.py}, and the judge can cite them for \stat{c}.
+  \item The tier is \emph{high}, triggered by the recruitment description in the README and the model card, so the
+        requirement applies.
+  \item The rule check is a regex for a \texttt{logger} or \texttt{audit\_log} call in code that mentions a prediction,
+        decision, score or output. It does not match, so the rule engine says \stat{nc}.
+  \item \textbf{v0:} the fixed prior gave this verdict confidence $0.8 \ge 0.75$, so hybrid mode kept the confident but
+        wrong \stat{nc} without asking the LLM. The deterministic and hybrid modes were both wrong. LLM-only mode was
+        right (\stat{c}, 0.82, 5 citations).
+  \item \textbf{v1:} a regex miss is graded at $0.6 < \tau$, so the item is routed. The scout's queries ``journal
+        record decision'' and ``audit log decision'' retrieve \texttt{journal.py}, the call sites in \texttt{api.py}
+        and the retention configuration. The judge answers \stat{c} with confidence 0.88 and cites 4 excerpts. The
+        judge is $0.28 \ge \delta$ more confident than the rules, so it wins the arbitration. The final verdict is
+        \stat{c} with confidence 0.78, and both rationales stay visible (Figure~\ref{fig:dashboard}, right).
 \end{enumerate}
-The example illustrates the central trade-off quantified in Chapter~\ref{chapter:experiments}: confident rules save LLM
-calls but propagate rule false negatives, while the LLM recovers indirect evidence at a higher cost; routing confident
-\stat{nc} rule verdicts to the judge (or lowering the \stat{nc} prior) is one of the ablations.
-\resultsTODO{replace step 3 with the actual verdicts of each mode for this item from the benchmark run.}
+The example shows the central trade-off quantified in Chapter~\ref{chapter:experiments}. Confident rules save LLM calls
+but propagate their false negatives. Graded confidence makes a ``regex miss'' weak enough to be checked, while strong
+rule evidence still saves the call.

@@ -1,37 +1,85 @@
 {
-  "generated_at": "2026-10-28T00:00:00Z",
-  "reports": [
-    {
-      "id": "talentlens-screening-2026-10-27",
-      "file": "talentlens-screening-2026-10-27.json",
-      "target": "github.com/talentlens/screening-service",
-      "created_at": "2026-10-27T14:32:08Z",
-      "mode": "hybrid",
-      "policies": [
-        "eu-ai-act",
-        "gdpr",
-        "internal-ai-policy"
-      ],
-      "risk_level": "high",
-      "overall_score": 46.2,
-      "requirements": 18,
-      "needs_review": 3
-    },
-    {
-      "id": "northwind-support-bot-2026-10-25",
-      "file": "northwind-support-bot-2026-10-25.json",
-      "target": "github.com/northwind/support-bot",
-      "created_at": "2026-10-25T09:11:42Z",
-      "mode": "llm",
-      "policies": [
-        "eu-ai-act",
-        "gdpr",
-        "internal-ai-policy"
-      ],
-      "risk_level": "limited",
-      "overall_score": 64.8,
-      "requirements": 12,
-      "needs_review": 2
-    }
-  ]
+ "generated_at": "2026-10-28T18:23:47Z",
+ "reports": [
+  {
+   "id": "credit-lens-hybrid",
+   "file": "credit-lens-hybrid.json",
+   "target": "app/benchmark/apps/credit-lens",
+   "created_at": "2026-10-28T18:17:42.198797Z",
+   "mode": "hybrid",
+   "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "acme-rai"
+   ],
+   "risk_level": "high",
+   "overall_score": 77.6,
+   "requirements": 45,
+   "needs_review": 1
+  },
+  {
+   "id": "hireright-screening-hybrid",
+   "file": "hireright-screening-hybrid.json",
+   "target": "app/benchmark/apps/hireright-screening",
+   "created_at": "2026-10-28T18:17:42.212920Z",
+   "mode": "hybrid",
+   "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "acme-rai"
+   ],
+   "risk_level": "high",
+   "overall_score": 87.9,
+   "requirements": 45,
+   "needs_review": 0
+  },
+  {
+   "id": "quickhire-ranker-hybrid",
+   "file": "quickhire-ranker-hybrid.json",
+   "target": "app/benchmark/apps/quickhire-ranker",
+   "created_at": "2026-10-28T18:17:42.185935Z",
+   "mode": "hybrid",
+   "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "acme-rai"
+   ],
+   "risk_level": "high",
+   "overall_score": 6.0,
+   "requirements": 45,
+   "needs_review": 0
+  },
+  {
+   "id": "spamshield-hybrid",
+   "file": "spamshield-hybrid.json",
+   "target": "app/benchmark/apps/spamshield",
+   "created_at": "2026-10-28T18:17:42.175068Z",
+   "mode": "hybrid",
+   "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "acme-rai"
+   ],
+   "risk_level": "minimal",
+   "overall_score": 89.8,
+   "requirements": 45,
+   "needs_review": 0
+  },
+  {
+   "id": "supportbot-genai-hybrid",
+   "file": "supportbot-genai-hybrid.json",
+   "target": "app/benchmark/apps/supportbot-genai",
+   "created_at": "2026-10-28T18:17:42.175050Z",
+   "mode": "hybrid",
+   "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "acme-rai"
+   ],
+   "risk_level": "limited",
+   "overall_score": 78.1,
+   "requirements": 45,
+   "needs_review": 0
+  }
+ ]
 }

@@ -1,0 +1,104 @@
+\chapter{Governance aspects}
+\label{chapter:governance}
+
+An AI system that audits AI systems must itself be governed. We analyse the auditor along the course's governance
+dimensions; Table~\ref{tab:agency} summarises its agency.
+
+\section{Ethics}
+\label{section:ethics}
+
+The main ethical risk is \emph{false assurance}: a report that says ``compliant'' where the law is not met can harm the
+people affected by the audited system (rejected candidates, declined borrowers) and shift blame to a tool. We therefore
+(i) treat a false compliance as the worst error in both the metrics and the design (no positive verdict without a
+verified citation; disagreement $\Rightarrow$ human); (ii) state in every report that it is decision support for an
+internal audit~\cite{raji2020closing}, not a conformity assessment or legal advice; (iii) never let generated artefacts
+invent facts (explicit \texttt{[TODO]} placeholders). \emph{Privacy:} the auditor reads source repositories that may
+contain secrets or personal data in sample logs; only bounded excerpts are sent to the LLM, through the user's own Claude
+account, with no tool access and no session persistence, and the local cache can be disabled or wiped. A deployment on
+confidential code should add secret/PII redaction before prompting, which is listed as future work. \emph{Dual use:} the
+same tool could be used to produce a ``clean'' report by tuning rules to pass; the full rule trace and the report history
+make such manipulation visible.
+
+\section{Fairness}
+\label{section:fairness}
+
+Fairness concerns the auditor in two ways. First, \emph{fairness of the audited systems}: the requirements include data
+governance and bias examination (AI Act Art.~10), and the benchmark contains a system that uses age, gender and nationality
+as features; the auditor can check that bias evaluation is \emph{documented and performed}, but it does not measure bias
+itself (it has no access to data or predictions), and it should not be read as a fairness certification~\cite{mehrabi2021survey}.
+Second, \emph{fairness of the auditor across the audited}: the same requirement should receive the same verdict for
+equivalent evidence regardless of programming language, documentation language or naming style. Rules are biased toward
+the vocabulary they were written for (e.g.\ English identifiers, \texttt{logger}); the LLM is more robust to naming but
+may favour verbose, well-documented repositories. We report per-category and per-application results to expose such
+disparities; extending the benchmark to non-English documentation and more stacks is future work.
+
+\section{Agency: what the system may decide and how far it may act}
+\label{section:agency}
+
+Following the levels-of-automation view of Parasuraman et al.~\cite{parasuraman2000levels}, the auditor automates
+information acquisition and analysis fully, \emph{recommends} decisions, and \emph{executes} nothing.
+
+\begin{table}[htbp]
+\caption{Agency of the auditor: decisions it may take alone, with a human, or never.}
+\label{tab:agency}
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{3.3cm}XX@{}}
+\toprule
+\textbf{Level} & \textbf{Decisions} & \textbf{Condition} \\
+\midrule
+Autonomous & collect evidence, classify risk tier, mark \stat{na}, emit \stat{c}/\stat{p}/\stat{nc} verdicts,
+draft remediation and artefacts, fail a CI build on a regression & verdict verified, confidence $\ge \beta$, no rule/LLM
+conflict; CI failure is reversible and threshold set by the team \\
+Human-in-the-loop & any verdict with confidence $< \beta$, any rule vs.\ LLM conflict, any \stat{c} claim without valid
+citation, contested verdicts & routed to the review queue as \stat{nr}; a named reviewer decides \\
+Never & modify the audited repository, commit or merge, file anything with a regulator, declare legal conformity,
+decide applicability by LLM alone & out of scope by design (no write tools; judge cannot output \stat{na}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The system may therefore act \emph{only on its own outputs} (a report, a SARIF file, a CI exit code). The furthest it acts
+before a person is involved is blocking a merge in CI, which is reversible, configurable (fail-on severity) and based on a
+regression relative to a baseline that a human accepted.
+
+\section{Architecture: components required by that permission}
+\label{section:architecture-gov}
+
+Each permission in Table~\ref{tab:agency} is backed by a concrete component:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Retrieval}: the evidence index and the BM25 EvidenceScout bound what the judge can see; every claim must be
+        traceable to an indexed chunk with path and line span.
+  \item \textbf{Tools}: none for the LLM. The Claude Code CLI runs with tools, MCP servers and settings disabled in an empty
+        temporary directory; only the deterministic code reads files. This removes the risk of an agent modifying the repo.
+  \item \textbf{Memory}: no conversational memory between calls (no session persistence); the only memory is the
+        content-addressed response cache (reproducibility) and the stored reports with their review history
+        (institutional memory, input to CI regression checks).
+  \item \textbf{Orchestration}: a fixed, ordinary-code pipeline (Algorithm~\ref{alg:hybrid}) with explicit routing
+        thresholds; agents cannot spawn agents or change the plan.
+  \item \textbf{Checks}: JSON-schema validation with bounded retries, the Verifier (Algorithm~\ref{alg:verifier}), the
+        conflict rule and the confidence gate, and the CI regression comparator.
+\end{itemize}
+
+\section{Accountability: who answers, what the record shows, how to contest}
+\label{section:accountability}
+
+Accountability for AI requires an identifiable answerable agent, a record and a forum~\cite{novelli2023accountability}.
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Who answers.} The organisation deploying the audited system (the AI Act provider or deployer) remains
+        responsible for compliance; within it, the named reviewer who resolves an item answers for that decision, and the
+        maintainers of the requirements YAML answer for the rules. The tool's authors answer for the correctness of the
+        pipeline and its documented limits.
+  \item \textbf{What the record shows.} Each report stores the policy ids, the full requirements used, the mode,
+        model and backend, the risk tier with triggers, every verdict with method, confidence, verified flag, rationale,
+        cited evidence (path, lines, snippet), gaps and remediation, plus timings, LLM calls, tokens and cost. Human
+        overrides append ``\emph{Human review by X: old $\to$ new. Justification}'' and are listed in the report statistics (\texttt{human\_reviews});
+        the cache makes LLM outputs replayable.
+  \item \textbf{How to contest.} Any verdict can be contested in the dashboard review queue or via
+        \texttt{ccauditor review} / \texttt{POST /reports/review}; the contester sees the exact evidence and both
+        rationales, and the decision is recorded with name and justification, in line with contestability by
+        design~\cite{alfrink2022contestable}. Rule-level errors are contested by changing the versioned requirement YAML,
+        and the policy-diff tool shows which reports are affected by such a change.
+\end{itemize}
+
+\paragraph{Transparency.} The rules, prompts, thresholds and benchmark are open in the repository; the report exposes the
+method that produced each verdict, so a reader can distinguish rule results, LLM judgements and human decisions.

@@ -1,0 +1,75 @@
+\chapter{Project and team}
+\label{chapter:team}
+
+\section{Project}
+\textbf{Title:} \ProjectTitle. \textbf{Course:} Advanced Machine Learning, Faculty of Mathematics and Computer Science,
+Babe\c s-Bolyai University, 2026-2027 (topic \#5). \textbf{Repository layout:} \texttt{app/backend} (Python package
+\texttt{ccauditor}: engine, agents, CLI, REST API), \texttt{app/web} (Next.js dashboard), \texttt{app/benchmark}
+(labelled target applications), \texttt{docs/} (design and this report).
+
+\section{Team members, skills and roles}
+
+Table~\ref{tab:team} identifies the team. \todo{confirm the role split and skills below; they are a proposal derived from
+the module boundaries of the code base.}
+
+\begin{table}[htbp]
+\caption{Team members, skills and roles.}
+\label{tab:team}
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}p{3.6cm}X@{}}
+\toprule
+\textbf{Member} & \textbf{Identification} & \textbf{Skills and role} \\
+\midrule
+\BalcName & \BalcSpec, \BalcGroup \newline \BalcEmail &
+\emph{Policy \& governance lead.} Regulatory analysis (EU AI Act, GDPR), policy corpus in citable markdown, curated
+requirements YAML (statements, applicability, checks), benchmark labelling protocol, governance and ethics chapters. \\
+\DraghiciName & \DraghiciSpec, \DraghiciGroup \newline \DraghiciEmail &
+\emph{Architecture \& LLM lead.} Data contracts, orchestrator (deterministic / LLM / hybrid), Claude Code headless backend
+with caching, agents (PolicyAnalyst, RiskClassifier, ComplianceJudge, Verifier, Remediator), CI integration. \\
+\GogName & \GogSpec, \GogGroup \newline \GogEmail &
+\emph{Evidence, UI \& evaluation lead.} Evidence collectors and BM25 retriever, web dashboard (traceability, review queue),
+benchmark applications, experiment harness, metrics and figures. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Performed tasks and timeline}
+
+All members took part in the literature review, the weekly design reviews, the report and the presentation.
+Figure~\ref{fig:gantt} shows the task plan over the 14 weeks of the semester. \todo{adjust the bars to the actual dates
+before submission.}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{ganttchart}[
+  hgrid, vgrid={*1{black!15,dotted}},
+  x unit=0.75cm, y unit chart=0.55cm,
+  bar/.append style={fill=blue!30},
+  group/.append style={fill=black!60},
+  milestone/.append style={fill=red!70},
+  bar label font=\small, group label font=\small\bfseries, milestone label font=\small\itshape,
+  title label font=\scriptsize
+]{1}{14}
+\gantttitlelist{1,...,14}{1} \\
+\ganttgroup{Analysis}{1}{4} \\
+\ganttbar{Topic analysis, literature (all)}{1}{3} \\
+\ganttbar{Policy corpus + requirements (FB)}{2}{5} \\
+\ganttbar{Architecture, data contracts (ED)}{2}{3} \\
+\ganttgroup{Engine}{3}{9} \\
+\ganttbar{Evidence collector + BM25 (RG)}{3}{6} \\
+\ganttbar{Rule engine + scoring (ED, FB)}{4}{7} \\
+\ganttbar{LLM backend + agents (ED)}{5}{9} \\
+\ganttbar{Verifier, HITL review, CI (ED)}{7}{10} \\
+\ganttgroup{Product \& evaluation}{5}{13} \\
+\ganttbar{Benchmark apps + labels (FB, RG)}{5}{9} \\
+\ganttbar{Web dashboard + API (RG)}{6}{11} \\
+\ganttbar{Experiments + ablations (RG, ED)}{9}{12} \\
+\ganttbar{Report + presentation (all)}{10}{14} \\
+\ganttmilestone{Mid-term checkpoint}{7} \\
+\ganttmilestone{Final presentation}{14}
+\end{ganttchart}}
+\caption{Gantt diagram of the project (semester weeks; initials: FB = B\^alc Felicia, ED = Dr\u{a}ghici Eduard,
+RG = Gog Raluca).}
+\label{fig:gantt}
+\end{figure}

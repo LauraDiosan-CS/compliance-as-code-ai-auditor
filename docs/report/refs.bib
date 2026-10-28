@@ -1,0 +1,356 @@
+% Bibliography for the Compliance-as-Code AI Auditor report.
+% Every entry was checked on 2026-10-28 against the arXiv API (arXiv ids) and/or the Crossref API (DOIs).
+
+% ------------------------------------------------------------------ regulation & standards
+@misc{euaiact2024,
+  author       = {{European Parliament and Council of the European Union}},
+  title        = {Regulation ({EU}) 2024/1689 laying down harmonised rules on artificial intelligence (Artificial Intelligence Act)},
+  howpublished = {Official Journal of the European Union, L series, 12 July 2024},
+  year         = {2024},
+  url          = {http://data.europa.eu/eli/reg/2024/1689/oj}
+}
+
+@misc{gdpr2016,
+  author       = {{European Parliament and Council of the European Union}},
+  title        = {Regulation ({EU}) 2016/679 on the protection of natural persons with regard to the processing of personal data (General Data Protection Regulation)},
+  howpublished = {Official Journal of the European Union, L 119, 4 May 2016},
+  year         = {2016},
+  url          = {http://data.europa.eu/eli/reg/2016/679/oj}
+}
+
+@misc{opa,
+  author       = {{Open Policy Agent contributors}},
+  title        = {Open Policy Agent: policy-based control for cloud native environments (Rego policy language)},
+  howpublished = {Cloud Native Computing Foundation graduated project},
+  year         = {2024},
+  url          = {https://www.openpolicyagent.org/docs/latest/}
+}
+
+@misc{sarif2020,
+  author       = {{OASIS}},
+  title        = {Static Analysis Results Interchange Format ({SARIF}) Version 2.1.0},
+  howpublished = {OASIS Standard, 27 March 2020},
+  year         = {2020},
+  url          = {https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html}
+}
+
+@misc{claudecode,
+  author       = {{Anthropic}},
+  title        = {Claude Code documentation: headless mode and command-line reference},
+  year         = {2025},
+  url          = {https://docs.anthropic.com/en/docs/claude-code/overview}
+}
+
+% ------------------------------------------------------------------ AI Act / AI governance scholarship
+@article{veale2021demystifying,
+  author  = {Veale, Michael and Zuiderveen Borgesius, Frederik},
+  title   = {Demystifying the Draft {EU} Artificial Intelligence Act: Analysing the good, the bad, and the unclear elements of the proposed approach},
+  journal = {Computer Law Review International},
+  volume  = {22},
+  number  = {4},
+  pages   = {97--112},
+  year    = {2021},
+  doi     = {10.9785/cri-2021-220402},
+  note    = {arXiv:2107.03721}
+}
+
+@inproceedings{hacker2023regulating,
+  author    = {Hacker, Philipp and Engel, Andreas and Mauer, Marco},
+  title     = {Regulating {ChatGPT} and other Large Generative {AI} Models},
+  booktitle = {Proceedings of the 2023 ACM Conference on Fairness, Accountability, and Transparency (FAccT)},
+  pages     = {1112--1123},
+  year      = {2023},
+  doi       = {10.1145/3593013.3594067}
+}
+
+@inproceedings{raji2020closing,
+  author    = {Raji, Inioluwa Deborah and Smart, Andrew and White, Rebecca N. and Mitchell, Margaret and Gebru, Timnit and Hutchinson, Ben and Smith-Loud, Jamila and Theron, Daniel and Barnes, Parker},
+  title     = {Closing the {AI} Accountability Gap: Defining an End-to-End Framework for Internal Algorithmic Auditing},
+  booktitle = {Proceedings of the 2020 Conference on Fairness, Accountability, and Transparency (FAT*)},
+  pages     = {33--44},
+  year      = {2020},
+  doi       = {10.1145/3351095.3372873},
+  note      = {arXiv:2001.00973}
+}
+
+@article{mokander2023auditing,
+  author  = {M{\"o}kander, Jakob and Schuett, Jonas and Kirk, Hannah Rose and Floridi, Luciano},
+  title   = {Auditing large language models: a three-layered approach},
+  journal = {AI and Ethics},
+  volume  = {4},
+  number  = {4},
+  pages   = {1085--1115},
+  year    = {2023},
+  doi     = {10.1007/s43681-023-00289-2},
+  note    = {arXiv:2302.08500}
+}
+
+@article{novelli2023accountability,
+  author  = {Novelli, Claudio and Taddeo, Mariarosaria and Floridi, Luciano},
+  title   = {Accountability in artificial intelligence: what it is and how it works},
+  journal = {AI \& Society},
+  volume  = {39},
+  number  = {4},
+  pages   = {1871--1882},
+  year    = {2023},
+  doi     = {10.1007/s00146-023-01635-y}
+}
+
+@article{alfrink2022contestable,
+  author  = {Alfrink, Kars and Keller, Ianus and Kortuem, Gerd and Doorn, Neelke},
+  title   = {Contestable {AI} by Design: Towards a Framework},
+  journal = {Minds and Machines},
+  volume  = {33},
+  number  = {4},
+  pages   = {613--639},
+  year    = {2022},
+  doi     = {10.1007/s11023-022-09611-z}
+}
+
+@article{parasuraman2000levels,
+  author  = {Parasuraman, Raja and Sheridan, Thomas B. and Wickens, Christopher D.},
+  title   = {A model for types and levels of human interaction with automation},
+  journal = {IEEE Transactions on Systems, Man, and Cybernetics -- Part A: Systems and Humans},
+  volume  = {30},
+  number  = {3},
+  pages   = {286--297},
+  year    = {2000},
+  doi     = {10.1109/3468.844354}
+}
+
+@article{mehrabi2021survey,
+  author  = {Mehrabi, Ninareh and Morstatter, Fred and Saxena, Nripsuta and Lerman, Kristina and Galstyan, Aram},
+  title   = {A Survey on Bias and Fairness in Machine Learning},
+  journal = {ACM Computing Surveys},
+  volume  = {54},
+  number  = {6},
+  pages   = {1--35},
+  year    = {2021},
+  doi     = {10.1145/3457607},
+  note    = {arXiv:1908.09635}
+}
+
+@inproceedings{mitchell2019modelcards,
+  author    = {Mitchell, Margaret and Wu, Simone and Zaldivar, Andrew and Barnes, Parker and Vasserman, Lucy and Hutchinson, Ben and Spitzer, Elena and Raji, Inioluwa Deborah and Gebru, Timnit},
+  title     = {Model Cards for Model Reporting},
+  booktitle = {Proceedings of the Conference on Fairness, Accountability, and Transparency (FAT*)},
+  pages     = {220--229},
+  year      = {2019},
+  doi       = {10.1145/3287560.3287596},
+  note      = {arXiv:1810.03993}
+}
+
+@article{gebru2021datasheets,
+  author  = {Gebru, Timnit and Morgenstern, Jamie and Vecchione, Briana and Vaughan, Jennifer Wortman and Wallach, Hanna and Daum{\'e} III, Hal and Crawford, Kate},
+  title   = {Datasheets for Datasets},
+  journal = {Communications of the ACM},
+  volume  = {64},
+  number  = {12},
+  pages   = {86--92},
+  year    = {2021},
+  doi     = {10.1145/3458723},
+  note    = {arXiv:1803.09010}
+}
+
+% ------------------------------------------------------------------ regulatory requirements engineering & compliance checking
+@article{breaux2008analyzing,
+  author  = {Breaux, Travis D. and Ant{\'o}n, Annie I.},
+  title   = {Analyzing Regulatory Rules for Privacy and Security Requirements},
+  journal = {IEEE Transactions on Software Engineering},
+  volume  = {34},
+  number  = {1},
+  pages   = {5--20},
+  year    = {2008},
+  doi     = {10.1109/TSE.2007.70746}
+}
+
+@inproceedings{torre2020completeness,
+  author    = {Torre, Damiano and Abualhaija, Sallam and Sabetzadeh, Mehrdad and Briand, Lionel and Baetens, Katrien and Goes, Peter and Forastier, Sylvie},
+  title     = {An {AI}-assisted Approach for Checking the Completeness of Privacy Policies Against {GDPR}},
+  booktitle = {2020 IEEE 28th International Requirements Engineering Conference (RE)},
+  pages     = {136--146},
+  year      = {2020},
+  doi       = {10.1109/RE48521.2020.00025}
+}
+
+@article{amaral2023dpa,
+  author  = {Amaral Cejas, Orlando and Azeem, Muhammad Ilyas and Abualhaija, Sallam and Briand, Lionel C.},
+  title   = {{NLP}-Based Automated Compliance Checking of Data Processing Agreements Against {GDPR}},
+  journal = {IEEE Transactions on Software Engineering},
+  volume  = {49},
+  number  = {9},
+  pages   = {4282--4303},
+  year    = {2023},
+  doi     = {10.1109/TSE.2023.3288901},
+  note    = {arXiv:2209.09722}
+}
+
+@misc{hassani2024rethinking,
+  author        = {Hassani, Shabnam and Sabetzadeh, Mehrdad and Amyot, Daniel and Liao, Jain},
+  title         = {Rethinking Legal Compliance Automation: Opportunities with Large Language Models},
+  year          = {2024},
+  eprint        = {2404.14356},
+  archivePrefix = {arXiv},
+  note          = {arXiv:2404.14356},
+  url           = {https://arxiv.org/abs/2404.14356}
+}
+
+% ------------------------------------------------------------------ legal NLP benchmarks
+@inproceedings{guha2023legalbench,
+  author    = {Guha, Neel and Nyarko, Julian and Ho, Daniel E. and R{\'e}, Christopher and others},
+  title     = {{LegalBench}: A Collaboratively Built Benchmark for Measuring Legal Reasoning in Large Language Models},
+  booktitle = {Advances in Neural Information Processing Systems 36 (NeurIPS 2023), Datasets and Benchmarks Track},
+  year      = {2023},
+  note      = {arXiv:2308.11462},
+  url       = {https://arxiv.org/abs/2308.11462}
+}
+
+@inproceedings{chalkidis2022lexglue,
+  author    = {Chalkidis, Ilias and Jana, Abhik and Hartung, Dirk and Bommarito, Michael and Androutsopoulos, Ion and Katz, Daniel and Aletras, Nikolaos},
+  title     = {{LexGLUE}: A Benchmark Dataset for Legal Language Understanding in {E}nglish},
+  booktitle = {Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (ACL)},
+  pages     = {4310--4330},
+  year      = {2022},
+  doi       = {10.18653/v1/2022.acl-long.297},
+  note      = {arXiv:2110.00976}
+}
+
+% ------------------------------------------------------------------ LLMs: RAG, judges, agents, calibration
+@inproceedings{lewis2020rag,
+  author    = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and Petroni, Fabio and Karpukhin, Vladimir and Goyal, Naman and K{\"u}ttler, Heinrich and Lewis, Mike and Yih, Wen-tau and Rockt{\"a}schel, Tim and Riedel, Sebastian and Kiela, Douwe},
+  title     = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
+  booktitle = {Advances in Neural Information Processing Systems 33 (NeurIPS 2020)},
+  pages     = {9459--9474},
+  year      = {2020},
+  note      = {arXiv:2005.11401},
+  url       = {https://arxiv.org/abs/2005.11401}
+}
+
+@article{robertson2009bm25,
+  author  = {Robertson, Stephen and Zaragoza, Hugo},
+  title   = {The Probabilistic Relevance Framework: {BM25} and Beyond},
+  journal = {Foundations and Trends in Information Retrieval},
+  year    = {2009},
+  doi     = {10.1561/1500000019}
+}
+
+@article{liu2024lost,
+  author  = {Liu, Nelson F. and Lin, Kevin and Hewitt, John and Paranjape, Ashwin and Bevilacqua, Michele and Petroni, Fabio and Liang, Percy},
+  title   = {Lost in the Middle: How Language Models Use Long Contexts},
+  journal = {Transactions of the Association for Computational Linguistics},
+  volume  = {12},
+  pages   = {157--173},
+  year    = {2024},
+  doi     = {10.1162/tacl_a_00638},
+  note    = {arXiv:2307.03172}
+}
+
+@inproceedings{zheng2023judging,
+  author    = {Zheng, Lianmin and Chiang, Wei-Lin and Sheng, Ying and Zhuang, Siyuan and Wu, Zhanghao and Zhuang, Yonghao and Lin, Zi and Li, Zhuohan and Li, Dacheng and Xing, Eric P. and Zhang, Hao and Gonzalez, Joseph E. and Stoica, Ion},
+  title     = {Judging {LLM}-as-a-Judge with {MT-Bench} and {Chatbot Arena}},
+  booktitle = {Advances in Neural Information Processing Systems 36 (NeurIPS 2023), Datasets and Benchmarks Track},
+  year      = {2023},
+  note      = {arXiv:2306.05685},
+  url       = {https://arxiv.org/abs/2306.05685}
+}
+
+@inproceedings{yao2023react,
+  author    = {Yao, Shunyu and Zhao, Jeffrey and Yu, Dian and Du, Nan and Shafran, Izhak and Narasimhan, Karthik and Cao, Yuan},
+  title     = {{ReAct}: Synergizing Reasoning and Acting in Language Models},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  note      = {arXiv:2210.03629},
+  url       = {https://arxiv.org/abs/2210.03629}
+}
+
+@misc{wu2023autogen,
+  author        = {Wu, Qingyun and Bansal, Gagan and Zhang, Jieyu and Wu, Yiran and Li, Beibin and Zhu, Erkang and Jiang, Li and Zhang, Xiaoyun and Zhang, Shaokun and Liu, Jiale and Awadallah, Ahmed Hassan and White, Ryen W. and Burger, Doug and Wang, Chi},
+  title         = {{AutoGen}: Enabling Next-Gen {LLM} Applications via Multi-Agent Conversation},
+  year          = {2023},
+  eprint        = {2308.08155},
+  archivePrefix = {arXiv},
+  note          = {arXiv:2308.08155},
+  url           = {https://arxiv.org/abs/2308.08155}
+}
+
+@misc{kadavath2022know,
+  author        = {Kadavath, Saurav and Conerly, Tom and Askell, Amanda and Henighan, Tom and others},
+  title         = {Language Models (Mostly) Know What They Know},
+  year          = {2022},
+  eprint        = {2207.05221},
+  archivePrefix = {arXiv},
+  note          = {arXiv:2207.05221},
+  url           = {https://arxiv.org/abs/2207.05221}
+}
+
+% ------------------------------------------------------------------ hallucination & attribution
+@article{ji2023survey,
+  author  = {Ji, Ziwei and Lee, Nayeon and Frieske, Rita and Yu, Tiezheng and Su, Dan and Xu, Yan and Ishii, Etsuko and Bang, Ye Jin and Madotto, Andrea and Fung, Pascale},
+  title   = {Survey of Hallucination in Natural Language Generation},
+  journal = {ACM Computing Surveys},
+  volume  = {55},
+  number  = {12},
+  pages   = {1--38},
+  year    = {2023},
+  doi     = {10.1145/3571730}
+}
+
+@inproceedings{gao2023alce,
+  author    = {Gao, Tianyu and Yen, Howard and Yu, Jiatong and Chen, Danqi},
+  title     = {Enabling Large Language Models to Generate Text with Citations},
+  booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {6465--6488},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.emnlp-main.398},
+  note      = {arXiv:2305.14627}
+}
+
+@article{rashkin2023ais,
+  author  = {Rashkin, Hannah and Nikolaev, Vitaly and Lamm, Matthew and Aroyo, Lora and Collins, Michael and Das, Dipanjan and Petrov, Slav and Tomar, Gaurav Singh and Turc, Iulia and Reitter, David},
+  title   = {Measuring Attribution in Natural Language Generation Models},
+  journal = {Computational Linguistics},
+  year    = {2023},
+  doi     = {10.1162/coli_a_00490},
+  note    = {arXiv:2112.12870}
+}
+
+@inproceedings{min2023factscore,
+  author    = {Min, Sewon and Krishna, Kalpesh and Lyu, Xinxi and Lewis, Mike and Yih, Wen-tau and Koh, Pang Wei and Iyyer, Mohit and Zettlemoyer, Luke and Hajishirzi, Hannaneh},
+  title     = {{FActScore}: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation},
+  booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {12076--12100},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.emnlp-main.741},
+  note      = {arXiv:2305.14251}
+}
+
+@inproceedings{manakul2023selfcheckgpt,
+  author    = {Manakul, Potsawee and Liusie, Adian and Gales, Mark J. F.},
+  title     = {{SelfCheckGPT}: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models},
+  booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {9004--9017},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.emnlp-main.557},
+  note      = {arXiv:2303.08896}
+}
+
+% ------------------------------------------------------------------ sustainability
+@inproceedings{strubell2019energy,
+  author    = {Strubell, Emma and Ganesh, Ananya and McCallum, Andrew},
+  title     = {Energy and Policy Considerations for Deep Learning in {NLP}},
+  booktitle = {Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (ACL)},
+  pages     = {3645--3650},
+  year      = {2019},
+  doi       = {10.18653/v1/P19-1355},
+  note      = {arXiv:1906.02243}
+}
+
+@inproceedings{luccioni2024power,
+  author    = {Luccioni, Sasha and Jernite, Yacine and Strubell, Emma},
+  title     = {Power Hungry Processing: Watts Driving the Cost of {AI} Deployment?},
+  booktitle = {Proceedings of the 2024 ACM Conference on Fairness, Accountability, and Transparency (FAccT)},
+  pages     = {85--99},
+  year      = {2024},
+  doi       = {10.1145/3630106.3658542},
+  note      = {arXiv:2311.16863}
+}

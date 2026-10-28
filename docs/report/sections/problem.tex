@@ -1,0 +1,115 @@
+\chapter{Scientific problem}
+\label{chapter:problem}
+
+\section{Informal description}
+\label{section:informal}
+
+An auditor receives two artefacts: a policy text and a software repository. The policy is long, hierarchical (articles,
+paragraphs, points) and mixes obligations with definitions and procedural provisions. The repository contains source code,
+infrastructure-as-code (Terraform, Kubernetes), configuration, documentation and possibly model cards and sample logs. The
+auditor must (1) find the obligations that are verifiable in a repository, (2) decide which of them apply to this system
+(this depends on the AI Act risk tier, which itself must be inferred from the intended purpose), (3) for each applicable
+obligation, locate evidence and decide whether it is met fully, partially or not at all, and (4) explain the decision with
+citations so that a third party can check it. The answer ``I cannot tell, a human must look'' is legitimate and preferable
+to a wrong answer.
+
+\paragraph{Why an intelligent method.} The mapping from legal text to code is not syntactic: Art.~12 ``automatic recording
+of events'' may be implemented as \texttt{logger.info(...)}, as a custom \texttt{DecisionJournal.record(...)} writing to
+object storage, or not at all despite a README claiming it. Rules alone suffer from false negatives (indirect evidence)
+and false positives (decoys such as commented code, TODOs, marketing claims). Reading and weighing heterogeneous evidence
+against an open-textured statement is a natural-language inference task, for which LLMs are the current best tool; their
+weaknesses (hallucination, sensitivity to context, cost) are what the rest of the design compensates for.
+
+\paragraph{Advantages and disadvantages of the candidate methods.}
+\begin{itemize}[leftmargin=*]
+  \item \emph{Rule-based (policy-as-code)}: deterministic, explainable, cheap, CI-friendly; brittle, high maintenance,
+        cannot judge sufficiency or proportionality.
+  \item \emph{LLM-only}: flexible, reads documents and code alike, writes good rationales; non-deterministic, may
+        hallucinate evidence, costs money and time per call, sensitive to retrieval quality~\cite{liu2024lost}.
+  \item \emph{Hybrid with verification and abstention} (ours): spends LLM calls only where rules are weak, constrains the
+        LLM to cited evidence and abstains when unsure; more moving parts, routing thresholds must be tuned.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\graphicalabstract}
+\caption{Graphical abstract: policies become requirements, repositories become evidence; a hybrid rule/LLM evaluation with
+a citation verifier and a human-in-the-loop gate produces an auditable report.}
+\label{fig:graphical-abstract}
+\end{figure}
+
+\section{Formal description}
+\label{section:formal}
+
+\paragraph{Policy side.} A policy $P$ is a finite tree of clauses $\Cl(P)=\{c_1,\dots,c_m\}$; each clause has a stable
+identifier (e.g.\ \texttt{eu-ai-act/Art.12(1)}), a text and a parent. A \emph{decomposition} $\delta:\Cl(P)\to 2^{\Req}$
+produces requirements
+\[
+  r=(\mathrm{id},\ C_r\subseteq\Cl(P),\ \kappa_r,\ s_r,\ A_r\subseteq\Lv,\ w_r,\ K_r,\ Q_r,\ g_r),
+\]
+where $\kappa_r$ is a category (record keeping, transparency, human oversight, \dots), $s_r$ a normative testable
+statement, $A_r$ the risk tiers it applies to with $\Lv=\{\text{prohibited},\text{high},\text{limited},\text{minimal}\}$,
+$w_r\in\{\text{critical},\text{high},\text{medium},\text{low}\}$ a severity, $K_r$ a (possibly empty) set of deterministic
+checks, $Q_r$ retrieval queries and $g_r$ guidance for the judge. $\delta$ is either curated by hand or computed by an
+LLM (PolicyAnalyst).
+
+\paragraph{Repository side.} A repository $D$ is a set of text files. A collector $\varphi$ maps it to an evidence set
+$\Ev=\varphi(D)$; each $e\in\Ev$ is a tuple $(\mathrm{id}, k_e, \mathrm{path}, [\ell_1,\ell_2], x_e, \sigma_e)$ with a kind
+$k_e\in\{\text{code},\text{config},\text{iac},\text{doc},\text{model\_card},\text{log}\}$, a line span, a snippet $x_e$ and
+a set of regex signals $\sigma_e$ (logging call, AI disclosure, human override, retention, \dots). A risk classifier
+$\rho:2^{\Ev}\to\Lv\cup\{\text{unknown}\}$ assigns the AI Act tier.
+
+\paragraph{Audit function.} Let $\St=\{\stat{c},\stat{p},\stat{nc},\stat{nr},\stat{na}\}$ (compliant, partial,
+non-compliant, needs review, not applicable). The auditor is a function
+\[
+  f:\ \Req\times 2^{\Ev}\ \longrightarrow\ \St\times[0,1]\times 2^{\Ev},\qquad
+  f(r,\Ev)=(\hat y_r,\ \pi_r,\ \hat E_r),
+\]
+returning a status, a confidence and a set of cited evidence, subject to three hard constraints:
+\begin{align}
+  &\text{(applicability)} && \rho(\Ev)\notin A_r \;\Rightarrow\; \hat y_r=\stat{na}, \label{eq:applic}\\
+  &\text{(grounding)}     && \hat E_r\subseteq \Ev_r \subseteq \Ev, \text{ where } \Ev_r \text{ is the evidence shown to the evaluator}, \label{eq:ground}\\
+  &\text{(no unsupported compliance)} && \hat y_r\in\{\stat{c},\stat{p}\}\;\Rightarrow\;\hat E_r\neq\emptyset
+     \text{ and } \hat E_r \text{ supports } s_r. \label{eq:support}
+\end{align}
+The status \stat{nr} is an \emph{abstention} (selective prediction): it is never a ground-truth label, it transfers the
+decision to a human at a cost $\lambda$.
+
+\paragraph{Objective.} With human labels $y_r\in\St\setminus\{\stat{nr}\}$, a misclassification cost matrix
+$\Lambda$ (asymmetric: predicting \stat{c} when the truth is \stat{nc} or \stat{p} -- a \emph{false compliance} -- is the
+most expensive error, because it hides a legal gap) and a per-call LLM cost, the design goal is
+\[
+  \min_{f}\ \sum_{r}\Big[\Lambda(y_r,\hat y_r)\,\mathbb{1}[\hat y_r\neq\stat{nr}] + \lambda\,\mathbb{1}[\hat y_r=\stat{nr}]\Big]
+  \;+\;\mu\cdot\mathrm{Cost}_{\text{LLM}}(f)
+  \quad\text{s.t. (\ref{eq:applic})--(\ref{eq:support}).}
+\]
+We do not optimise this objective numerically (there is no training set large enough); it motivates the routing and
+abstention thresholds of Chapter~\ref{chapter:approach} and the metrics below.
+
+\paragraph{Metrics.} Let $\mathcal{A}=\{r: y_r\neq\stat{na}\}$ be the applicable requirements and
+$G=\{r\in\mathcal{A}: y_r\in\{\stat{nc},\stat{p}\}\}$ the true \emph{gaps}.
+Let $F=\{\stat{nc},\stat{p},\stat{nr}\}$ be the predictions that \emph{flag} a requirement for attention. The metrics
+(implemented in \texttt{app/benchmark/evaluate.py}) are:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Accuracy} $=\frac{1}{|\mathcal{A}|}\sum_{r\in\mathcal{A}} \mathbb{1}[\hat y_r=y_r]$ on the applicable
+        labels; an \stat{nr} or a wrong \stat{na} prediction counts as an error.
+  \item \textbf{Macro-F1} over the graded classes $\{\stat{c},\stat{p},\stat{nc}\}$ on $\mathcal{A}$.
+  \item \textbf{Gap detection} (binary): gap precision $=|\{r\in G:\hat y_r\in F\}|/|\{r\in\mathcal{A}:\hat y_r\in F\}|$,
+        gap recall $=|\{r\in G:\hat y_r\in F\}|/|G|$ and their F1.
+  \item \textbf{False-compliance rate} $\mathrm{FCR}=|\{r\in G:\hat y_r=\stat{c}\}|/|G|$ (lower is better; the
+        safety-critical failure of an auditor).
+  \item \textbf{Needs-review rate} $=|\{r\in\mathcal{A}:\hat y_r=\stat{nr}\}|/|\mathcal{A}|$ (human workload) and
+        \textbf{accuracy@deferral}, the accuracy on the applicable items that were not deferred (selective accuracy).
+  \item \textbf{Applicability accuracy} $=\frac{1}{|\Req|}\sum_r \mathbb{1}\big[(\hat y_r=\stat{na})=(y_r=\stat{na})\big]$
+        over all labels, and \textbf{risk-tier accuracy} of $\rho$ over the applications.
+  \item \textbf{Citation validity}: share of cited evidence ids that exist in the evidence index, and share of
+        \stat{c} verdicts carrying at least one citation~\cite{rashkin2023ais,gao2023alce}.
+  \item \textbf{Complexity}: wall-clock latency per audit and per stage, number of LLM calls, input/output tokens,
+        equivalent USD cost reported by the CLI, cache hit rate.
+\end{itemize}
+
+\paragraph{Computational complexity.} With $n=|\Ev|$ chunks, $|\Req|$ requirements and $q$ queries per requirement,
+evidence collection is linear in the repository size, BM25 indexing is $O(n\bar{\ell})$ and each query $O(n)$; the rule
+engine is linear in the scanned text per check. The dominant cost is the number of LLM calls: $|\Req_{\mathcal{A}}|$
+judge calls in LLM mode versus $|\{r:\text{route}(r)=\text{LLM}\}|$ in hybrid mode (plus one risk call, and optionally
+one verifier call per positive verdict), each with a bounded prompt of at most 14 evidence items / 12\,000 characters.

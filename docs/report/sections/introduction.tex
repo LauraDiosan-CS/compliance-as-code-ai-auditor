@@ -1,0 +1,54 @@
+\chapter{Introduction}
+\label{chapter:introduction}
+
+\section{What? Why? How?}
+\label{section:what}
+
+\paragraph{What.} Given a \emph{policy} (a regulation such as the EU AI Act~\cite{euaiact2024} or GDPR~\cite{gdpr2016}, or
+an internal responsible-AI policy) and the \emph{source repository} of an AI application, we want to know, for every
+obligation in the policy, whether the application satisfies it, and to be able to \emph{prove} the answer: which file and
+which lines are the evidence, what is missing, and how to fix it. This is the idea of \emph{compliance-as-code}: obligations
+become machine-checkable requirements that run continuously, like unit tests or the policy rules of the Open Policy
+Agent~\cite{opa}, instead of a yearly PDF audit.
+
+\paragraph{Why.} The AI Act is risk-tiered: prohibited practices (Art.~5), high-risk systems (Art.~6 and Annex~III, e.g.
+recruitment and credit scoring) with heavy obligations (risk management, data governance, technical documentation,
+automatic logging, transparency to deployers, human oversight, accuracy and cybersecurity, Arts.~9--15), and lighter
+transparency duties for e.g.\ chatbots (Art.~50)~\cite{veale2021demystifying,hacker2023regulating}. These obligations are
+written in natural language, are open-textured (``appropriate'', ``proportionate'') and map to evidence that is scattered
+over code, infrastructure, configuration and documents. Manual auditing is slow, expensive and goes stale with every
+commit; purely rule-based scanners are fast but shallow (a regex cannot tell a commented-out logger from a real one); a
+large language model (LLM) can read and reason, but it hallucinates and is not, on its own, an acceptable basis for a legal
+conclusion~\cite{ji2023survey}.
+
+\paragraph{How.} We combine the three: (i) a \emph{deterministic rule engine} gives cheap, reproducible verdicts where a
+requirement has a precise technical signature; (ii) an \emph{LLM judge} with retrieval-augmented generation
+(RAG)~\cite{lewis2020rag} handles the open-textured requirements and the cases where rules are inconclusive; (iii) a
+\emph{Verifier} and a \emph{human-in-the-loop} gate make the result trustworthy: no ``compliant'' without a real citation,
+and every disagreement or low-confidence verdict goes to a person. The system is evaluated on a benchmark of five
+hand-labelled AI applications against three policies.
+
+\section{Report structure and original contributions}
+\label{section:structure}
+
+The main contributions are:
+\begin{enumerate}[leftmargin=*]
+  \item a \textbf{formalisation} of policy-to-repository compliance checking as grounded, selective multi-class prediction
+        with citations (Chapter~\ref{chapter:problem});
+  \item a \textbf{hybrid agentic auditor}: rule engine $\to$ LLM judge $\to$ verifier $\to$ human gate, with explicit
+        routing rules, an anti-hallucination contract and full traceability (Chapter~\ref{chapter:approach});
+  \item a \textbf{benchmark} of five realistic AI repositories with 225 requirement-level labels and deliberate traps for
+        both rules and LLMs, plus an evaluation protocol covering quality, cost and latency
+        (Chapter~\ref{chapter:experiments});
+  \item a \textbf{usable tool}: CLI, REST API, web dashboard with a review queue, SARIF output and CI regression gating,
+        policy-version diffing;
+  \item a \textbf{governance analysis} of the auditor itself: what it may decide, which components that permission
+        requires, and who is accountable (Chapter~\ref{chapter:governance}).
+\end{enumerate}
+
+The report contains 35 bibliographical references and is structured as follows. Chapter~\ref{chapter:team} presents
+the team and the plan. Chapter~\ref{chapter:problem} defines the scientific problem informally and formally.
+Chapter~\ref{chapter:related} reviews related work. Chapter~\ref{chapter:approach} details the approach and
+Chapter~\ref{chapter:experiments} the experiments. Chapter~\ref{chapter:governance} discusses ethics, fairness, agency,
+architecture and accountability, Chapter~\ref{chapter:swot} gives a SWOT analysis and Chapter~\ref{chapter:concl}
+concludes.

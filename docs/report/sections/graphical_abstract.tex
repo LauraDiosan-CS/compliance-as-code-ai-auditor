@@ -1,0 +1,39 @@
+% Graphical abstract (TikZ). Used in the abstract (scaled) and in Chapter 2 (Figure~\ref{fig:graphical-abstract}).
+% Note: inside \newcommand, TikZ style parameters must be written ##1.
+\newcommand{\graphicalabstract}{%
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=1.35cm, text width=2.75cm, inner sep=3pt, fill=##1},
+  arr/.style={-{Stealth[length=2.2mm]}, thick},
+  lab/.style={font=\sffamily\scriptsize, text=black!65, align=center}]
+
+  % lanes
+  \node[box=blue!8]   (pol)  at (0,2.2)   {\textbf{Policy} $P$\\EU AI Act, GDPR,\\internal policy};
+  \node[box=blue!8]   (cl)   at (4.0,2.2) {\textbf{Clauses} $\Cl$\\citable ids\\\texttt{Art.12(1)}};
+  \node[box=blue!8]   (req)  at (8.0,2.2) {\textbf{Requirements} $\Req$\\statement, tiers,\\checks, queries};
+  \node[box=orange!10] (repo) at (0,0)     {\textbf{Repository} $D$\\code, IaC, config,\\docs, model cards};
+  \node[box=orange!10] (ev)   at (4.0,0)   {\textbf{Evidence} $\Ev$\\line chunks\\+ signals};
+  \node[box=orange!10] (risk) at (8.0,0)   {\textbf{Risk tier} $\rho$\\Art.~5 / Annex III /\\Art.~50};
+
+  % evaluation
+  \node[box=green!10]  (rules) at (12.0,2.2) {\textbf{Rule engine}\\regex, file, YAML,\\Rego checks};
+  \node[box=violet!10] (judge) at (12.0,0)   {\textbf{LLM judge}\\Claude (headless)\\must cite evidence};
+  \node[box=red!8]     (ver)   at (15.8,1.1) {\textbf{Verifier}\\citations exist\\and support claim};
+  \node[box=yellow!20] (hitl)  at (19.6,1.1) {\textbf{Human gate}\\conflict or low\\confidence $\to$ review};
+  \node[box=gray!10]   (rep)   at (23.4,1.1) {\textbf{Audit report}\\status, confidence,\\\texttt{file:line}, gaps,\\fixes; SARIF, UI};
+  \node[draw, circle, fill=yellow!35, inner sep=1.5pt, font=\sffamily\scriptsize, align=center] (human) at (19.6,3.0) {human\\auditor};
+
+  \draw[arr] (pol) -- node[lab, above]{ingest} (cl);
+  \draw[arr] (cl) -- node[lab, above]{decompose} (req);
+  \draw[arr] (repo) -- node[lab, above]{collect} (ev);
+  \draw[arr] (ev) -- node[lab, above]{classify} (risk);
+  \draw[arr] (req) -- node[lab, above]{evaluate} (rules);
+  \draw[arr] (risk) -- node[lab, above]{applicable} (judge);
+  \draw[arr, dashed] (rules) -- node[lab, right, xshift=1mm]{inconclusive\\or weak} (judge);
+  \draw[arr] (ev.south) -- ++(0,-0.45) -| node[lab, below, pos=0.25]{BM25 retrieval of evidence for each requirement} (judge.south);
+  \draw[arr] (rules.east) -- (ver.north west);
+  \draw[arr] (judge.east) -- (ver.south west);
+  \draw[arr] (ver) -- (hitl);
+  \draw[arr] (hitl) -- (rep);
+  \draw[arr, dashed] (human) -- node[lab, right]{decide /\\contest} (hitl);
+\end{tikzpicture}}

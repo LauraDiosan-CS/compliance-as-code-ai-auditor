@@ -1,0 +1,235 @@
+\chapter{Experiments}
+\label{chapter:experiments}
+
+\section{Research questions and hypotheses}
+\label{section:hypotheses}
+
+\begin{description}[leftmargin=1.2cm, labelwidth=1cm]
+  \item[RQ1] \emph{Quality.} Does the hybrid mode reach at least the accuracy and macro-F1 of the LLM-only mode, and
+        exceed the deterministic mode, on applicable requirements?
+  \item[RQ2] \emph{Safety.} Which mode minimises the false-compliance rate, and how much human workload (needs-review
+        rate) does that cost?
+  \item[RQ3] \emph{Cost.} How many LLM calls, tokens, dollars and seconds does each mode need per audit, and how much does
+        the cache save on a re-audit?
+  \item[RQ4] \emph{Safeguards.} What do the Verifier, the LLM support check and the model size contribute (ablations)?
+\end{description}
+\noindent The \emph{independent variables} are the mode, the model, and the safeguard switches; the \emph{dependent
+variables} are the metrics of Section~\ref{section:formal}.
+
+\section{Data: a hand-labelled benchmark}
+\label{section:data}
+
+There is no public dataset of application repositories labelled against the AI Act, so we built one
+(\texttt{app/benchmark}). Five small but realistic repositories cover the four risk tiers and different stacks
+(Table~\ref{tab:apps}); each contains code, configuration, infrastructure-as-code, documentation, model cards and sample
+logs as real teams would write them. Every one of the 45 curated requirements was labelled for every app (225 labels,
+165 applicable), with a justification and file references. Labels were written \emph{before} running the rule engine, by
+reading the repository against the requirement statement; claims without backing (README marketing, TODOs, commented code)
+are not evidence; \stat{na} is used only when the requirement's risk tiers exclude the app's tier, so it is never a
+judgement call. Table~\ref{tab:labels} gives the label distribution.
+
+\begin{table}[htbp]
+\caption{Benchmark applications.}
+\label{tab:apps}
+\centering\small
+\begin{tabularx}{\linewidth}{@{}lllX@{}}
+\toprule
+\textbf{App} & \textbf{Domain} & \textbf{AI Act tier} & \textbf{Compliance profile} \\
+\midrule
+\texttt{hireright-screening} & CV ranking & high (Annex III 4(a)) & mostly compliant; logging via a custom journal, kill switch with an unusual name; gaps: bias evaluation, ROPA, DPIA \\
+\texttt{quickhire-ranker} & CV ranking MVP & high (Annex III 4(a)) & mostly non-compliant: auto-rejection, protected attributes as features, no auth; decoys (commented logger, ``fully GDPR compliant'' README) \\
+\texttt{supportbot-genai} & support chatbot & limited (Art.~50) & disclosure banner, erasure endpoint; gaps: unlabelled AI replies (TODO only), 2-year transcript retention \\
+\texttt{credit-lens} & credit scoring & high (Annex III 5(b)) & strong governance; gaps: 30-day log retention, automatic declines up to EUR 25\,000, no instructions for use \\
+\texttt{spamshield} & spam filter & minimal & most AI Act duties N/A; GDPR largely compliant; gaps: incident procedure, on-request erasure \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\caption{Ground-truth label distribution (45 requirements $\times$ 5 apps).}
+\label{tab:labels}
+\centering\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+\textbf{App} & \textbf{Tier} & \stat{c} & \stat{p} & \stat{nc} & \stat{na} & \textbf{total} \\
+\midrule
+credit-lens & high & 32 & 7 & 3 & 3 & 45 \\
+hireright-screening & high & 37 & 1 & 4 & 3 & 45 \\
+quickhire-ranker & high & 1 & 2 & 39 & 3 & 45 \\
+spamshield & minimal & 15 & 2 & 1 & 27 & 45 \\
+supportbot-genai & limited & 15 & 2 & 4 & 24 & 45 \\
+\midrule
+\textbf{all} & & \textbf{100} & \textbf{14} & \textbf{51} & \textbf{60} & \textbf{225} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The benchmark is deliberately adversarial for rules: \emph{indirect evidence} (regex false negatives, e.g.\ a
+\texttt{DecisionJournal} instead of \texttt{logger}, ``pseudonymous'' instead of ``pseudonymise''), \emph{decoys} (regex
+false positives, e.g.\ \texttt{\# logger.info(...)}, \texttt{override\_allowed = False}, a TODO to label AI replies) and
+three requirements without any check. It is also adversarial for LLMs: plausible but unbacked claims in READMEs and
+disproportionate-but-present controls (retention defined but too long) that require reading thresholds.
+
+\subsection{Exploratory data analysis}
+\label{section:eda}
+
+Figures~\ref{fig:eda-corpus}--\ref{fig:eda-signals} describe the inputs. The AI Act dominates the corpus, with long and
+structurally varied clauses (Annex~III, Art.~9, Art.~13). Most requirements have exactly one deterministic check, and three
+have none (Figure~\ref{fig:eda-corpus}). The applications differ in the mix of evidence kinds: \texttt{hireright} and
+\texttt{credit-lens} are documentation-heavy, \texttt{quickhire} is mostly code (Figure~\ref{fig:eda-bench}). The labels
+are imbalanced per application by design (Figure~\ref{fig:eda-labels}). The signal heat map
+(Figure~\ref{fig:eda-signals}) shows why a signal alone is weak evidence: for example, 50\% of \texttt{quickhire} chunks
+carry a PII signal, yet that application has no data protection.
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.49\linewidth]{eda_clauses}{Clauses per article and clause length.}\hfill
+\maybefig[0.49\linewidth]{eda_requirements}{Requirements per category, severity, checks per requirement.}
+\caption{Policy corpus: clauses per article and clause length (left); requirements per category, severity and number of
+deterministic checks (right).}
+\label{fig:eda-corpus}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.8\linewidth]{eda_benchmark_files}{Files and evidence chunks per kind and app.}
+\caption{Benchmark repositories: files and evidence chunks per evidence kind.}
+\label{fig:eda-bench}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.8\linewidth]{eda_labels}{Labels per app and applicable labels per category.}
+\caption{Ground-truth labels per application (left) and applicable labels per category (right).}
+\label{fig:eda-labels}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.6\linewidth]{eda_signals}{Share of evidence chunks carrying each signal, per app.}
+\caption{Share of evidence chunks carrying each collector signal, per application.}
+\label{fig:eda-signals}
+\end{figure}
+
+\section{Protocol}
+\label{section:protocol}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Configurations.} \emph{deterministic}; \emph{hybrid} and \emph{llm} with Claude Sonnet (default) and
+        Claude Haiku (smaller, cheaper); all three policies at once on each app (45 requirements per audit).
+  \item \textbf{Runs.} \texttt{app/benchmark/evaluate.py} audits the five apps in parallel processes (3 concurrent LLM
+        calls per audit), stores every full report, the per-item predictions and a $5\times5$ confusion matrix per
+        configuration. Temperature cannot be set through the CLI; variance is estimated by repeating cold (uncached)
+        runs. \resultsTODO{number of repetitions and seeds.}
+  \item \textbf{Ablations.} (a) Verifier disabled (\texttt{--no-verifier}); (b) LLM claim-support check enabled
+        (\texttt{--verify-llm}); (c) model size (Sonnet vs.\ Haiku); (d) routing threshold $\tau$ / routing of confident
+        \stat{nc} rule verdicts; (e) cache: cold run vs.\ warm re-audit of unchanged code.
+  \item \textbf{Statistics.} 95\% bootstrap confidence intervals over items (1\,000 resamples) for accuracy, macro-F1 and
+        FCR, and McNemar's exact test on paired per-item correctness between modes.
+  \item \textbf{Hardware.} \todo{CPU / RAM / OS of the machine}; LLM inference runs on Anthropic's servers via the
+        Claude Code CLI \todo{CLI version}, so local memory is dominated by the Python process.
+\end{itemize}
+
+\section{Results}
+\label{section:results}
+
+\IfFileExists{results_tables.tex}{\input{results_tables.tex}}{%
+Table~\ref{tab:main-results} is filled from \texttt{app/benchmark/results/SUMMARY.md}.
+
+\begin{table}[htbp]
+\caption{Main results on the 165 applicable labels (percentages; cost and latency per app audit).}
+\label{tab:main-results}
+\centering\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrrrrrrrr@{}}
+\toprule
+\textbf{Config} & \textbf{Acc} & \textbf{M-F1} & \textbf{Gap P} & \textbf{Gap R} & \textbf{FCR}$\downarrow$ & \textbf{NR} & \textbf{Acc@def} & \textbf{Cit.\ valid} & \textbf{LLM calls} & \textbf{Cost \$ / s} \\
+\midrule
+deterministic        & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & 0 & 0 / \res{} \\
+hybrid (Sonnet)      & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
+llm (Sonnet)         & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
+hybrid (Haiku)       & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
+\midrule
+hybrid, no Verifier  & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
+hybrid, LLM verifier & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} & \res{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\resultsTODO{fill Table~\ref{tab:main-results} (or provide \texttt{docs/report/results\_tables.tex}, which replaces this
+block automatically), add bootstrap CIs and McNemar p-values.}
+}
+
+\begin{figure}[htbp]
+\centering
+\maybefig{mode_comparison}{Bar chart: accuracy, macro-F1, gap F1, FCR, needs-review per configuration.}
+\caption{Quality metrics per configuration.}
+\label{fig:mode-comparison}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.48\linewidth]{confusion_hybrid}{Confusion matrix (truth $\times$ prediction) of the hybrid mode.}\hfill
+\maybefig[0.48\linewidth]{confusion_llm}{Confusion matrix of the LLM-only mode.}
+\caption{Confusion matrices (rows: ground truth, columns: prediction) for hybrid (left) and LLM-only (right).}
+\label{fig:confusion}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig[0.7\linewidth]{cost_quality}{Scatter: cost (USD) or LLM calls per audit vs.\ accuracy / FCR, one point per configuration.}
+\caption{Cost--quality trade-off of the configurations.}
+\label{fig:cost-quality}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\maybefig{per_category}{Heat map or grouped bars: accuracy per requirement category and mode.}
+\caption{Accuracy per requirement category.}
+\label{fig:per-category}
+\end{figure}
+
+\section{Complexity and sustainability}
+\label{section:complexity}
+
+\paragraph{Time and memory.} The deterministic mode is CPU-only and runs in well under a second per application; memory
+is bounded by the evidence index (a few thousand chunks for our apps). In LLM modes wall-clock time is dominated by the
+judge calls and scales with the number of routed requirements divided by the concurrency.
+\resultsTODO{per-stage timings (requirements, evidence, risk, deterministic, LLM judge, report) and peak RSS.}
+
+\paragraph{Cost and energy.} Cost is measured as the equivalent USD reported by the CLI per call
+(\texttt{total\_cost\_usd}; the subscription itself is a flat fee) together with input/output tokens. We cannot meter the
+energy of a hosted model directly, so tokens and the number of calls are used as proxies: inference energy grows with
+generated and processed tokens~\cite{luccioni2024power,strubell2019energy}. Three design choices reduce them: (1)
+\emph{routing} -- the LLM sees only the requirements the rules cannot settle; (2) \emph{bounded prompts} -- at most 14
+evidence items and 12\,000 characters per judgement, one requirement per call, no tool use; (3) a \emph{content-addressed
+cache}, so a re-audit of an unchanged repository (the common CI case) costs no new calls.
+\resultsTODO{cold vs.\ warm cost and calls per audit; tokens per configuration.}
+
+\section{Explainability}
+\label{section:explainability}
+
+Every verdict is explainable by construction: it carries the rule-check trace (which check passed or failed and where),
+the judge's rationale that refers to evidence aliases, the cited \texttt{file:line} snippets, the gaps and the
+remediation; conflicts keep both the rule and the LLM rationale. \texttt{ccauditor explain} and the dashboard side sheet
+render this justification for a single requirement, and SARIF places the finding on the cited lines in code review.
+
+\section{Discussion}
+\label{section:discussion}
+
+\resultsTODO{answer RQ1--RQ4 with the numbers: is the hybrid hypothesis supported; where does each mode fail (per
+category, per app); effect of the Verifier and of model size; statistical significance; cost per correct verdict.}
+
+Independently of the final numbers, the design implies the following expected failure modes, which the analysis should
+confirm or refute: (i) the rule engine is precise on decoy-free, syntactic requirements but propagates confident false
+negatives on indirect evidence (Section~\ref{section:example}); (ii) the LLM-only mode recovers indirect evidence but
+tends to be stricter, flagging more items as gaps (higher gap recall, lower gap precision) and costing an order of
+magnitude more calls; (iii) the hybrid mode inherits the rule engine's confident errors because they are never routed,
+which bounds its accuracy from above and is the main target for threshold tuning; (iv) data-governance and
+human-oversight requirements are the hardest for rules, because their evidence is mostly prose.
+
+\paragraph{Threats to validity.} The benchmark is small (5 apps, 225 labels), synthetic and labelled by the authors who
+also wrote the rules, which risks optimistic results for the deterministic mode on the patterns we anticipated; we
+mitigated this by labelling before running the rules and by planting traps against our own rules. Policies are selected
+provisions, requirements are curated, and the AI Act will be complemented by harmonised standards that may change what
+counts as sufficient evidence.

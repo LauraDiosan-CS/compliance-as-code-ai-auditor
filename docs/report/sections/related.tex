@@ -1,0 +1,82 @@
+\chapter{State of the art and related work}
+\label{chapter:related}
+
+We group related work by the sub-problem it addresses; for each group we state what they solve, how our setting differs
+and what we reuse. Table~\ref{tab:related} summarises the comparison.
+
+\section{Policy-as-code and static compliance checking}
+Policy engines such as the Open Policy Agent~\cite{opa} express organisational rules in a declarative language (Rego) and
+evaluate them against structured inputs (Kubernetes manifests, Terraform plans, API requests); static analysers report
+findings in the SARIF interchange format~\cite{sarif2020}. They are deterministic and CI-native, but presuppose that a
+human has already translated the regulation into precise rules, and they operate on structured data, not on prose
+documentation. Our rule engine is in this tradition (it even evaluates optional Rego checks) and we emit SARIF, but we add
+the translation step (requirements derived from clauses) and an LLM for the requirements that no rule can capture.
+
+\section{Requirements extraction and compliance checking with NLP}
+Regulatory requirements engineering has long studied how to turn legal text into software requirements: Breaux and
+Ant\'on~\cite{breaux2008analyzing} systematically extract rights, obligations and constraints from HIPAA.
+Torre et al.~\cite{torre2020completeness} check the completeness of privacy policies against GDPR with NLP and ML, and
+Amaral Cejas et al.~\cite{amaral2023dpa} check data processing agreements against GDPR with an NLP pipeline built on a
+manually derived set of ``shall'' requirements. Hassani et al.~\cite{hassani2024rethinking} argue that LLMs can replace
+much of this hand-crafted pipeline. These works check \emph{documents against documents}; we check a \emph{software
+repository} (code, IaC, configuration and documents) against a regulation, and we target the AI Act, which is newer and
+has no labelled corpus.
+
+\section{Legal reasoning with LLMs}
+LexGLUE~\cite{chalkidis2022lexglue} and LegalBench~\cite{guha2023legalbench} benchmark language models on legal
+understanding and reasoning tasks (issue spotting, rule application, interpretation). They show that LLMs perform well on
+rule-application tasks but unevenly across task types, which supports using them as \emph{judges of a single, well-scoped
+requirement} rather than as end-to-end auditors. Our benchmark is task-specific (requirement $\times$ repository) and
+much smaller, but its labels are grounded in repository evidence.
+
+\section{Retrieval-augmented generation and LLM-as-a-judge}
+RAG~\cite{lewis2020rag} conditions generation on retrieved passages; we use sparse BM25 retrieval~\cite{robertson2009bm25},
+which suits code identifiers and needs no embedding model, and cap the context because long contexts degrade the use of
+mid-context information~\cite{liu2024lost}. Zheng et al.~\cite{zheng2023judging} show that strong LLMs agree with human
+preferences at a level comparable to inter-human agreement, but exhibit position, verbosity and self-enhancement biases;
+we therefore give the judge a structured schema, a single requirement at a time and a hint from the rule engine that it
+is explicitly told may be wrong. Calibration of LLM self-reported confidence is imperfect but informative~\cite{kadavath2022know};
+we use it only for routing to a human, not as a probability of legal correctness.
+
+\section{Agentic orchestration}
+ReAct~\cite{yao2023react} interleaves reasoning with tool calls; AutoGen~\cite{wu2023autogen} composes multiple
+conversing agents. Our agents are deliberately \emph{not} free-running: the orchestrator is a fixed program, each agent is
+a single structured call without tools (the Claude Code CLI is run with tools disabled), which bounds cost and makes every
+step auditable.
+
+\section{Hallucination and citation verification}
+Hallucination is pervasive in natural language generation~\cite{ji2023survey}. Attribution can be framed as whether
+generated statements are supported by identified sources (AIS)~\cite{rashkin2023ais}; ALCE~\cite{gao2023alce} measures
+citation recall and precision of LLM answers; FActScore~\cite{min2023factscore} decomposes outputs into atomic facts checked
+against a knowledge source and SelfCheckGPT~\cite{manakul2023selfcheckgpt} detects hallucinations by sampling consistency.
+Our Verifier applies the same principle with a cheaper, stricter contract adapted to auditing: citations must refer to
+evidence ids actually shown to the judge, positive verdicts require at least one valid citation, and an optional second LLM
+pass checks support claim-by-claim.
+
+\section{AI Act scholarship and AI auditing}
+Veale and Zuiderveen Borgesius~\cite{veale2021demystifying} analyse the structure and weaknesses of the AI Act proposal,
+including its reliance on self-assessment and harmonised standards; Hacker et al.~\cite{hacker2023regulating} discuss
+obligations for generative models. Raji et al.~\cite{raji2020closing} propose an end-to-end internal audit framework
+(SMACTR) whose artefacts our tool can help produce; M\"okander et al.~\cite{mokander2023auditing} propose layered
+(governance, model, application) audits of LLMs. Model cards~\cite{mitchell2019modelcards} and
+datasheets~\cite{gebru2021datasheets} are documentation artefacts our evidence collector treats as a separate kind and
+our ArtifactGenerator can draft. We position the tool as \emph{support for the internal, application-level audit}, not as a
+conformity assessment.
+
+\begin{table}[htbp]
+\caption{Comparison with related approaches (\checkmark{} = supported, $\sim$ = partially).}
+\label{tab:related}
+\centering\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Approach} & \textbf{Legal text} & \textbf{Code/IaC} & \textbf{Open-textured} & \textbf{Citations} & \textbf{Abstains} & \textbf{CI} \\
+\midrule
+OPA / Rego, SARIF tools~\cite{opa,sarif2020} & -- & \checkmark & -- & \checkmark & -- & \checkmark \\
+NLP compliance of documents~\cite{torre2020completeness,amaral2023dpa} & \checkmark & -- & $\sim$ & $\sim$ & -- & -- \\
+Legal LLM benchmarks~\cite{guha2023legalbench,chalkidis2022lexglue} & \checkmark & -- & \checkmark & -- & -- & -- \\
+LLM + citations~\cite{gao2023alce,min2023factscore} & -- & -- & \checkmark & \checkmark & -- & -- \\
+\textbf{Ours} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}}
+\end{table}

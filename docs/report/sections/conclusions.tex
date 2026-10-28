@@ -1,0 +1,32 @@
+\chapter{Conclusions and future work}
+\label{chapter:concl}
+
+We framed the checking of an application repository against a regulation as grounded, selective classification:
+every requirement receives a status, a confidence and citations, and the system may abstain in favour of a human. The
+Compliance-as-Code AI Auditor implements this with a hybrid of deterministic policy-as-code checks and an LLM judge
+(Claude via the Claude Code CLI in headless mode) constrained by retrieval, a strict citation contract, a Verifier and a
+human-in-the-loop gate. It turns three policies (selected EU AI Act provisions, GDPR, an internal responsible-AI policy)
+into 45 testable requirements and produces auditable reports in JSON, Markdown, SARIF and a web dashboard, with CI
+regression gating and policy-version impact analysis.
+
+\resultsTODO{two or three sentences with the main quantitative findings (RQ1--RQ4) and the recommended default
+configuration.}
+
+\paragraph{Most important points.} (1) Rules and LLMs fail in complementary ways, so routing between them is worth more
+than either alone; (2) the costliest auditor error, false compliance, can be controlled structurally (citations,
+conflicts, abstention) rather than only statistically; (3) an auditor must be auditable: the record of who or what
+decided each verdict, on which evidence, is as important as the verdict.
+
+\paragraph{Future work.}
+\begin{itemize}[leftmargin=*]
+  \item \emph{Routing}: route confident negative rule verdicts too, or learn the routing policy from review outcomes
+        (active learning from the human queue).
+  \item \emph{Requirements}: evaluate PolicyAnalyst-derived requirements against the curated ones; cover the full AI Act
+        and harmonised standards; multilingual policies and repositories.
+  \item \emph{Evidence}: dense or hybrid retrieval, cross-file reasoning (call graphs), runtime evidence (logs, metrics,
+        model evaluations) in addition to static artefacts.
+  \item \emph{Safety}: secret/PII redaction before prompting, local open-weight models for confidential code, calibration
+        of the judge's confidence on review outcomes.
+  \item \emph{Evaluation}: more and larger repositories labelled by independent annotators, with inter-annotator
+        agreement.
+\end{itemize}

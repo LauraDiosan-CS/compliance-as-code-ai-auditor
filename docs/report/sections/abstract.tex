@@ -1,0 +1,36 @@
+\input{sections/graphical_abstract.tex}
+
+\begin{abstract}
+\noindent
+\textbf{Relevance.} The EU Artificial Intelligence Act~\cite{euaiact2024} turns ethical principles into legally binding,
+risk-tiered obligations (risk management, record-keeping, transparency, human oversight, robustness), which come on top of
+GDPR~\cite{gdpr2016} and internal responsible-AI policies. Checking an application against these texts is today a manual,
+document-heavy activity that is repeated whenever the code or the regulation changes.
+
+\medskip\noindent
+\textbf{Method.} We build a \emph{Compliance-as-Code AI Auditor}: policies are parsed into citable clauses and decomposed
+into atomic, testable requirements (curated YAML or an LLM \emph{PolicyAnalyst} agent); an application repository is turned
+into an index of evidence chunks (code, configuration, infrastructure-as-code, documentation, model cards, logs). Each
+requirement is evaluated by a \emph{hybrid} orchestrator: a deterministic rule engine (regex, file, YAML-path and Rego checks)
+runs first; inconclusive or weak cases are sent to an LLM \emph{ComplianceJudge} (Claude, invoked through the Claude Code CLI in
+headless mode) that receives BM25-retrieved evidence and must cite it; a \emph{Verifier} removes hallucinated citations and
+refuses ``compliant'' claims without evidence; disagreements and low-confidence verdicts are escalated to a human reviewer.
+The output is an auditable report linking every requirement to \texttt{file:line} evidence or to a gap, with a risk tier,
+a scorecard, remediation advice and SARIF output for CI.
+
+\medskip\noindent
+\textbf{Data.} Three policy corpora (selected EU AI Act provisions, GDPR, a fictional internal policy; 45 curated
+requirements) and a benchmark of five hand-labelled AI application repositories (225 requirement-level labels) designed with
+deliberate traps for rule-based checks (indirect evidence, decoys, requirements without rules).
+
+\medskip\noindent
+\textbf{Results.} \resultsTODO{one or two sentences with the headline numbers: accuracy / macro-F1 / false-compliance rate of
+deterministic vs LLM vs hybrid, share of requirements routed to the LLM, citation validity, cost and latency per audit.}
+
+\medskip\noindent
+\textbf{Graphical abstract.}
+
+\begin{center}
+\resizebox{\linewidth}{!}{\graphicalabstract}
+\end{center}
+\end{abstract}

@@ -1,0 +1,168 @@
+% Compliance-as-Code AI Auditor -- Advanced Machine Learning report (UBB Cluj, 2026-2027).
+% Adapted from the course template (lauradiosan/AML-MateInfoUBB, 2026-2027/Report/texModel/model.tex).
+% Build: `make` (uses tectonic) or `latexmk -pdf report.tex`. See Makefile.
+
+\documentclass[a4paper,11pt]{report}
+
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{comment}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\fi
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{pgfgantt}
+\usepackage{setspace}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.multipart,fit,backgrounds,calc}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks]{hyperref}
+
+\geometry{a4paper,top=3cm,left=2cm,right=2cm,bottom=3cm}
+
+% ------------------------------------------------------------------ placeholders (render in red)
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+% Marks a number / table / figure that the experiments run must still fill in.
+\newcommand{\resultsTODO}[1]{\par\noindent\fcolorbox{red}{red!5}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small\textcolor{red}{\textbf{RESULTS PENDING:} #1}}}\par}
+% Inline numeric placeholder, e.g. accuracy \res{acc-hybrid}.
+\newcommand{\res}[1]{\textcolor{red}{\textbf{[#1]}}}
+
+% Includes figures/<name>.pdf or .png if the experiments agent produced it, otherwise a red placeholder.
+\newcommand{\maybefig}[3][0.85\linewidth]{%
+  \IfFileExists{figures/#2.pdf}{\includegraphics[width=#1]{figures/#2.pdf}}{%
+  \IfFileExists{figures/#2.png}{\includegraphics[width=#1]{figures/#2.png}}{%
+  \resultsTODO{figure \texttt{figures/\detokenize{#2}.\{pdf,png\}} not generated yet. #3}}}}
+
+\input{team.tex}
+
+\newcommand{\ProjectTitle}{Compliance-as-Code AI Auditor: Checking Applications Against Policies and Regulations (e.g., EU AI Act)}
+\newcommand{\ProjectShort}{Compliance-as-Code AI Auditor}
+
+% math shorthands
+\newcommand{\St}{\mathcal{S}}
+\newcommand{\Ev}{\mathcal{E}}
+\newcommand{\Req}{\mathcal{R}}
+\newcommand{\Cl}{\mathcal{C}}
+\newcommand{\Lv}{\mathcal{L}}
+\newcommand{\stat}[1]{\textsc{#1}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\ProjectShort}
+\fancyhead[L]{\AuthorsShort}
+\fancyfoot[L]{Advanced Machine Learning --- 2026-2027}
+\fancyfoot[R]{\thepage}
+\setlength{\headheight}{14pt}
+
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\footrulewidth}{1pt}
+\renewcommand{\headrule}{\hbox to\headwidth{%
+  \color{lime}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{%
+  \color{lime}\leaders\hrule height \footrulewidth\hfill}}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\ProjectShort}\fancyhead[L]{\AuthorsShort}%
+  \fancyfoot[L]{Advanced Machine Learning --- 2026-2027}\fancyfoot[R]{\thepage}}
+
+\hypersetup{
+pdftitle={Compliance-as-Code AI Auditor},
+pdfauthor={Balc Felicia, Draghici Eduard, Gog Raluca},
+pdfkeywords={compliance-as-code, EU AI Act, GDPR, LLM-as-a-judge, retrieval-augmented generation, auditing},
+bookmarksnumbered,
+pdfstartview={FitH},
+urlcolor=cyan,
+colorlinks=true,
+linkcolor=blue!60!black,
+citecolor=green!50!black,
+}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\linespread{1}
+\setlength{\emergencystretch}{3em}
+\sloppy
+
+\begin{document}
+
+% ======================================================================= title page
+\begin{titlepage}
+\sloppy
+\begin{center}
+\includegraphics[width=2.2cm]{img/ubb.pdf}\\[0.4cm]
+BABE\c S-BOLYAI UNIVERSITY, CLUJ-NAPOCA, ROM\^ANIA
+
+FACULTY OF MATHEMATICS AND COMPUTER SCIENCE
+
+\vspace{4.5cm}
+
+{\LARGE \textbf{Compliance-as-Code AI Auditor}}\\[0.4cm]
+{\Large Checking Applications Against Policies and Regulations (e.g., EU AI Act)}
+
+\vspace{1cm}
+
+\normalsize -- Advanced Machine Learning report --
+\end{center}
+
+\vspace{4cm}
+
+\begin{flushright}
+\Large{\textbf{Authors}}\\[0.2cm]
+\normalsize
+\BalcName, \BalcSpec, \BalcGroup, \BalcEmail\\
+\DraghiciName, \DraghiciSpec, \DraghiciGroup, \DraghiciEmail\\
+\GogName, \GogSpec, \GogGroup, \GogEmail
+\end{flushright}
+
+\vfill
+
+\begin{center}
+2026-2027
+\end{center}
+\end{titlepage}
+
+\pagenumbering{gobble}
+
+\input{sections/abstract.tex}
+
+\tableofcontents
+\newpage
+\listoftables
+\listoffigures
+\listofalgorithms
+\newpage
+
+\setstretch{1.15}
+\pagenumbering{arabic}
+
+\input{sections/team.tex}
+\input{sections/introduction.tex}
+\input{sections/problem.tex}
+\input{sections/related.tex}
+\input{sections/approach.tex}
+\input{sections/experiments.tex}
+\input{sections/governance.tex}
+\input{sections/swot.tex}
+\input{sections/conclusions.tex}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

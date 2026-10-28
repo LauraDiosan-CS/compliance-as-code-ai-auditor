@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hireright-screening
+  namespace: talent
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: hireright-screening}
+  template:
+    metadata:
+      labels: {app: hireright-screening}
+    spec:
+      serviceAccountName: hireright
+      containers:
+        - name: api
+          image: 123456789012.dkr.ecr.eu-central-1.amazonaws.com/hireright:2.4.1
+          ports: [{containerPort: 8443}]
+          volumeMounts:
+            - {name: tls, mountPath: /etc/tls, readOnly: true}
+          envFrom:
+            - secretRef: {name: hireright-oidc}
+      volumes:
+        - name: tls
+          secret: {secretName: hireright-tls}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hireright
+  namespace: talent
+  annotations:
+    cert-manager.io/cluster-issuer: acme-internal-ca
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+spec:
+  tls:
+    - hosts: [hireright.internal.acme.example]
+      secretName: hireright-tls
+  rules:
+    - host: hireright.internal.acme.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: hireright-screening, port: {number: 443}}}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3-encrypted
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: alias/hireright-data
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hireright-retention
+  namespace: talent
+spec:
+  schedule: "15 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: retention
+              image: 123456789012.dkr.ecr.eu-central-1.amazonaws.com/hireright:2.4.1
+              command: ["python", "-m", "hireright.retention"]

@@ -1,0 +1,736 @@
+{
+  "id": "northwind-support-bot-2026-10-25",
+  "created_at": "2026-10-25T09:11:42Z",
+  "target": "github.com/northwind/support-bot",
+  "policies": [
+    "eu-ai-act",
+    "gdpr",
+    "internal-ai-policy"
+  ],
+  "mode": "llm",
+  "risk": {
+    "level": "limited",
+    "rationale": "A customer-support chatbot interacting directly with natural persons. It does not make decisions with legal or similarly significant effects and does not match any Annex III use case; transparency obligations under Art. 50 apply.",
+    "triggers": [
+      "Art. 50(1): direct interaction with natural persons",
+      "Art. 50(2): generates synthetic text"
+    ],
+    "evidence_ids": [
+      "ev_29626243c5",
+      "ev_6a6a83e174"
+    ],
+    "confidence": 0.91
+  },
+  "requirements": [
+    {
+      "id": "AIA-PROH-01",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.5(1)(f)"
+      ],
+      "category": "risk_classification",
+      "title": "No emotion recognition in workplace context",
+      "statement": "The system does not infer emotions of candidates or employees from biometric or behavioural signals.",
+      "applies_to": [
+        "prohibited",
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "critical",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "No emotion-recognition libraries or endpoints",
+          "globs": [
+            "**/*.py",
+            "requirements*.txt"
+          ],
+          "kinds": [],
+          "pattern": "(fer|deepface|emotion_recogn|affectiva)",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "absent"
+        }
+      ],
+      "llm_guidance": "",
+      "evidence_queries": [
+        "emotion",
+        "facial expression",
+        "sentiment of candidate"
+      ]
+    },
+    {
+      "id": "AIA-RISK-01",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.6(2)",
+        "eu-ai-act/AnnexIII.4(a)"
+      ],
+      "category": "risk_classification",
+      "title": "Risk class documented and justified",
+      "statement": "The repository documents the AI Act risk class of the system with an explicit justification referencing Art. 6 / Annex III.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "critical",
+      "checks": [
+        {
+          "type": "file_exists",
+          "description": "Risk assessment document exists",
+          "globs": [
+            "docs/**/risk*.md",
+            "RISK*.md"
+          ],
+          "kinds": [],
+          "pattern": null,
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "present"
+        }
+      ],
+      "llm_guidance": "Check whether the document states a risk class and justifies it against Annex III use cases.",
+      "evidence_queries": [
+        "risk assessment",
+        "Annex III",
+        "high-risk"
+      ]
+    },
+    {
+      "id": "AIA-TRANS-02",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.50(1)"
+      ],
+      "category": "transparency",
+      "title": "Users informed they interact with an AI",
+      "statement": "Natural persons interacting with a conversational interface are informed they are interacting with an AI system.",
+      "applies_to": [
+        "high",
+        "limited"
+      ],
+      "severity": "medium",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "AI disclosure string in UI",
+          "globs": [
+            "**/*.tsx",
+            "**/*.html"
+          ],
+          "kinds": [],
+          "pattern": "(AI assistant|virtual assistant|automated system)",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "present"
+        }
+      ],
+      "llm_guidance": "Disclosure must be shown before or at the start of the interaction.",
+      "evidence_queries": [
+        "AI assistant",
+        "disclosure",
+        "chat banner"
+      ]
+    },
+    {
+      "id": "AIA-TRANS-03",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.50(2)"
+      ],
+      "category": "transparency",
+      "title": "Machine-readable marking of generated content",
+      "statement": "Generated text outputs are marked as AI-generated in a machine-readable form (metadata or watermark).",
+      "applies_to": [
+        "limited"
+      ],
+      "severity": "medium",
+      "checks": [],
+      "llm_guidance": "Look for response metadata flags, headers or content credentials indicating AI generation.",
+      "evidence_queries": [
+        "ai_generated",
+        "x-ai-generated",
+        "content credentials",
+        "watermark"
+      ]
+    },
+    {
+      "id": "AIA-REC-01",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.12(1)"
+      ],
+      "category": "record_keeping",
+      "title": "Automatic logging of AI decisions",
+      "statement": "The system automatically records events (inputs, outputs, timestamps) for each model decision.",
+      "applies_to": [
+        "high"
+      ],
+      "severity": "high",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "Decision logging call present",
+          "globs": [],
+          "kinds": [
+            "code"
+          ],
+          "pattern": "(audit_log|logger\\.(info|warning)).*(predict|decision|output)",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "present"
+        }
+      ],
+      "llm_guidance": "Look for logging of model inputs/outputs with timestamps for every prediction.",
+      "evidence_queries": [
+        "logging",
+        "audit log",
+        "logger.info prediction"
+      ]
+    },
+    {
+      "id": "AIA-HO-01",
+      "policy_id": "eu-ai-act",
+      "clause_ids": [
+        "eu-ai-act/Art.14(4)(d)"
+      ],
+      "category": "human_oversight",
+      "title": "Human reviewer can override AI output",
+      "statement": "A human reviewer can disregard, override or reverse every automated decision before it takes effect.",
+      "applies_to": [
+        "high"
+      ],
+      "severity": "critical",
+      "checks": [],
+      "llm_guidance": "Check that rejection decisions are routed to a human, not only borderline scores.",
+      "evidence_queries": [
+        "manual review",
+        "override",
+        "human in the loop",
+        "recruiter approve"
+      ]
+    },
+    {
+      "id": "GDPR-MIN-01",
+      "policy_id": "gdpr",
+      "clause_ids": [
+        "gdpr/Art.5(1)(c)"
+      ],
+      "category": "data_governance",
+      "title": "PII minimised before third-party processing",
+      "statement": "Personal data is redacted or minimised before being sent to third-party model providers.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "high",
+      "checks": [],
+      "llm_guidance": "Check the code path that calls the external LLM API for redaction of names, emails, phone numbers.",
+      "evidence_queries": [
+        "redact",
+        "pii",
+        "anonymize",
+        "openai.chat"
+      ]
+    },
+    {
+      "id": "GDPR-RET-01",
+      "policy_id": "gdpr",
+      "clause_ids": [
+        "gdpr/Art.5(1)(e)"
+      ],
+      "category": "data_retention",
+      "title": "Personal data deleted after retention period",
+      "statement": "Personal data is automatically deleted or anonymised after a defined retention period.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "high",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "Scheduled purge job",
+          "globs": [],
+          "kinds": [
+            "code",
+            "iac"
+          ],
+          "pattern": "(purge|delete|ttl|expire).*(days|retention)",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "present"
+        }
+      ],
+      "llm_guidance": "Verify that every store of personal data has a retention/deletion mechanism.",
+      "evidence_queries": [
+        "retention",
+        "purge",
+        "ttl",
+        "delete older than"
+      ]
+    },
+    {
+      "id": "GDPR-INFO-01",
+      "policy_id": "gdpr",
+      "clause_ids": [
+        "gdpr/Art.13(1)"
+      ],
+      "category": "transparency",
+      "title": "Privacy notice shown at collection",
+      "statement": "Data subjects are shown a privacy notice (controller, purposes, legal basis, recipients) when their data is collected.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "medium",
+      "checks": [],
+      "llm_guidance": "",
+      "evidence_queries": [
+        "privacy notice",
+        "privacy policy",
+        "legal basis"
+      ]
+    },
+    {
+      "id": "GDPR-SEC-01",
+      "policy_id": "gdpr",
+      "clause_ids": [
+        "gdpr/Art.32(1)(a)"
+      ],
+      "category": "security",
+      "title": "Encryption of personal data at rest",
+      "statement": "Storage holding personal data is encrypted at rest.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "high",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "Encryption flags in IaC",
+          "globs": [
+            "infra/**/*.tf"
+          ],
+          "kinds": [
+            "iac"
+          ],
+          "pattern": "(storage_encrypted\\s*=\\s*true|server_side_encryption)",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "present"
+        }
+      ],
+      "llm_guidance": "",
+      "evidence_queries": [
+        "encrypted",
+        "kms",
+        "server_side_encryption"
+      ]
+    },
+    {
+      "id": "INT-SEC-02",
+      "policy_id": "internal-ai-policy",
+      "clause_ids": [
+        "internal-ai-policy/SEC-2"
+      ],
+      "category": "security",
+      "title": "No hard-coded secrets",
+      "statement": "No API keys, passwords or tokens are committed to the repository.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "medium",
+      "checks": [
+        {
+          "type": "pattern",
+          "description": "Secret patterns",
+          "globs": [
+            "**/*"
+          ],
+          "kinds": [
+            "code",
+            "config"
+          ],
+          "pattern": "(sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|password\\s*=\\s*['\"])",
+          "path": null,
+          "equals": null,
+          "rego": null,
+          "expect": "absent"
+        }
+      ],
+      "llm_guidance": "",
+      "evidence_queries": [
+        "api_key",
+        "secret",
+        "password"
+      ]
+    },
+    {
+      "id": "INT-LOG-01",
+      "policy_id": "internal-ai-policy",
+      "clause_ids": [
+        "internal-ai-policy/LOG-3"
+      ],
+      "category": "record_keeping",
+      "title": "Prompt logs redact PII",
+      "statement": "Prompt/completion logs redact personal data before persistence.",
+      "applies_to": [
+        "high",
+        "limited",
+        "minimal"
+      ],
+      "severity": "medium",
+      "checks": [],
+      "llm_guidance": "Check the logging middleware around LLM calls for redaction.",
+      "evidence_queries": [
+        "log prompt",
+        "redact",
+        "langfuse",
+        "trace"
+      ]
+    }
+  ],
+  "verdicts": [
+    {
+      "requirement_id": "AIA-PROH-01",
+      "status": "compliant",
+      "confidence": 0.95,
+      "rationale": "The assistant answers order and shipping questions; no emotion inference or biometric processing exists in the codebase.",
+      "evidence_ids": [
+        "ev_29626243c5"
+      ],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "AIA-RISK-01",
+      "status": "compliant",
+      "confidence": 0.92,
+      "rationale": "docs/ai-act.md classifies the system as limited risk with a justification (not an Annex III use case, Art. 50 applies) and a review date.",
+      "evidence_ids": [
+        "ev_29626243c5"
+      ],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "AIA-TRANS-02",
+      "status": "compliant",
+      "confidence": 0.94,
+      "rationale": "The chat window renders a persistent disclosure ('You're chatting with Northwind's AI assistant') above the conversation, before the first message.",
+      "evidence_ids": [
+        "ev_6a6a83e174"
+      ],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "AIA-TRANS-03",
+      "status": "needs_review",
+      "confidence": 0.5,
+      "rationale": "The API response includes a 'generated: true' field, which is machine-readable, but it is not propagated into transcripts or exported content, and no standard (e.g. C2PA/IPTC) is used. Whether this suffices for chat text is unsettled.",
+      "evidence_ids": [
+        "ev_c95a43b992"
+      ],
+      "gaps": [
+        "Marking not persisted with stored/exported answers.",
+        "No standard metadata scheme."
+      ],
+      "remediation": "Persist an ai_generated flag with assistant messages and include it in any export (e.g. email transcripts) using a documented metadata field.",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "AIA-REC-01",
+      "status": "not_applicable",
+      "confidence": 0.9,
+      "rationale": "Applies to high-risk systems only; the system is classified as limited risk.",
+      "evidence_ids": [],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "AIA-HO-01",
+      "status": "not_applicable",
+      "confidence": 0.9,
+      "rationale": "Applies to high-risk systems only; the system is classified as limited risk.",
+      "evidence_ids": [],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "GDPR-MIN-01",
+      "status": "non_compliant",
+      "confidence": 0.84,
+      "rationale": "Raw user messages (including emails and order numbers, as the inline comment notes) are sent unmodified to the third-party model provider together with the full history.",
+      "evidence_ids": [
+        "ev_c95a43b992"
+      ],
+      "gaps": [
+        "No PII redaction before the LLM call.",
+        "Entire transcript history is forwarded on every turn."
+      ],
+      "remediation": "Add a redaction step (emails, phone numbers, addresses) before building the prompt and cap history to the last N turns.",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "GDPR-RET-01",
+      "status": "partial",
+      "confidence": 0.73,
+      "rationale": "Session data in Redis expires after 30 days, but transcripts in Postgres are only inserted and never deleted or anonymised.",
+      "evidence_ids": [
+        "ev_d80085aa6f",
+        "ev_2b76d46a0c"
+      ],
+      "gaps": [
+        "No retention/deletion for the transcripts table."
+      ],
+      "remediation": "Add a scheduled job deleting transcripts older than the retention period stated in the privacy notice, or a created_at-based partition drop.",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "GDPR-INFO-01",
+      "status": "partial",
+      "confidence": 0.69,
+      "rationale": "A privacy notice linked from the chat names the controller, purposes and recipients, but omits the legal basis and gives no concrete retention period.",
+      "evidence_ids": [
+        "ev_69db96b065",
+        "ev_6a6a83e174"
+      ],
+      "gaps": [
+        "Legal basis missing.",
+        "Retention period not specified."
+      ],
+      "remediation": "State the legal basis (Art. 6(1)(b)/(f)) and the concrete retention period in web/pages/privacy.mdx.",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "GDPR-SEC-01",
+      "status": "compliant",
+      "confidence": 0.86,
+      "rationale": "The Postgres flexible server holding transcripts uses a customer-managed Key Vault key for encryption at rest.",
+      "evidence_ids": [
+        "ev_35c69c800a"
+      ],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "INT-SEC-02",
+      "status": "compliant",
+      "confidence": 0.9,
+      "rationale": "Secrets are referenced via environment variables; .env.example contains empty placeholders only.",
+      "evidence_ids": [
+        "ev_c0cbea657c"
+      ],
+      "gaps": [],
+      "remediation": "",
+      "method": "llm",
+      "verified": true
+    },
+    {
+      "requirement_id": "INT-LOG-01",
+      "status": "needs_review",
+      "confidence": 0.45,
+      "rationale": "The chat_turn log line includes the raw prompt and answer. Whether the logger has a redaction transport configured elsewhere could not be established from the retrieved evidence.",
+      "evidence_ids": [
+        "ev_c95a43b992"
+      ],
+      "gaps": [
+        "Raw prompts appear in application logs."
+      ],
+      "remediation": "Configure pino redaction paths for prompt/answer or log message lengths and hashed session ids only.",
+      "method": "llm",
+      "verified": false
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev_6a6a83e174",
+      "kind": "code",
+      "path": "web/components/ChatWindow.tsx",
+      "start_line": 18,
+      "end_line": 31,
+      "snippet": "export function ChatWindow() {\n  const { messages, send, pending } = useChat(\"/api/chat\");\n  return (\n    <section aria-label=\"Support chat\" className=\"chat\">\n      <p role=\"note\" className=\"chat-disclosure\">\n        You're chatting with Northwind's AI assistant. Answers are generated\n        automatically and may be inaccurate. <a href=\"/privacy\">Privacy</a>\n      </p>\n      <MessageList messages={messages} />\n      <Composer onSend={send} disabled={pending} />\n    </section>\n  );\n}",
+      "signal": "ui_component",
+      "score": 0.93
+    },
+    {
+      "id": "ev_c95a43b992",
+      "kind": "code",
+      "path": "server/routes/chat.ts",
+      "start_line": 22,
+      "end_line": 44,
+      "snippet": "router.post(\"/api/chat\", async (req, res) => {\n  const { sessionId, message } = ChatRequest.parse(req.body);\n  const history = await transcripts.load(sessionId);\n  const completion = await llm.chat.completions.create({\n    model: process.env.CHAT_MODEL ?? \"gpt-4o-mini\",\n    messages: [\n      { role: \"system\", content: SYSTEM_PROMPT },\n      ...history,\n      { role: \"user\", content: message },   // raw user text, may contain email / order ids\n    ],\n  });\n  const answer = completion.choices[0].message.content ?? \"\";\n  await transcripts.append(sessionId, message, answer);\n  logger.info({ sessionId, prompt: message, answer }, \"chat_turn\");\n  res.json({ answer, generated: true });\n});",
+      "signal": "llm_call",
+      "score": 0.91
+    },
+    {
+      "id": "ev_d80085aa6f",
+      "kind": "code",
+      "path": "server/store/session.ts",
+      "start_line": 5,
+      "end_line": 12,
+      "snippet": "export const sessions = new Redis(process.env.REDIS_URL!);\n\nexport async function touchSession(id: string) {\n  // sessions expire after 30 days of inactivity\n  await sessions.expire(`chat:${id}`, 60 * 60 * 24 * 30);\n}",
+      "signal": "ttl",
+      "score": 0.82
+    },
+    {
+      "id": "ev_2b76d46a0c",
+      "kind": "code",
+      "path": "server/store/transcripts.ts",
+      "start_line": 1,
+      "end_line": 20,
+      "snippet": "import { db } from \"./db\";\n\nexport const transcripts = {\n  async load(sessionId: string) {\n    const rows = await db.query(\n      \"SELECT role, content FROM transcripts WHERE session_id = $1 ORDER BY created_at\",\n      [sessionId],\n    );\n    return rows.rows;\n  },\n  async append(sessionId: string, user: string, answer: string) {\n    await db.query(\n      \"INSERT INTO transcripts (session_id, role, content) VALUES ($1,'user',$2), ($1,'assistant',$3)\",\n      [sessionId, user, answer],\n    );\n  },\n};",
+      "signal": "datastore",
+      "score": 0.77
+    },
+    {
+      "id": "ev_69db96b065",
+      "kind": "doc",
+      "path": "web/pages/privacy.mdx",
+      "start_line": 1,
+      "end_line": 16,
+      "snippet": "# Privacy notice\n\nNorthwind Traders Ltd. (\"we\") processes the messages you send to our\nsupport assistant to answer your questions and improve our service.\n\n**What we collect:** chat messages, order numbers you provide, technical\nsession identifiers.\n\n**Who receives it:** our hosting provider and our AI model provider.\n\n**How long:** see our retention schedule.\n\nContact: privacy@northwind.example",
+      "signal": "doc_keyword",
+      "score": 0.8
+    },
+    {
+      "id": "ev_35c69c800a",
+      "kind": "iac",
+      "path": "infra/main.tf",
+      "start_line": 40,
+      "end_line": 52,
+      "snippet": "resource \"azurerm_postgresql_flexible_server\" \"chat\" {\n  name                   = \"northwind-chat-pg\"\n  version                = \"16\"\n  storage_mb             = 32768\n  sku_name               = \"B_Standard_B1ms\"\n  customer_managed_key {\n    key_vault_key_id     = azurerm_key_vault_key.pg.id\n  }\n}",
+      "signal": "iac_resource",
+      "score": 0.88
+    },
+    {
+      "id": "ev_c0cbea657c",
+      "kind": "config",
+      "path": ".env.example",
+      "start_line": 1,
+      "end_line": 6,
+      "snippet": "# copy to .env and fill from 1Password\nOPENAI_API_KEY=\nREDIS_URL=redis://localhost:6379\nDATABASE_URL=postgres://localhost:5432/chat\nCHAT_MODEL=gpt-4o-mini",
+      "signal": "config_file",
+      "score": 0.6
+    },
+    {
+      "id": "ev_29626243c5",
+      "kind": "doc",
+      "path": "docs/ai-act.md",
+      "start_line": 1,
+      "end_line": 12,
+      "snippet": "# EU AI Act self-assessment\n\nThe support assistant answers questions about orders, shipping and\nreturns. It does not take decisions about customers and escalates to a\nhuman agent on request (\"talk to a human\").\n\nClassification: **limited risk** (Art. 50 transparency obligations).\nNot an Annex III use case. No prohibited practice under Art. 5.\n\nReviewed: 2026-09-02 by Compliance (M. Ionescu)",
+      "signal": "doc_keyword",
+      "score": 0.9
+    }
+  ],
+  "scorecard": [
+    {
+      "category": "risk_classification",
+      "total": 2,
+      "compliant": 2,
+      "partial": 0,
+      "non_compliant": 0,
+      "needs_review": 0,
+      "score": 100
+    },
+    {
+      "category": "transparency",
+      "total": 3,
+      "compliant": 1,
+      "partial": 1,
+      "non_compliant": 0,
+      "needs_review": 1,
+      "score": 50
+    },
+    {
+      "category": "record_keeping",
+      "total": 1,
+      "compliant": 0,
+      "partial": 0,
+      "non_compliant": 0,
+      "needs_review": 1,
+      "score": 0
+    },
+    {
+      "category": "data_governance",
+      "total": 1,
+      "compliant": 0,
+      "partial": 0,
+      "non_compliant": 1,
+      "needs_review": 0,
+      "score": 0
+    },
+    {
+      "category": "security",
+      "total": 2,
+      "compliant": 2,
+      "partial": 0,
+      "non_compliant": 0,
+      "needs_review": 0,
+      "score": 100
+    },
+    {
+      "category": "data_retention",
+      "total": 1,
+      "compliant": 0,
+      "partial": 1,
+      "non_compliant": 0,
+      "needs_review": 0,
+      "score": 50
+    }
+  ],
+  "overall_score": 64.8,
+  "stats": {
+    "duration_s": 97.3,
+    "files_scanned": 141,
+    "llm_calls": 14,
+    "tokens_in": 61872,
+    "tokens_out": 8410,
+    "cost_usd": 0,
+    "llm_backend": "claude-code (subscription)",
+    "rules_evaluated": 0,
+    "requirements": 12,
+    "status_counts": {
+      "compliant": 5,
+      "needs_review": 2,
+      "not_applicable": 2,
+      "non_compliant": 1,
+      "partial": 2
+    },
+    "evidence_items": 8
+  }
+}

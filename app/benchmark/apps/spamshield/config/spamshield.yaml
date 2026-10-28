@@ -1,0 +1,17 @@
+port: 9443
+model_path: /models/nb-2026.10.joblib
+thresholds:
+  tag: 0.70
+  quarantine: 0.95
+rate_limit:
+  requests_per_minute: 6000
+quarantine:
+  path: /var/lib/spamshield/quarantine
+  retention_days: 30
+logging:
+  sink: loki
+  retention_days: 180
+tls:
+  cert: /etc/spamshield/tls/tls.crt
+  key: /etc/spamshield/tls/tls.key
+  client_ca: /etc/spamshield/tls/gateway-ca.crt

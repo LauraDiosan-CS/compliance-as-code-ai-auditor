@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spamshield
+  namespace: mail
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: spamshield}
+  template:
+    metadata:
+      labels: {app: spamshield}
+    spec:
+      containers:
+        - name: spamshield
+          image: registry.acme.example/mail/spamshield:2026.10
+          ports: [{containerPort: 9443}]
+          volumeMounts:
+            - {name: quarantine, mountPath: /var/lib/spamshield/quarantine}
+            - {name: tls, mountPath: /etc/spamshield/tls, readOnly: true}
+      volumes:
+        - name: quarantine
+          persistentVolumeClaim: {claimName: spamshield-quarantine}
+        - name: tls
+          secret: {secretName: spamshield-mtls}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spamshield-quarantine
+  namespace: mail
+spec:
+  storageClassName: encrypted-ssd
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 50Gi}}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: encrypted-ssd
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-ssd
+  disk-encryption-kms-key: projects/acme-mail/locations/europe-west1/keyRings/mail/cryptoKeys/spamshield
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spamshield-only-gateway
+  namespace: mail
+spec:
+  podSelector: {matchLabels: {app: spamshield}}
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app: postfix-gateway}}
+      ports: [{port: 9443}]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: spamshield-quarantine-purge
+  namespace: mail
+spec:
+  schedule: "0 3 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: purge
+              image: registry.acme.example/mail/spamshield:2026.10
+              command: ["python", "-c", "from spamshield.quarantine import Quarantine; Quarantine('/var/lib/spamshield/quarantine').purge(30)"]

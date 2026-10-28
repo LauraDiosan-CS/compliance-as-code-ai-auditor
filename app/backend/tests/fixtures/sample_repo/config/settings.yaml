@@ -1,0 +1,8 @@
+app:
+  name: loan-scoring
+logging:
+  level: INFO
+data:
+  retention:
+    days: 30
+  encryption: true

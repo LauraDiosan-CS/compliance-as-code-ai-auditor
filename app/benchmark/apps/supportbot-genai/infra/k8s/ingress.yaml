@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: supportbot
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+    - hosts: [support-api.acme-energy.example]
+      secretName: supportbot-tls
+  rules:
+    - host: support-api.acme-energy.example
+      http:
+        paths:
+          - path: /api/chat
+            pathType: Prefix
+            backend: {service: {name: supportbot, port: {number: 8080}}}

@@ -1,0 +1,8 @@
+# Data retention schedule for HireRight Screening (reviewed by DPO 2026-05-12)
+raw_cv:                 # uploaded CV files (PDF/DOCX) and parsed text
+  retention_days: 30
+candidate_profile:      # structured profile used for the ongoing recruitment round
+  retention_days: 180   # recruitment round + challenge period; then anonymised
+decision_journal:       # AI rankings and recruiter actions, AI Act Art. 12/19/26(6)
+  retention_days: 400
+  storage: s3-object-lock

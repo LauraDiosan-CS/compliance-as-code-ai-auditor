@@ -1,0 +1,3 @@
+{"level":30,"time":1760256012345,"service":"supportbot","event":"llm_call","sessionId":"s-4f1c","model":"gpt-4o-mini-2024-07-18","promptTokens":1412,"completionTokens":96,"latencyMs":1180,"handover":false,"model_version":"gpt-4o-mini-2024-07-18","msg":"llm reply generated"}
+{"level":30,"time":1760256044871,"service":"supportbot","event":"llm_call","sessionId":"s-4f1c","model":"gpt-4o-mini-2024-07-18","promptTokens":1630,"completionTokens":41,"latencyMs":902,"handover":true,"model_version":"gpt-4o-mini-2024-07-18","msg":"llm reply generated"}
+{"level":40,"time":1760256101002,"service":"supportbot","msg":"rate limit exceeded","key":"s-9a07"}

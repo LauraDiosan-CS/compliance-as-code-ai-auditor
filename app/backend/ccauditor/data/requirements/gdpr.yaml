@@ -1,0 +1,260 @@
+# Curated, verifiable requirements derived from Regulation (EU) 2016/679 (GDPR).
+# GDPR obligations do not depend on the AI Act risk tier; they apply to every system processing personal
+# data. Requirements specific to automated decisions with legal or similarly significant effects
+# (Art. 22) and to mandatory DPIAs (Art. 35(3)(a)) are scoped to high-risk systems as a proxy.
+policy_id: gdpr
+requirements:
+
+  - id: GDPR-LAW-01
+    clause_ids: ["gdpr/Art.6(1)", "gdpr/Art.5(1)"]
+    category: other
+    title: Lawful basis documented for each processing purpose
+    statement: >-
+      Each purpose for which personal data is processed has a documented lawful basis under Art. 6(1)
+      (consent, contract, legal obligation, vital interests, public task or legitimate interests), and
+      consent is collected and recorded where it is the basis relied on.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - lawful basis legal basis
+      - legitimate interest
+      - consent
+      - Art. 6(1)
+    llm_guidance: >-
+      Look for a privacy notice, record of processing or DPIA naming the lawful basis per purpose. A
+      README claim "fully GDPR compliant" is not evidence of a lawful basis.
+    checks:
+      - type: pattern
+        kinds: [doc, config]
+        pattern: '(lawful basis|legal basis|legitimate interests?|art(icle)?\.?\s*6\s*\(1\))'
+        expect: present
+
+  - id: GDPR-TRN-01
+    clause_ids: ["gdpr/Art.13(1)", "gdpr/Art.13(2)"]
+    category: transparency
+    title: Privacy notice provided to data subjects
+    statement: >-
+      Data subjects receive a privacy notice at collection stating the controller and contact details,
+      purposes and lawful basis, recipients, retention period, and their rights (access, rectification,
+      erasure, objection, complaint).
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - privacy notice
+      - your rights erasure access
+      - data controller contact
+      - how long we keep your data
+    llm_guidance: >-
+      Compliant if a notice covering controller, purposes, legal basis, retention and rights exists and
+      is shown/linked to data subjects. Partial if key items (e.g. retention or rights) are missing.
+    checks:
+      - type: file_exists
+        globs: ["**/*privacy*", "**/*PRIVACY*"]
+      - type: pattern
+        kinds: [doc]
+        pattern: '(right to (erasure|access|object|rectification)|your rights)'
+        expect: present
+
+  - id: GDPR-RET-01
+    clause_ids: ["gdpr/Art.5(1)", "gdpr/Art.13(2)"]
+    category: data_retention
+    title: Storage limitation enforced
+    statement: >-
+      Personal data is kept no longer than necessary for its purpose: a retention period proportionate
+      to the purpose is defined for each data category and enforced automatically (TTL, purge job,
+      lifecycle rule).
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - retention period days
+      - purge job delete older than
+      - lifecycle expiration ttl
+    llm_guidance: >-
+      Check both that a retention period is defined AND enforced in code/IaC, and that it is
+      proportionate (e.g. keeping raw support chats for years without justification is excessive;
+      keeping data "forever" is non_compliant). Defined and enforced but disproportionate -> partial.
+    checks:
+      - type: pattern
+        kinds: [config, iac, code]
+        pattern: '(retention(_days|_period)?|ttl|expiration|purge|delete_older_than)\s*[:=]'
+        expect: present
+
+  - id: GDPR-ERA-01
+    clause_ids: ["gdpr/Art.17(1)"]
+    category: data_retention
+    title: Right to erasure implemented
+    statement: >-
+      A mechanism exists to erase a data subject's personal data on request without undue delay
+      (endpoint, admin job or documented procedure covering all stores, including derived data).
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - delete user data erasure
+      - right to be forgotten
+      - data subject request
+    llm_guidance: >-
+      Look for an implemented deletion path for a single data subject. Automatic expiry of all data
+      after N days is not an on-request erasure mechanism (partial at most).
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(def |function |async function |const )\w*(erase|forget|delete)\w*(candidate|customer|applicant|subject|user|person)\w*'
+        expect: present
+
+  - id: GDPR-ADM-01
+    clause_ids: ["gdpr/Art.22(1)", "gdpr/Art.22(3)"]
+    category: human_oversight
+    title: Safeguards for solely automated decisions
+    statement: >-
+      Decisions producing legal or similarly significant effects are not based solely on automated
+      processing, or, where an Art. 22(2) exception applies, the data subject can obtain human
+      intervention, express their point of view and contest the decision.
+    applies_to: [high]
+    severity: critical
+    evidence_queries:
+      - contest decision appeal
+      - human intervention review
+      - automated rejection
+    llm_guidance: >-
+      Compliant if no significant decision is fully automated, OR if automated decisions come with an
+      implemented contest/appeal path leading to human review. Non_compliant if decisions are fully
+      automated with no recourse.
+    checks: []
+
+  - id: GDPR-ADM-02
+    clause_ids: ["gdpr/Art.13(2)", "gdpr/Art.22(3)"]
+    category: transparency
+    title: Meaningful information about the logic involved
+    statement: >-
+      Data subjects are informed of the existence of automated decision-making/profiling and receive
+      meaningful information about the logic involved and its envisaged consequences.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - logic involved automated decision
+      - how the score is calculated
+      - factors that influence the decision
+    llm_guidance: >-
+      Look for an applicant/candidate-facing explanation of the main factors used and the consequences.
+      Internal model documentation does not inform data subjects.
+    checks:
+      - type: pattern
+        kinds: [doc]
+        pattern: '(logic involved|automated decision[- ]making|main factors|factors (that|which) (influence|affect))'
+        expect: present
+
+  - id: GDPR-PBD-01
+    clause_ids: ["gdpr/Art.25(1)", "gdpr/Art.25(2)", "gdpr/Art.5(1)"]
+    category: data_governance
+    title: Data minimisation and privacy by design
+    statement: >-
+      Only personal data necessary for the purpose is collected and used (no unnecessary sensitive or
+      protected attributes as model features), and privacy-by-design measures such as pseudonymisation
+      or redaction are applied before processing or sharing with third parties.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - pseudonymisation redaction
+      - features gender age nationality
+      - data minimisation drop columns
+      - mask PII before sending
+    llm_guidance: >-
+      Inspect model features and data flows. Using gender/age/nationality as features, or sending raw
+      personal data to a third-party LLM without redaction, is non_compliant. Look for explicit
+      redaction/pseudonymisation code.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(pseudonymi[sz]|anonymi[sz]|redact|mask_pii|hash_identifier|minimi[sz])'
+        expect: present
+
+  - id: GDPR-SEC-01
+    clause_ids: ["gdpr/Art.32(1)"]
+    category: security
+    title: Encryption of personal data at rest and in transit
+    statement: >-
+      Personal data is encrypted at rest (databases, object storage, volumes, backups) and in transit
+      (TLS) as appropriate to the risk.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - kms encryption at rest
+      - storage_encrypted
+      - tls certificate https ingress
+      - server_side_encryption
+    llm_guidance: >-
+      Both at-rest and in-transit encryption must be evidenced for all stores holding personal data.
+      Only one of the two -> partial. Self-signed dev certificates in docker-compose do not count for
+      production.
+    checks:
+      - type: pattern
+        description: encryption at rest configured
+        kinds: [iac, config]
+        pattern: '(kms_key|sse_algorithm|server_side_encryption|storage_encrypted\s*=\s*true|encrypted:\s*"?true|aws:kms)'
+        expect: present
+      - type: pattern
+        description: TLS configured
+        kinds: [iac, config]
+        pattern: '(tls|https|ssl_certificate|cert-manager)'
+        expect: present
+
+  - id: GDPR-SEC-02
+    clause_ids: ["gdpr/Art.32(1)", "gdpr/Art.32(4)"]
+    category: security
+    title: Access control to personal data
+    statement: >-
+      Access to personal data and to administrative functions is restricted to authenticated and
+      authorised personnel (authentication, role-based authorisation, least privilege).
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - authentication middleware
+      - role based access admin
+      - network policy least privilege
+    llm_guidance: >-
+      Check that endpoints exposing personal data require authentication and that admin/export routes
+      check roles. Unauthenticated upload/listing endpoints are non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(requireAdmin|requires?_role|has_role|Depends\(\s*(get_current|verify|require)\w*|login_required|verify_token|mtls|client_cert)'
+        expect: present
+
+  - id: GDPR-ROPA-01
+    clause_ids: ["gdpr/Art.30(1)"]
+    category: technical_documentation
+    title: Record of processing activities
+    statement: >-
+      A record of processing activities is maintained for the system listing purposes, categories of
+      data subjects and personal data, recipients, transfers, retention limits and security measures.
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - record of processing activities
+      - ROPA
+      - categories of data subjects recipients
+    llm_guidance: >-
+      Accept a ROPA entry in the repo (markdown/yaml). A DPIA or privacy notice alone is not a ROPA but
+      may be partial if it contains the Art. 30(1) items.
+    checks:
+      - type: file_exists
+        globs: ["**/*ropa*", "**/*ROPA*", "**/*processing-record*", "**/*processing_record*", "**/*records-of-processing*", "**/*processing-activities*"]
+
+  - id: GDPR-DPIA-01
+    clause_ids: ["gdpr/Art.35(1)", "gdpr/Art.35(3)", "gdpr/Art.35(7)"]
+    category: technical_documentation
+    title: Data protection impact assessment
+    statement: >-
+      A DPIA has been carried out for the processing (systematic and extensive evaluation of personal
+      aspects based on automated processing) and contains a description of the processing, necessity
+      and proportionality assessment, risk assessment and mitigation measures.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - DPIA data protection impact assessment
+      - necessity proportionality
+      - risks to rights and freedoms
+    llm_guidance: Compliant only if a DPIA document with the Art. 35(7) elements exists.
+    checks:
+      - type: file_exists
+        globs: ["**/*dpia*", "**/*DPIA*", "**/*impact-assessment*", "**/*impact_assessment*"]

@@ -1,0 +1,13 @@
+port: 8080
+llm:
+  provider: openai
+  model: gpt-4o-mini
+public_endpoints:
+  - /api/chat
+rate_limit:
+  chat_per_minute: 20
+retention:
+  transcript_days: 730     # 2 years: QA sampling and complaint handling
+logging:
+  sink: loki
+  retention_days: 90

@@ -1,0 +1,6 @@
+reject_threshold: 0.4
+cv_dir: /data/cvs
+keep_cvs: forever        # useful for retraining
+email:
+  sender: jobs@quickhire.example
+  smtp_host: smtp.quickhire.example

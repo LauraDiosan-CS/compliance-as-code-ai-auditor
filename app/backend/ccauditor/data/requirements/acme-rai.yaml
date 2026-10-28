@@ -1,0 +1,249 @@
+# Curated requirements for the internal ACME Responsible AI Engineering Policy (revision 1).
+# The policy applies to all ACME AI systems; obligations that only make sense for decision-making
+# systems about people (POL-7, POL-11) are scoped to high-risk systems, and generative-content
+# labelling (POL-2) to limited-risk (generative / conversational) systems.
+policy_id: acme-rai
+requirements:
+
+  - id: ACME-01
+    clause_ids: ["acme-rai/POL-1(1)", "acme-rai/POL-1(2)"]
+    category: transparency
+    title: AI use disclosed in user interfaces
+    statement: >-
+      Every interface where a person interacts with the AI system or sees an AI-produced score,
+      ranking, classification or text visibly discloses AI involvement; decision-support UIs state that
+      the output is an AI recommendation and who decides.
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - AI-generated recommendation label
+      - powered by AI disclosure
+      - final decision made by
+      - classified automatically
+    llm_guidance: >-
+      Inspect UI components, e-mail templates and notification texts. Neutral names like "Smart Score"
+      do not disclose AI involvement.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(ai[- ](suggested|generated|assistant|recommendation)|artificial intelligence|automated (filter|assessment|screening))'
+        expect: present
+
+  - id: ACME-02
+    clause_ids: ["acme-rai/POL-2(1)", "acme-rai/POL-2(2)"]
+    category: transparency
+    title: AI-generated content labelled
+    statement: >-
+      AI-generated text/media delivered to customers carries a visible "AI-generated" label and, where
+      feasible, a machine-readable marker.
+    applies_to: [limited]
+    severity: medium
+    evidence_queries:
+      - AI-generated badge
+      - X-AI-Generated header
+      - generated content label
+    llm_guidance: >-
+      A banner saying the user chats with an AI is POL-1, not POL-2. Look for per-message labelling or
+      metadata. TODO comments do not count.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(ai[-_ ]generated|x-ai-generated)'
+        expect: present
+
+  - id: ACME-03
+    clause_ids: ["acme-rai/POL-3(1)", "acme-rai/POL-3(2)"]
+    category: record_keeping
+    title: Prediction logging with 180-day retention
+    statement: >-
+      Every production prediction/response is logged with timestamp, correlation id, model version,
+      input reference and output, in tamper-resistant storage retained for at least 180 days.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - prediction log model version request id
+      - log retention days
+      - append-only audit
+    llm_guidance: >-
+      Both parts are needed: structured per-prediction logging AND >= 180 days retention. Logging with
+      shorter retention -> partial. No logging -> non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: 'model_version'
+        expect: present
+      - type: pattern
+        kinds: [config, iac]
+        pattern: '(retention_days|retention_in_days)\s*[:=]\s*"?(1[89]\d|[2-9]\d\d|\d{4,})\b'
+        expect: present
+
+  - id: ACME-04
+    clause_ids: ["acme-rai/POL-4(1)", "acme-rai/POL-4(2)"]
+    category: data_retention
+    title: Raw personal-data inputs deleted within 30 days
+    statement: >-
+      Raw inputs containing personal data (documents, messages, transcripts, payloads) are
+      automatically deleted or anonymised within 30 days, unless a documented legal retention
+      obligation applies.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - raw input retention 30 days
+      - transcript retention
+      - purge uploaded documents
+      - lifecycle expiration
+    llm_guidance: >-
+      Find the retention of each raw-input store. Any raw store kept > 30 days without a documented
+      legal obligation is non_compliant; no automated deletion at all is non_compliant.
+    checks:
+      - type: pattern
+        kinds: [config, iac, code]
+        pattern: '(raw|cv|upload|transcript|payload|quarantine)\w*[\s\S]{0,80}?(retention_days|expiration_days|ttl_days|days)\s*[:=]\s*"?([1-9]|[12]\d|30)\b'
+        expect: present
+
+  - id: ACME-05
+    clause_ids: ["acme-rai/POL-5(1)", "acme-rai/POL-5(2)"]
+    category: security
+    title: Encryption at rest and TLS in transit
+    statement: >-
+      Storage of personal data, model artefacts and logs is encrypted at rest, and all service traffic
+      uses TLS 1.2+.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - kms encrypted storage
+      - tls ingress certificate
+      - min tls version
+    llm_guidance: Both at rest and in transit must be shown; one of the two -> partial.
+    checks:
+      - type: pattern
+        kinds: [iac, config]
+        pattern: '(kms|sse_algorithm|storage_encrypted\s*=\s*true|encrypted:\s*"?true)'
+        expect: present
+      - type: pattern
+        kinds: [iac, config]
+        pattern: '(tls|https)'
+        expect: present
+
+  - id: ACME-06
+    clause_ids: ["acme-rai/POL-6(1)", "acme-rai/POL-6(2)"]
+    category: security
+    title: Access control on model endpoints
+    statement: >-
+      Inference and model-management endpoints require authentication (or are declared public and
+      rate-limited), and administrative endpoints enforce role-based authorisation.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - authentication required endpoint
+      - admin role check
+      - public endpoints declared
+    llm_guidance: >-
+      Enumerate routes. Any undeclared unauthenticated inference/upload route, or an admin route
+      without a role check, is non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(requireAdmin|requires?_role|has_role|Depends\(\s*(get_current|verify|require)\w*|login_required|verify_token|client_cert)'
+        expect: present
+
+  - id: ACME-07
+    clause_ids: ["acme-rai/POL-7(1)", "acme-rai/POL-7(2)"]
+    category: human_oversight
+    title: Human approval of adverse decisions
+    statement: >-
+      Adverse decisions about natural persons (rejection, decline, closure) are approved by a human
+      reviewer who sees the AI output and reasons and can change the outcome, and the approval is
+      logged.
+    applies_to: [high]
+    severity: critical
+    evidence_queries:
+      - reviewer approval reject
+      - auto decline
+      - human confirmation required
+    llm_guidance: >-
+      Trace adverse outcomes in code. Human approval for only part of the cases (e.g. above an amount
+      threshold) is partial. Automatic rejection is non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(auto[_-]?reject|auto[_-]?decline)'
+        expect: absent
+
+  - id: ACME-08
+    clause_ids: ["acme-rai/POL-8(1)"]
+    category: technical_documentation
+    title: Model card for every deployed model
+    statement: >-
+      Each deployed model (including third-party models) has a model card covering intended and
+      out-of-scope use, version, training data summary, evaluation metrics, limitations and owner.
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - model card
+      - intended use out of scope
+      - owner team limitations
+    llm_guidance: Check presence and completeness of the model card(s) against the listed fields.
+    checks:
+      - type: file_exists
+        globs: ["**/MODEL_CARD*", "**/model_card*", "**/*.modelcard.md"]
+
+  - id: ACME-09
+    clause_ids: ["acme-rai/POL-9(1)"]
+    category: security
+    title: Rate limiting on AI endpoints
+    statement: >-
+      AI endpoints reachable from untrusted networks enforce per-client rate limiting configured in
+      code or configuration.
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - rate limit
+      - throttling
+      - requests per minute
+    llm_guidance: >-
+      Look for rate-limit middleware (express-rate-limit, slowapi), gateway throttling or ingress
+      annotations. Public endpoints without it are non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code, config, iac]
+        pattern: '(rate[_-]?limit|ratelimit|throttl|slowapi|limit-rps|requests_per_minute)'
+        expect: present
+
+  - id: ACME-10
+    clause_ids: ["acme-rai/POL-10(1)", "acme-rai/POL-10(2)"]
+    category: other
+    title: AI incident response procedure
+    statement: >-
+      The repository contains an AI incident response procedure (detection, escalation, reporting) that
+      requires reporting serious incidents to the AI Governance Board within 24 hours.
+    applies_to: [high, limited, minimal]
+    severity: medium
+    evidence_queries:
+      - incident response
+      - escalation on-call
+      - ai-incidents report 24 hours
+    llm_guidance: >-
+      A generic ops runbook without AI incidents or without the 24h governance reporting is partial.
+    checks:
+      - type: pattern
+        kinds: [doc]
+        pattern: '(ai[- ]incidents?@|incident (response|reporting))'
+        expect: present
+
+  - id: ACME-11
+    clause_ids: ["acme-rai/POL-11(1)"]
+    category: data_governance
+    title: Bias and fairness evaluation before release
+    statement: >-
+      A documented bias and fairness evaluation (metrics and results per protected group, mitigations)
+      exists for the released model and is referenced from the model card.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - fairness evaluation report
+      - disparate impact ratio
+      - bias audit results per group
+    llm_guidance: >-
+      Requires actual results. "Planned", TODOs or excluding protected features only is non_compliant.
+    checks: []

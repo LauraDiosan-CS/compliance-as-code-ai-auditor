@@ -1,0 +1,567 @@
+# Curated, verifiable requirements derived from Regulation (EU) 2024/1689 (AI Act).
+# clause_ids reference clauses in data/policies/eu-ai-act.md (ids as produced by policies/loader.py:
+# "Art. 12" + "### 1" -> "eu-ai-act/Art.12(1)", "Annex III" + "### 4(a)" -> "eu-ai-act/AnnexIII(4)(a)").
+# Patterns are Python regexes evaluated with re.IGNORECASE | re.MULTILINE.
+# Requirements without `checks` need interpretation (LLM judge or human review).
+policy_id: eu-ai-act
+requirements:
+
+  # ------------------------------------------------------------------ risk classification
+  - id: AIA-RISK-01
+    clause_ids: ["eu-ai-act/Art.5(1)"]
+    category: risk_classification
+    title: No prohibited AI practices
+    statement: >-
+      The system does not implement any practice prohibited by Art. 5(1): subliminal or manipulative
+      techniques, exploitation of vulnerabilities, social scoring, crime prediction based solely on
+      profiling, untargeted scraping of facial images, emotion inference in the workplace or in
+      education, or biometric categorisation inferring sensitive traits.
+    applies_to: [prohibited, high, limited, minimal]
+    severity: critical
+    evidence_queries:
+      - emotion recognition facial expression
+      - social score citizen behaviour
+      - biometric categorisation face embedding
+      - scrape faces images
+      - manipulative dark pattern nudge
+    llm_guidance: >-
+      Look for code or documentation showing the system infers emotions (e.g. from video interviews or
+      voice) of employees/candidates/students, scores people on social behaviour, scrapes facial images,
+      or categorises people by biometrics into sensitive traits. A comment or doc stating that such a
+      feature is NOT implemented is evidence of compliance, not a violation. Mark non_compliant only
+      if a prohibited practice is actually implemented or planned for production.
+    checks:
+      - type: pattern
+        description: no emotion recognition / social scoring / face scraping code
+        kinds: [code]
+        pattern: '(emotion[_ ]?(recognition|detection|analysis)|infer_emotion|facial[_ ]expression|social[_ ]?scor|scrape[_ ]?faces?|face[_ ]?scrap)'
+        expect: absent
+
+  - id: AIA-RISK-02
+    clause_ids: ["eu-ai-act/Art.6(2)", "eu-ai-act/Art.6(3)", "eu-ai-act/Art.6(4)", "eu-ai-act/AnnexIII"]
+    category: risk_classification
+    title: Risk classification documented
+    statement: >-
+      The provider documents the AI Act risk classification of the system with its rationale: the
+      applicable Annex III area/point if high-risk, the Art. 6(3) assessment if an Annex III system is
+      claimed not to be high-risk, or why the system is limited/minimal risk.
+    applies_to: [high, limited, minimal]
+    severity: high
+    evidence_queries:
+      - AI Act risk classification
+      - high-risk Annex III
+      - limited risk minimal risk
+      - intended purpose
+    llm_guidance: >-
+      Accept a README section, ADR or compliance document that states the risk tier AND gives a reason
+      (e.g. "Annex III point 4(a) recruitment", "chatbot, transparency obligations under Art. 50",
+      "spam filtering, no Annex III use case"). A bare marketing claim ("fully compliant") is not a
+      classification.
+    checks:
+      - type: pattern
+        description: risk tier stated in documentation
+        kinds: [doc, model_card]
+        pattern: '(annex\s+iii|high[- ]risk|limited[- ]risk|minimal[- ]risk)\b.*(ai act|art(icle)?\.?\s*\d|annex|use case|point)'
+        expect: present
+
+  - id: AIA-RISK-03
+    clause_ids: ["eu-ai-act/Art.9(1)", "eu-ai-act/Art.9(2)", "eu-ai-act/Art.9(5)"]
+    category: other
+    title: Risk management system documented
+    statement: >-
+      A risk management process is documented for the high-risk system: known and reasonably
+      foreseeable risks to health, safety and fundamental rights are identified and evaluated, and
+      targeted mitigation measures with residual-risk acceptance are recorded and kept up to date.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - risk assessment
+      - risk register
+      - foreseeable misuse
+      - mitigation residual risk
+    llm_guidance: >-
+      Look for a risk register / risk assessment / model risk management document listing concrete
+      risks (e.g. discrimination, automation bias, data drift), their likelihood/impact and mitigations.
+      A single sentence like "risks are low" is not sufficient (partial at most).
+    checks:
+      - type: file_exists
+        description: a risk assessment / risk register document exists
+        globs: ["**/*risk-assessment*", "**/*risk_assessment*", "**/*risk-register*", "**/*risk_register*", "**/RISK*.md"]
+
+  # ------------------------------------------------------------------ data governance
+  - id: AIA-DATA-01
+    clause_ids: ["eu-ai-act/Art.10(2)", "eu-ai-act/Art.10(3)"]
+    category: data_governance
+    title: Training data documented (datasheet)
+    statement: >-
+      Training, validation and test data sets are documented: origin and collection process,
+      original purpose for personal data, preparation steps (labelling, cleaning, enrichment),
+      assumptions, and the availability/quantity/suitability of the data.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - datasheet training data
+      - data collection origin
+      - labelling cleaning preprocessing
+      - train validation test split
+    llm_guidance: >-
+      Accept a datasheet / data card / training-data document. Code that loads a CSV is not
+      documentation. Partial if only some of origin, preparation and splits are described.
+    checks:
+      - type: file_exists
+        description: a datasheet / data card exists
+        globs: ["**/DATASHEET*", "**/datasheet*", "**/DATA_CARD*", "**/data_card*", "**/data-card*"]
+
+  - id: AIA-DATA-02
+    clause_ids: ["eu-ai-act/Art.10(2)", "eu-ai-act/Art.10(3)", "eu-ai-act/Art.10(4)"]
+    category: data_governance
+    title: Bias examination and mitigation of data sets
+    statement: >-
+      The data sets have been examined for possible biases likely to lead to discrimination (including
+      representativeness for the persons and setting the system is used on), and measures to detect,
+      prevent and mitigate the identified biases are documented with results.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - bias evaluation fairness
+      - disparate impact demographic parity
+      - protected attributes gender age
+      - representativeness of data
+    llm_guidance: >-
+      Requires an actual bias/fairness analysis with results (metrics per group, findings, mitigations).
+      A plan ("bias audit planned"), a TODO, or merely excluding protected attributes from the features
+      does NOT satisfy this requirement on its own (proxies may remain). Judge from documents and
+      evaluation code/reports.
+    checks: []
+
+  # ------------------------------------------------------------------ technical documentation
+  - id: AIA-DOC-01
+    clause_ids: ["eu-ai-act/Art.11(1)", "eu-ai-act/AnnexIV(1)", "eu-ai-act/AnnexIV(2)"]
+    category: technical_documentation
+    title: Technical documentation (Annex IV)
+    statement: >-
+      Technical documentation covering the Annex IV elements exists before deployment: general
+      description and intended purpose, versions, how the system interacts with other software,
+      development methods, design specifications and key design choices, system architecture, and
+      validation/testing procedures.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - technical documentation
+      - system architecture components
+      - design choices rationale
+      - validation and testing procedures
+    llm_guidance: >-
+      Compliant only if a document (or set of docs) covers most Annex IV(1)-(2) elements. An
+      architecture overview plus a model card without development/validation information is partial.
+    checks:
+      - type: file_exists
+        description: technical documentation file exists
+        globs: ["**/*technical-documentation*", "**/*technical_documentation*", "**/TECHNICAL_DOC*", "**/annex-iv*", "**/annex_iv*"]
+
+  - id: AIA-DOC-02
+    clause_ids: ["eu-ai-act/AnnexIV(3)", "eu-ai-act/Art.11(1)"]
+    category: technical_documentation
+    title: Model card for the deployed model
+    statement: >-
+      A model card documents the deployed model: intended use and out-of-scope uses, version,
+      training data summary, evaluation results, capabilities and known limitations.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - model card
+      - intended use limitations
+      - model version evaluation
+    llm_guidance: Check that a model card exists and covers intended use, limitations and evaluation results.
+    checks:
+      - type: file_exists
+        globs: ["**/MODEL_CARD*", "**/model_card*", "**/*.modelcard.md", "**/model-card*"]
+
+  - id: AIA-DOC-03
+    clause_ids: ["eu-ai-act/Art.13(2)", "eu-ai-act/Art.13(3)"]
+    category: transparency
+    title: Instructions for use for deployers
+    statement: >-
+      Instructions for use are provided to deployers and contain at least: provider identity and
+      contact, intended purpose, level of accuracy and its metrics, known limitations and foreseeable
+      misuse risks, human oversight measures, and how to collect and interpret the logs.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - instructions for use
+      - user guide deployer
+      - provider contact
+      - how to interpret the score
+    llm_guidance: >-
+      Compliant only if the instructions contain all the listed elements. If a guide exists but misses
+      accuracy metrics, limitations or log interpretation, the status is partial. Sections marked TBD
+      count as missing.
+    checks:
+      - type: file_exists
+        description: instructions for use document exists
+        globs: ["**/*instructions-for-use*", "**/*instructions_for_use*", "**/INSTRUCTIONS*", "**/*user-guide*", "**/*user_guide*"]
+      - type: pattern
+        description: instructions mention accuracy metrics
+        globs: ["**/*instructions*", "**/*user-guide*", "**/*user_guide*"]
+        pattern: '(accuracy|auc|precision|recall|f1)\b'
+        expect: present
+
+  # ------------------------------------------------------------------ transparency
+  - id: AIA-TRA-01
+    clause_ids: ["eu-ai-act/Art.13(1)", "eu-ai-act/Art.13(3)", "eu-ai-act/Art.14(4)"]
+    category: transparency
+    title: Interpretable outputs for deployers
+    statement: >-
+      The system provides information that lets deployers interpret each output (e.g. main reasons,
+      feature contributions, reason codes or confidence) rather than a bare score.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - explanation reasons
+      - shap feature importance
+      - reason codes
+      - confidence score explanation
+    llm_guidance: >-
+      Look for code that returns explanations/reason codes alongside the score and shows them to the
+      human reviewer. A global feature-importance chart in a notebook alone is partial.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(shap|lime|explain|reason[_ ]?codes?|feature[_ ]?(importance|contribution)s?)'
+        expect: present
+
+  - id: AIA-TRA-02
+    clause_ids: ["eu-ai-act/Art.50(1)", "eu-ai-act/Art.50(5)"]
+    category: transparency
+    title: Disclosure of interaction with an AI system
+    statement: >-
+      Natural persons interacting directly with the AI system (e.g. a chatbot) are informed, clearly and
+      at the latest at the first interaction, that they are interacting with an AI system.
+    applies_to: [limited]
+    severity: high
+    evidence_queries:
+      - you are chatting with an AI
+      - AI assistant disclosure banner
+      - virtual assistant notice
+    llm_guidance: >-
+      Look for user-facing UI strings (React/HTML templates, chat greeting) that tell users they talk
+      to an AI, shown at the start of the conversation. A statement buried in terms of service is not
+      sufficient.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(chatting|talking|speaking|interacting) with (an? )?(ai|automated|virtual|bot)'
+        expect: present
+
+  - id: AIA-TRA-03
+    clause_ids: ["eu-ai-act/Art.50(2)"]
+    category: transparency
+    title: Marking of AI-generated content
+    statement: >-
+      Synthetic text, image, audio or video generated by the system is marked as AI-generated in a
+      machine-readable format (and labelled for the recipient where it is published or delivered).
+    applies_to: [limited]
+    severity: high
+    evidence_queries:
+      - AI-generated label
+      - watermark content credential c2pa
+      - response metadata generated
+    llm_guidance: >-
+      Look for code that adds an AI-generated flag/header/metadata or visible label to each generated
+      message. A TODO or ticket reference to add labelling later means non_compliant. A disclosure that
+      the user talks to an AI (Art. 50(1)) is a different obligation and does not mark the content.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(ai[-_ ]generated|generated[-_ ]by[-_ ]ai|c2pa|watermark)'
+        expect: present
+
+  - id: AIA-WRK-01
+    clause_ids: ["eu-ai-act/Art.26(7)", "eu-ai-act/Art.26(11)"]
+    category: transparency
+    title: Affected persons informed about high-risk AI use
+    statement: >-
+      Natural persons subject to decisions made or assisted by the high-risk AI system (candidates,
+      applicants, workers) are informed that such a system is used on them.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - candidate notice automated screening
+      - applicant information AI used
+      - privacy notice automated decision
+    llm_guidance: >-
+      Look for a candidate/applicant notice, privacy notice or e-mail template that tells the person
+      an AI system is used to assess them. Recruiter-facing UI text does not inform the candidate.
+    checks:
+      - type: pattern
+        kinds: [doc, code]
+        pattern: '(we use|uses|using) (an? )?(ai|artificial intelligence|automated|machine[- ]learning)[^.\n]{0,80}(assess|screen|evaluat|scor|rank)'
+        expect: present
+
+  # ------------------------------------------------------------------ record keeping
+  - id: AIA-REC-01
+    clause_ids: ["eu-ai-act/Art.12(1)", "eu-ai-act/Art.12(2)"]
+    category: record_keeping
+    title: Automatic logging of AI decisions
+    statement: >-
+      The system automatically records an event for each decision/output over its lifetime, with
+      timestamp, input reference, output, model version and (where applicable) the human reviewer,
+      enabling traceability and post-market monitoring.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - audit log decision
+      - log prediction model version
+      - journal record decision
+      - append-only event store
+    llm_guidance: >-
+      Look for code that writes a structured record for every prediction (custom journal/audit classes
+      count). Commented-out logging calls, TODOs or debug prints do not count. Logging only errors is
+      not decision logging.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(audit_?log(ger)?|logger|logging)\.(info|warning|log)\s*\(.*(predict|decision|score|output)'
+        expect: present
+
+  - id: AIA-REC-02
+    clause_ids: ["eu-ai-act/Art.19(1)", "eu-ai-act/Art.26(6)"]
+    category: record_keeping
+    title: Logs retained for at least six months
+    statement: >-
+      Automatically generated decision logs are retained for a period appropriate to the intended
+      purpose and of at least six months (>= 180 days).
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - log retention days
+      - retention_in_days cloudwatch
+      - decision log retention
+    llm_guidance: >-
+      Find the effective retention of the decision/audit logs (config, Terraform log group, lifecycle
+      rules). Compliant only if >= 180 days. If logs exist but retention is shorter or unbounded
+      deletion is configured, non_compliant. If no logs exist at all, non_compliant.
+    checks:
+      - type: pattern
+        kinds: [config, iac]
+        pattern: '(log|journal|audit)\w*[\s\S]{0,120}?(retention_days|retention_in_days|retentiondays)\s*[:=]\s*"?(1[89]\d|[2-9]\d\d|\d{4,})\b'
+        expect: present
+
+  # ------------------------------------------------------------------ human oversight
+  - id: AIA-HUM-01
+    clause_ids: ["eu-ai-act/Art.14(1)", "eu-ai-act/Art.14(4)"]
+    category: human_oversight
+    title: Human can override or disregard the AI output
+    statement: >-
+      Natural persons overseeing the system can decide not to use, disregard, override or reverse an
+      individual output of the system, and the override is recorded.
+    applies_to: [high]
+    severity: critical
+    evidence_queries:
+      - override decision reviewer
+      - manual review
+      - appeal contest decision
+      - reverse outcome
+    llm_guidance: >-
+      Look for an implemented mechanism (API endpoint, UI action, workflow state) letting a human change
+      the outcome. A flag set to False, a README promise without code, or an override limited to admins
+      for model config does not count.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(override|manual[_ ]review|human[_ ]review|reviewer)'
+        expect: present
+
+  - id: AIA-HUM-02
+    clause_ids: ["eu-ai-act/Art.14(4)"]
+    category: human_oversight
+    title: Stop / interrupt mechanism
+    statement: >-
+      Operators can interrupt the system (a 'stop' button, kill switch or similar procedure) so that it
+      halts in a safe state, e.g. automated processing is suspended and cases fall back to manual
+      handling.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - kill switch
+      - disable model feature flag
+      - suspend automated processing
+      - stop button halt
+    llm_guidance: >-
+      Accept any implemented switch (feature flag, admin endpoint, config) that stops automated
+      decisions and routes work to humans. Infrastructure scaling to zero without a documented
+      procedure is partial.
+    checks:
+      - type: pattern
+        kinds: [code, config]
+        pattern: '(kill[_-]?switch|stop[_-]?button|circuit[_-]?breaker|disable[_-]?(ai|model|automation))'
+        expect: present
+
+  - id: AIA-HUM-03
+    clause_ids: ["eu-ai-act/Art.14(4)", "eu-ai-act/Art.26(2)"]
+    category: human_oversight
+    title: No adverse decision solely on the AI output
+    statement: >-
+      Decisions adverse to natural persons (e.g. rejection, decline) are not taken automatically on the
+      basis of the AI output alone; a competent human reviews and confirms them, mitigating automation
+      bias.
+    applies_to: [high]
+    severity: critical
+    evidence_queries:
+      - auto reject threshold
+      - automatic decline
+      - human confirmation required
+      - final decision recruiter underwriter
+    llm_guidance: >-
+      Trace the decision flow in code. If any adverse outcome is set without a human step (e.g. score
+      below threshold -> rejected), it is non_compliant; if only a subset of cases gets human review
+      (e.g. above an amount threshold), partial.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: 'auto[_-]?reject'
+        expect: absent
+
+  # ------------------------------------------------------------------ accuracy, robustness, cybersecurity
+  - id: AIA-ACC-01
+    clause_ids: ["eu-ai-act/Art.15(1)", "eu-ai-act/Art.15(3)"]
+    category: accuracy_robustness
+    title: Accuracy levels and metrics declared
+    statement: >-
+      The levels of accuracy and the relevant accuracy metrics (e.g. AUC, precision/recall, error
+      rates) are declared in the documentation accompanying the system (instructions for use and/or
+      model card).
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - accuracy auc precision recall
+      - evaluation results metrics
+      - performance holdout
+    llm_guidance: >-
+      Metrics must be declared in documentation shipped with the system, with values. A training script
+      that prints accuracy is not a declaration.
+    checks:
+      - type: pattern
+        kinds: [doc, model_card]
+        pattern: '(accuracy|auc|roc[- ]auc|gini|f1|precision|recall)[^\n]{0,30}\d\.\d+'
+        expect: present
+
+  - id: AIA-ACC-02
+    clause_ids: ["eu-ai-act/Art.15(4)"]
+    category: accuracy_robustness
+    title: Resilience to errors (fallback / fail-safe)
+    statement: >-
+      The system handles errors, faults and model unavailability safely (e.g. timeouts and exceptions
+      lead to a fail-safe outcome such as routing to manual handling, never to an automatic adverse
+      decision).
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - fallback manual queue
+      - fail-safe error handling
+      - model unavailable timeout
+    llm_guidance: >-
+      Look for explicit error handling around model inference with a safe fallback. Generic web
+      framework error pages are not sufficient.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(fallback|fail[-_ ]?safe|graceful[-_ ]degrad)'
+        expect: present
+
+  - id: AIA-SEC-01
+    clause_ids: ["eu-ai-act/Art.15(5)"]
+    category: security
+    title: Input validation against malformed or adversarial inputs
+    statement: >-
+      Inputs to the model are validated (schema, types, ranges, size limits, file types) before
+      inference to resist malformed or adversarial inputs.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - input validation schema
+      - pydantic constraints
+      - max file size content type
+    llm_guidance: >-
+      Look for schema validation (pydantic/zod/marshmallow), constraints and upload limits on the
+      inference path. Reading raw request bodies directly into the model is non_compliant.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(BaseModel|Field\(|constr|conint|confloat|validator|zod|joi|jsonschema|max_length|MAX_CONTENT_LENGTH)'
+        expect: present
+
+  - id: AIA-SEC-02
+    clause_ids: ["eu-ai-act/Art.15(5)"]
+    category: security
+    title: Protection of model endpoints against unauthorised use
+    statement: >-
+      Inference and model-management endpoints are protected against unauthorised third parties
+      (authentication and authorisation), so that the system's use, outputs or performance cannot be
+      altered by exploiting vulnerabilities.
+    applies_to: [high]
+    severity: high
+    evidence_queries:
+      - authentication token
+      - require role admin
+      - oauth2 jwt api key
+    llm_guidance: >-
+      Every inference and admin route must require authentication; admin/model routes need
+      authorisation. Partial if some sensitive routes are unauthenticated.
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: '(Depends\(\s*(get_current|verify|require)\w*|login_required|requires?_role|verify_token|jwt|oauth2)'
+        expect: present
+
+  # ------------------------------------------------------------------ quality management
+  - id: AIA-QMS-01
+    clause_ids: ["eu-ai-act/Art.17(1)", "eu-ai-act/Art.9(2)"]
+    category: other
+    title: Quality management and post-market monitoring procedures
+    statement: >-
+      Documented procedures cover change management of the model/system, validation before release,
+      post-market monitoring of performance in production (e.g. drift), and serious-incident reporting.
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - release process change management
+      - post-market monitoring drift
+      - incident reporting procedure
+      - quality management
+    llm_guidance: >-
+      Compliant if the repository documents change management, pre-release validation, production
+      monitoring AND incident reporting; partial if only some are covered.
+    checks:
+      - type: pattern
+        kinds: [doc]
+        pattern: '(post[- ]market monitoring|change management|quality management)'
+        expect: present
+      - type: pattern
+        kinds: [doc]
+        pattern: 'incident'
+        expect: present
+
+  - id: AIA-QMS-02
+    clause_ids: ["eu-ai-act/Art.9(6)", "eu-ai-act/Art.9(8)", "eu-ai-act/Art.17(1)"]
+    category: accuracy_robustness
+    title: Testing against predefined metrics before release
+    statement: >-
+      The system is tested before release against prior defined metrics and thresholds appropriate to
+      its intended purpose (e.g. an automated quality gate failing the build below a minimum AUC).
+    applies_to: [high]
+    severity: medium
+    evidence_queries:
+      - test model quality threshold
+      - assert auc greater than
+      - evaluation gate ci
+    llm_guidance: >-
+      Smoke tests that only check an HTTP 200 are not model validation; require assertions against
+      metric thresholds on held-out data.
+    checks:
+      - type: file_exists
+        globs: ["**/test_*.py", "**/*_test.py", "**/*.test.ts", "**/*.spec.ts"]
+      - type: pattern
+        globs: ["**/test_*.py", "**/*_test.py", "**/*.test.ts", "**/*.spec.ts"]
+        pattern: 'assert\w*\s*\(?.*(auc|accuracy|precision|recall|f1|gini)'
+        expect: present

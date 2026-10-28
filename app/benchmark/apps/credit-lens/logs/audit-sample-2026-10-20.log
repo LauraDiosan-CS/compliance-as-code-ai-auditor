@@ -1,0 +1,3 @@
+2026-10-20T09:12:03.112Z INFO creditlens.audit credit decision approve application_id=LA-20481123 input_sha256=4be1...9c pd=0.041 reason_codes=[] model_version=pd-lgbm-3.1.0 caller=origination-prod
+2026-10-20T09:12:07.845Z INFO creditlens.audit credit decision decline application_id=LA-20481131 input_sha256=a01f...e2 pd=0.231 reason_codes=["R01 Debt-to-income ratio too high","R03 Recent payment delinquencies"] model_version=pd-lgbm-3.1.0 caller=origination-prod
+2026-10-20T09:13:44.009Z INFO creditlens.audit credit decision referred application_id=LA-20481140 input_sha256=77c3...1d pd=None reason_codes=None model_version=None caller=origination-prod

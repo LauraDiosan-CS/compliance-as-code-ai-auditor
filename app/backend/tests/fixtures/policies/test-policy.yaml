@@ -1,0 +1,56 @@
+policy_id: test-policy
+requirements:
+  - id: TP-REC-01
+    clause_ids: ["test-policy/Art.12(1)"]
+    category: record_keeping
+    title: Automatic logging of AI decisions
+    statement: The system logs every model decision.
+    applies_to: [high]
+    severity: high
+    evidence_queries: ["logging", "audit log"]
+    checks:
+      - type: pattern
+        kinds: [code]
+        pattern: "logger\\.(info|warning).*(predict|decision)"
+        expect: present
+  - id: TP-HO-01
+    clause_ids: ["test-policy/Art.14"]
+    category: human_oversight
+    title: Human override
+    statement: A human can override model decisions.
+    severity: critical
+    checks:
+      - type: pattern
+        pattern: "human_review|human_override"
+      - type: file_exists
+        globs: ["docs/oversight*.md"]
+        description: Human oversight procedure documented
+  - id: TP-RET-01
+    clause_ids: ["test-policy/Art.12(2)"]
+    category: data_retention
+    title: Retention configured
+    statement: A data retention period is configured.
+    severity: medium
+    checks:
+      - type: yaml_path
+        globs: ["config/*.yaml"]
+        path: data.retention.days
+      - type: file_exists
+        globs: ["MODEL_CARD*"]
+  - id: TP-TR-01
+    clause_ids: ["test-policy/Art.50(1)"]
+    category: transparency
+    title: AI disclosure
+    statement: Users are told they interact with AI.
+    severity: low
+    checks: []
+  - id: TP-SEC-01
+    clause_ids: ["test-policy/AnnexIII(4)(a)"]
+    category: security
+    title: No hardcoded secrets
+    statement: No secrets are hardcoded.
+    severity: high
+    checks:
+      - type: file_exists
+        globs: ["SECURITY.md"]
+        description: Security policy published

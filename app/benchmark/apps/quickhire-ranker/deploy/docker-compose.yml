@@ -1,0 +1,14 @@
+services:
+  api:
+    build: ..
+    environment:
+      MODEL_PATH: /models/qh-xgb.pkl
+      CV_DIR: /data/cvs
+      REJECT_THRESHOLD: "0.4"
+    expose: ["8080"]
+    volumes:
+      - /data/cvs:/data/cvs
+  caddy:
+    image: caddy:2.8
+    ports: ["443:443"]
+    command: caddy reverse-proxy --from quickhire.example --to api:8080

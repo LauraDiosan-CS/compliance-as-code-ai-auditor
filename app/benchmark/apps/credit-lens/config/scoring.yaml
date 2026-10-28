@@ -1,0 +1,6 @@
+pd_cutoff: 0.12
+manual_review_threshold_eur: 25000
+kill_switch: false            # true = every application goes to underwriters
+retention:
+  raw_request_payload_days: 30
+  application_record_years: 5   # legal obligation, see docs/dpia.md section 6

@@ -1,0 +1,12 @@
+service: hireright-screening
+model_path: models/ranker-2.4.1.txt
+journal_bucket: acme-hireright-journal-prod
+automated_ranking_enabled: true
+rate_limit: "120/minute"
+auth:
+  issuer: https://login.acme.example/realms/hr
+  audience: hireright
+  roles: [recruiter, screening-admin, privacy-officer]
+monitoring:
+  drift_psi_alert: 0.2
+  weekly_performance_report: true

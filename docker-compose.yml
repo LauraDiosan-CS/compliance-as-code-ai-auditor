@@ -1,0 +1,23 @@
+# Local full stack: FastAPI backend on :8000 and the Next.js dashboard on :3000.
+#   docker compose up --build
+services:
+  backend:
+    build: ./app/backend
+    image: ccauditor-api
+    ports:
+      - "8000:8000"
+    environment:
+      CCAUDITOR_SERVERLESS: "1"          # deterministic audits (no Claude Code CLI in the container)
+      CCAUDITOR_CORS_ORIGINS: "http://localhost:3000"
+
+  web:
+    build:
+      context: ./app/web
+      args:
+        # Inlined into the browser bundle, so it must be reachable from the host browser.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    image: ccauditor-web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

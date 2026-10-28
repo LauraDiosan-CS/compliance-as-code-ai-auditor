@@ -16,3 +16,7 @@ docs/report/*.out
 docs/report/*.toc
 docs/report/*.bbl
 docs/report/*.blg
+
+# local CLI / CI outputs (make audit-demo, ccauditor artifacts)
+/reports/
+/artifacts/

@@ -1,0 +1,237 @@
+# Compliance-as-Code in CI/CD.
+#
+# On every pull request the auditor (installed from the PR head) audits TARGET_DIR on the base commit
+# and on the head commit, then `ccauditor ci` compares the two reports requirement by requirement.
+# The check fails when a requirement of severity FAIL_ON or worse regresses (e.g. an audit-log
+# retention is shortened, an AI disclosure is deleted). Both sides are audited with the same auditor
+# version, so rule changes in the PR are not reported as regressions of the target.
+#
+# Configuration (first match wins): workflow_dispatch inputs -> repository variables
+# (Settings > Secrets and variables > Actions > Variables) -> defaults below.
+#   CCAUDITOR_TARGET_DIR  directory to audit             (default app/benchmark/apps/hireright-screening)
+#   CCAUDITOR_POLICIES    space-separated policy ids     (default "eu-ai-act acme-rai")
+#   CCAUDITOR_FAIL_ON     critical | high | medium | low (default high)
+#   CCAUDITOR_MODEL       Claude model alias for the hybrid job (default sonnet)
+# Optional secret CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`, uses a Claude subscription)
+# enables the non-blocking LLM hybrid job; without it that job is skipped.
+name: compliance
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: Directory to audit
+        required: false
+      policies:
+        description: Space-separated policy ids
+        required: false
+      fail_on:
+        description: "Fail on regressions of this severity or worse: critical | high | medium | low"
+        required: false
+      base_ref:
+        description: Git ref to compare against (default HEAD~1)
+        required: false
+
+concurrency:
+  group: compliance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write    # sticky PR comment
+  security-events: write  # SARIF upload to code scanning
+
+env:
+  TARGET_DIR: ${{ inputs.target_dir || vars.CCAUDITOR_TARGET_DIR || 'app/benchmark/apps/hireright-screening' }}
+  POLICIES: ${{ inputs.policies || vars.CCAUDITOR_POLICIES || 'eu-ai-act acme-rai' }}
+  FAIL_ON: ${{ inputs.fail_on || vars.CCAUDITOR_FAIL_ON || 'high' }}
+  BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_ref || 'HEAD~1' }}
+
+jobs:
+  audit:
+    name: deterministic audit (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/backend/pyproject.toml
+
+      - name: Install ccauditor
+        run: pip install ./app/backend
+
+      - name: Check out base commit into a worktree
+        id: base
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "$BASE_SHA"
+          echo "sha=$(git -C "$RUNNER_TEMP/base" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ -d "$RUNNER_TEMP/base/$TARGET_DIR" ]; then echo "has_target=true"; else echo "has_target=false"; fi >> "$GITHUB_OUTPUT"
+
+      - name: Audit base
+        if: steps.base.outputs.has_target == 'true'
+        run: |
+          mkdir -p reports
+          P=(); for p in $POLICIES; do P+=(-p "$p"); done
+          ccauditor audit "$RUNNER_TEMP/base/$TARGET_DIR" "${P[@]}" -m deterministic -f json -o reports/baseline.json
+
+      - name: Audit head and compare (ccauditor ci)
+        id: ci
+        run: |
+          mkdir -p reports
+          P=(); for p in $POLICIES; do P+=(-p "$p"); done
+          B=(); [ -f reports/baseline.json ] && B=(--baseline reports/baseline.json)
+          set +e
+          ccauditor ci "$TARGET_DIR" "${B[@]}" "${P[@]}" -m deterministic \
+            --base-ref "${{ steps.base.outputs.sha }}" --fail-on "$FAIL_ON" \
+            --out reports/current.json --sarif reports/compliance.sarif --sarif-prefix "$TARGET_DIR" \
+            --markdown-summary reports/summary.md 2>&1 | tee reports/ci.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          ccauditor audit "$TARGET_DIR" "${P[@]}" -m deterministic -f md -o reports/report.md
+          if [ ! -f reports/baseline.json ]; then
+            printf '\n> `%s` does not exist on the base commit, so this run only reports open gaps and does not block the PR.\n' "$TARGET_DIR" >> reports/summary.md
+          fi
+          printf '\n<sub>Full report, SARIF and JSON: [workflow run artifacts](%s/%s/actions/runs/%s).</sub>\n' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> reports/summary.md
+          cat reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload SARIF to code scanning
+        if: always() && hashFiles('reports/compliance.sarif') != ''
+        # Private classroom repositories may not have code scanning (GitHub Advanced Security).
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/compliance.sarif
+          category: ccauditor
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-reports
+          path: reports/
+          if-no-files-found: warn
+
+      - name: Post / update sticky PR comment
+        if: always() && github.event_name == 'pull_request' && hashFiles('reports/summary.md') != ''
+        # Pull requests from forks get a read-only token; the job summary still has the result.
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ccauditor-ci -->';
+            let body = fs.readFileSync('reports/summary.md', 'utf8');
+            if (!body.includes(marker)) body = `${marker}\n${body}`;
+            if (body.length > 65000) body = body.slice(0, 65000) + '\n\n_(truncated)_';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const mine = comments.find(c => c.user?.type === 'Bot' && c.body?.includes(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Compliance gate
+        if: always()
+        env:
+          CODE: ${{ steps.ci.outputs.exit_code }}
+          HAS_BASELINE: ${{ steps.base.outputs.has_target }}
+        run: |
+          if [ "$CODE" = "0" ]; then echo "No compliance regressions at '$FAIL_ON' or worse."; exit 0; fi
+          if [ "$CODE" = "1" ] && [ "$HAS_BASELINE" != "true" ]; then
+            echo "::warning::Open compliance gaps in $TARGET_DIR (no baseline on the base commit, not blocking)."; exit 0
+          fi
+          if [ "$CODE" = "1" ]; then
+            echo "::error::Compliance regression at '$FAIL_ON' severity or worse in $TARGET_DIR (see PR comment / job summary)."; exit 1
+          fi
+          echo "::error::ccauditor ci did not complete (exit code '${CODE:-none}')."; exit 1
+
+  hybrid:
+    name: LLM hybrid audit (optional, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      CCAUDITOR_MODEL: ${{ vars.CCAUDITOR_MODEL || 'sonnet' }}
+      CCAUDITOR_CACHE_DIR: ${{ github.workspace }}/.ccauditor-cache
+    steps:
+      - name: Check for CLAUDE_CODE_OAUTH_TOKEN
+        id: gate
+        run: |
+          if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set (or unavailable to fork PRs): skipping the LLM hybrid audit."
+            echo "LLM hybrid audit skipped: secret \`CLAUDE_CODE_OAUTH_TOKEN\` is not configured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/backend/pyproject.toml
+
+      - uses: actions/setup-node@v5
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          node-version: 24
+
+      - name: Install ccauditor and Claude Code CLI
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          pip install ./app/backend
+          npm install -g @anthropic-ai/claude-code
+          claude --version
+
+      - name: Restore LLM response cache
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .ccauditor-cache
+          key: ccauditor-llm-${{ github.run_id }}
+          restore-keys: ccauditor-llm-
+
+      - name: Hybrid audit of base and head
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          mkdir -p reports
+          P=(); for p in $POLICIES; do P+=(-p "$p"); done
+          B=()
+          if git worktree add --detach "$RUNNER_TEMP/base" "$BASE_SHA" && [ -d "$RUNNER_TEMP/base/$TARGET_DIR" ]; then
+            ccauditor audit "$RUNNER_TEMP/base/$TARGET_DIR" "${P[@]}" -m hybrid -f json -o reports/baseline-hybrid.json \
+              && B=(--baseline reports/baseline-hybrid.json)
+          fi
+          set +e
+          ccauditor ci "$TARGET_DIR" "${B[@]}" "${P[@]}" -m hybrid --fail-on "$FAIL_ON" \
+            --out reports/current-hybrid.json --markdown-summary reports/summary-hybrid.md 2>&1 | tee reports/ci-hybrid.log
+          echo "ccauditor ci (hybrid) exit code: ${PIPESTATUS[0]}"
+          set -e
+          ccauditor audit "$TARGET_DIR" "${P[@]}" -m hybrid -f md -o reports/report-hybrid.md || true
+          { echo "### LLM hybrid audit (informational)"; cat reports/summary-hybrid.md 2>/dev/null; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload hybrid reports
+        if: always() && steps.gate.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-reports-hybrid
+          path: reports/
+          if-no-files-found: warn

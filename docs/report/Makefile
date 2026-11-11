@@ -2,16 +2,15 @@
 #
 #   make            -> report.pdf (tectonic: fetches LaTeX packages on demand, runs bibtex automatically)
 #   make latexmk    -> same with a TeX Live installation (pdflatex + bibtex)
-#   make todos      -> list remaining placeholders (\todo, \resultsTODO, \res, \maybefig without a file)
+#   make todos      -> list remaining placeholders (\todo, \plannedTODO, \resultsTODO, \res, missing figures)
 #   make clean
 #
 # Install tectonic on macOS with `brew install tectonic`.
 #
-# Experiments hook-ups (no edits to the .tex needed):
-#   * results_tables.tex holds the main results + statistics tables (from app/benchmark/results/SUMMARY.md and
-#     app/benchmark/stats_tests.py -> results/stats_tests.json);
-#   * figures/results_*.pdf and figures/eda_*.pdf come from app/notebooks (01_eda / 02_results);
-#   * figures/dashboard_*.png are Playwright screenshots of app/web (/reports/hireright-screening-hybrid).
+# Seminar 4 version (pipeline + first v0 results). Data hook-ups:
+#   * results_tables.tex holds the v0 results + statistics tables (from the v0_baseline rows of
+#     app/benchmark/results/SUMMARY.md and `app/benchmark/stats_tests.py --run v0_baseline` -> results/stats_tests_v0.json);
+#   * figures/results_v0_*.pdf come from app/benchmark/plot_v0.py; figures/eda_*.pdf from app/notebooks/01_eda.
 
 MAIN = report
 
@@ -26,9 +25,9 @@ latexmk:
 	latexmk -pdf -interaction=nonstopmode $(MAIN).tex
 
 todos:
-	@grep -n '\\todo{\|\\resultsTODO{\|\\res{' $(MAIN).tex team.tex sections/*.tex || true
-	@for f in results_v0_v1.pdf results_confusion.pdf results_cost_quality.pdf results_threshold_sweep.pdf \
-	  results_per_category.pdf dashboard_overview.png dashboard_requirement.png; do \
+	@grep -n '\\todo{\|\\plannedTODO{\|\\resultsTODO{\|\\res{' team.tex sections/*.tex || true
+	@for f in results_v0_modes.pdf results_v0_confusion.pdf results_v0_per_category.pdf results_v0_cost.pdf \
+	  eda_clauses.pdf eda_requirements.pdf eda_benchmark_files.pdf eda_labels.pdf eda_signals.pdf; do \
 	  ls figures/$$f >/dev/null 2>&1 || echo "missing figure: figures/$$f"; done
 
 clean:

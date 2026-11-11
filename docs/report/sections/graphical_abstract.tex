@@ -1,4 +1,4 @@
-% Graphical abstract (TikZ). Used in the abstract (scaled) and in Chapter 2 (Figure~\ref{fig:graphical-abstract}).
+% Graphical abstract (TikZ): the pipeline as of Seminar 4 (v0). Used in the abstract (scaled).
 % Note: inside \newcommand, TikZ style parameters must be written ##1.
 \newcommand{\graphicalabstract}{%
 \begin{tikzpicture}[
@@ -7,33 +7,30 @@
   arr/.style={-{Stealth[length=2.2mm]}, thick},
   lab/.style={font=\sffamily\scriptsize, text=black!65, align=center}]
 
-  % lanes
-  \node[box=blue!8]   (pol)  at (0,2.2)   {\textbf{Policy} $P$\\EU AI Act, GDPR,\\internal policy};
-  \node[box=blue!8]   (cl)   at (4.0,2.2) {\textbf{Clauses} $\Cl$\\citable ids\\\texttt{Art.12(1)}};
-  \node[box=blue!8]   (req)  at (8.0,2.2) {\textbf{Requirements} $\Req$\\statement, tiers,\\checks, queries};
-  \node[box=orange!10] (repo) at (0,0)     {\textbf{Repository} $D$\\code, IaC, config,\\docs, model cards};
-  \node[box=orange!10] (ev)   at (4.0,0)   {\textbf{Evidence} $\Ev$\\line chunks\\+ signals};
-  \node[box=orange!10] (risk) at (8.0,0)   {\textbf{Risk tier} $\rho$\\Art.~5 / Annex III /\\Art.~50};
+  % policy lane
+  \node[box=blue!8]   (pol)  at (0,2.2)   {\textbf{Policy}\\EU AI Act, GDPR,\\internal policy};
+  \node[box=blue!8]   (cl)   at (4.0,2.2) {\textbf{Clauses}\\with ids we can cite\\\texttt{Art.12(1)}};
+  \node[box=blue!8]   (req)  at (8.0,2.2) {\textbf{Requirements}\\45 testable\\statements};
+  % repository lane
+  \node[box=orange!10] (repo) at (0,0)     {\textbf{Repository}\\code, config,\\docs, model cards};
+  \node[box=orange!10] (ev)   at (4.0,0)   {\textbf{Evidence}\\small pieces\\of files};
+  \node[box=orange!10] (risk) at (8.0,0)   {\textbf{Risk tier}\\high, limited\\or minimal};
 
   % evaluation
-  \node[box=green!10]  (rules) at (12.0,2.2) {\textbf{Rule engine}\\regex, file, YAML,\\Rego checks};
-  \node[box=violet!10] (judge) at (12.0,0)   {\textbf{LLM judge}\\Claude (headless)\\must cite evidence};
-  \node[box=red!8]     (ver)   at (15.8,1.1) {\textbf{Verifier}\\citations exist\\and support claim};
-  \node[box=yellow!20] (hitl)  at (19.6,1.1) {\textbf{Human gate}\\conflict or low\\confidence $\to$ review};
-  \node[box=gray!10]   (rep)   at (23.4,1.1) {\textbf{Audit report}\\status, confidence,\\\texttt{file:line}, gaps,\\fixes; SARIF, UI};
-  \node[draw, circle, fill=yellow!35, inner sep=1.5pt, font=\sffamily\scriptsize, align=center] (human) at (19.6,3.0) {human\\auditor};
+  \node[box=green!10]  (rules) at (12.0,2.2) {\textbf{Rules}\\fixed patterns\\in the code};
+  \node[box=violet!10] (judge) at (12.0,0)   {\textbf{LLM judge}\\reads the evidence\\and must cite it};
+  \node[box=red!8]     (ver)   at (15.8,1.1) {\textbf{Citation check}\\only evidence that\\was shown};
+  \node[box=gray!10]   (rep)   at (19.6,1.1) {\textbf{Audit report}\\status, confidence,\\file + lines, gaps};
 
-  \draw[arr] (pol) -- node[lab, above]{ingest} (cl);
-  \draw[arr] (cl) -- node[lab, above]{decompose} (req);
+  \draw[arr] (pol) -- node[lab, above]{split} (cl);
+  \draw[arr] (cl) -- node[lab, above]{rewrite} (req);
   \draw[arr] (repo) -- node[lab, above]{collect} (ev);
   \draw[arr] (ev) -- node[lab, above]{classify} (risk);
-  \draw[arr] (req) -- node[lab, above]{evaluate} (rules);
-  \draw[arr] (risk) -- node[lab, above]{applicable} (judge);
-  \draw[arr, dashed] (rules) -- node[lab, right, xshift=1mm]{inconclusive\\or weak} (judge);
-  \draw[arr] (ev.south) -- ++(0,-0.45) -| node[lab, below, pos=0.25]{BM25 retrieval of evidence for each requirement} (judge.south);
+  \draw[arr] (req) -- node[lab, above]{check} (rules);
+  \draw[arr] (risk) -- node[lab, above]{applies?} (judge);
+  \draw[arr, dashed] (rules) -- node[lab, right, xshift=1mm]{hybrid: rules\\are unsure} (judge);
+  \draw[arr] (ev.south) -- ++(0,-0.45) -| node[lab, below, pos=0.25]{search the evidence for each requirement} (judge.south);
   \draw[arr] (rules.east) -- (ver.north west);
   \draw[arr] (judge.east) -- (ver.south west);
-  \draw[arr] (ver) -- (hitl);
-  \draw[arr] (hitl) -- (rep);
-  \draw[arr, dashed] (human) -- node[lab, right]{decide /\\contest} (hitl);
+  \draw[arr] (ver) -- (rep);
 \end{tikzpicture}}

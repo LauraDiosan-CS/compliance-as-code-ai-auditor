@@ -2,6 +2,8 @@
 
 Usage (from the repo root):
     .venv/bin/python app/benchmark/stats_tests.py            # prints a table and writes results/stats_tests.json
+    .venv/bin/python app/benchmark/stats_tests.py --run v0_baseline
+        # only the configurations of one run, all pairwise McNemar tests -> results/stats_tests_v0.json
 
 * 95% percentile bootstrap CIs (10,000 resamples of the 165 applicable items, seed 0) for accuracy,
   macro-F1 over {compliant, partial, non_compliant} and false-compliance rate.
@@ -11,6 +13,7 @@ Definitions follow evaluate.py (needs_review / wrong N/A count as errors).
 
 from __future__ import annotations
 
+import argparse
 import json
 import random
 from math import comb
@@ -82,10 +85,23 @@ def mcnemar_exact(b: int, c: int) -> float:
     return min(1.0, p)
 
 
+RUN_OUT = {"v0_baseline": "stats_tests_v0.json", "v1_improved": "stats_tests_v1.json"}
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--run", help="restrict to the configurations of one run (e.g. v0_baseline); "
+                                  "McNemar tests are then run between every pair of its configurations")
+    args = ap.parse_args()
+    configs, pairs_to_test, out_name = CONFIGS, PAIRS, "stats_tests.json"
+    if args.run:
+        data = json.loads((RESULTS / f"{args.run}.json").read_text())
+        configs = [(args.run, c) for c in data["configs"]]
+        pairs_to_test = [(configs[i], configs[j]) for i in range(len(configs)) for j in range(i + 1, len(configs))]
+        out_name = RUN_OUT.get(args.run, f"stats_tests_{args.run}.json")
     out: dict = {"bootstrap": {}, "mcnemar": []}
     print(f"{'config':40s} {'acc [95% CI]':24s} {'macro-F1 [95% CI]':24s} {'FCR [95% CI]':22s}")
-    for run, cfg in CONFIGS:
+    for run, cfg in configs:
         d = load(run, cfg)
         pairs = [d[k] for k in sorted(d)]
         rng = random.Random(0)
@@ -97,7 +113,7 @@ def main() -> None:
         fmt = lambda r: f"{100*r['value']:5.1f} [{100*r['ci95'][0]:4.1f}, {100*r['ci95'][1]:4.1f}]"
         print(f"{run + '/' + cfg:40s} {fmt(row['accuracy']):24s} {fmt(row['macro_f1']):24s} {fmt(row['false_compliance']):22s}")
     print()
-    for a, b in PAIRS:
+    for a, b in pairs_to_test:
         da, db = load(*a), load(*b)
         keys = sorted(set(da) & set(db))
         only_a = sum(da[k][0] == da[k][1] and db[k][0] != db[k][1] for k in keys)
@@ -106,7 +122,16 @@ def main() -> None:
         out["mcnemar"].append({"a": "/".join(a), "b": "/".join(b), "a_right_b_wrong": only_a,
                                "a_wrong_b_right": only_b, "p_value": round(p, 5)})
         print(f"McNemar {'/'.join(a):32s} vs {'/'.join(b):36s} a>b {only_a:3d}  b>a {only_b:3d}  p={p:.4g}")
-    (RESULTS / "stats_tests.json").write_text(json.dumps(out, indent=1))
+        # gap detection on the true gaps (partial / non_compliant): flagged = predicted anything but compliant/N/A
+        gk = [k for k in keys if da[k][0] in GAP]
+        flag = lambda p_: p_ not in ("compliant", "not_applicable")
+        ga = sum(flag(da[k][1]) and not flag(db[k][1]) for k in gk)
+        gb = sum(not flag(da[k][1]) and flag(db[k][1]) for k in gk)
+        gp = mcnemar_exact(ga, gb)
+        out["mcnemar"][-1]["gap_recall"] = {"n_gaps": len(gk), "a_flags_b_misses": ga, "a_misses_b_flags": gb,
+                                            "p_value": round(gp, 5)}
+        print(f"    gap recall on {len(gk)} true gaps: a>b {ga:3d}  b>a {gb:3d}  p={gp:.4g}")
+    (RESULTS / out_name).write_text(json.dumps(out, indent=1))
 
 
 if __name__ == "__main__":

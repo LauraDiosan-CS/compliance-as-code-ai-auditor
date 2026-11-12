@@ -43,6 +43,8 @@
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 % Marks a number / table / figure that the experiments run must still fill in.
 \newcommand{\resultsTODO}[1]{\par\noindent\fcolorbox{red}{red!5}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small\textcolor{red}{\textbf{RESULTS PENDING:} #1}}}\par}
+% Work planned for a later stage of the course (Seminar 6 / Seminar 7): a visible red box.
+\newcommand{\plannedTODO}[2]{\par\smallskip\noindent\fcolorbox{red}{red!5}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\small\textcolor{red}{\textbf{TODO (#1):}} #2}}\par\smallskip}
 % Inline numeric placeholder, e.g. accuracy \res{acc-hybrid}.
 \newcommand{\res}[1]{\textcolor{red}{\textbf{[#1]}}}
 
@@ -56,14 +58,8 @@
 
 \newcommand{\ProjectTitle}{Compliance-as-Code AI Auditor: Checking Applications Against Policies and Regulations (e.g., EU AI Act)}
 \newcommand{\ProjectShort}{Compliance-as-Code AI Auditor}
-
-% math shorthands
-\newcommand{\St}{\mathcal{S}}
-\newcommand{\Ev}{\mathcal{E}}
-\newcommand{\Req}{\mathcal{R}}
-\newcommand{\Cl}{\mathcal{C}}
-\newcommand{\Lv}{\mathcal{L}}
-\newcommand{\stat}[1]{\textsc{#1}}
+% Number of bibliographical references printed (cited entries of refs.bib); update after adding citations.
+\newcommand{\NumRefs}{15}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -71,7 +67,7 @@
 \fancyhead[L]{\AuthorsShort}
 \fancyfoot[L]{Advanced Machine Learning --- 2026-2027}
 \fancyfoot[R]{\thepage}
-\setlength{\headheight}{14pt}
+\setlength{\headheight}{15pt}
 
 \renewcommand{\headrulewidth}{2pt}
 \renewcommand{\footrulewidth}{1pt}
@@ -94,8 +90,29 @@ linkcolor=blue!60!black,
 citecolor=green!50!black,
 }
 
-\setcounter{secnumdepth}{3}
-\setcounter{tocdepth}{2}
+% float pages: stack floats from the top instead of spreading them over the page
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{14pt plus 1fil}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.6}
+\renewcommand{\textfraction}{0.1}
+\setcounter{totalnumber}{4}
+
+% compact chapter headings: no page break before a chapter (short seminar report)
+\makeatletter
+\renewcommand\chapter{\par\addvspace{12pt}\global\@topnum\z@\@afterindentfalse\secdef\@chapter\@schapter}
+\renewcommand{\@makechapterhead}[1]{{\parindent\z@\raggedright\normalfont\Large\bfseries
+  \ifnum\c@secnumdepth>\m@ne\thechapter\quad\fi #1\par\nobreak\vskip 6pt}}
+\renewcommand{\@makeschapterhead}[1]{{\parindent\z@\raggedright\normalfont\Large\bfseries #1\par\nobreak\vskip 6pt}}
+\makeatother
+\setlist{itemsep=1pt,topsep=3pt}
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{0}
 \linespread{1}
 \setlength{\emergencystretch}{3em}
 \sloppy
@@ -118,7 +135,8 @@ FACULTY OF MATHEMATICS AND COMPUTER SCIENCE
 
 \vspace{1cm}
 
-\normalsize -- Advanced Machine Learning report --
+\normalsize -- Advanced Machine Learning report --\\[0.2cm]
+\normalsize Seminar 4 version: pipeline description and first results
 \end{center}
 
 \vspace{4cm}
@@ -140,29 +158,22 @@ FACULTY OF MATHEMATICS AND COMPUTER SCIENCE
 
 \pagenumbering{gobble}
 
+\setstretch{1.0}
+\pagenumbering{arabic}
+\setcounter{page}{2}
 \input{sections/abstract.tex}
 
-\tableofcontents
-\newpage
-\listoftables
-\listoffigures
-\listofalgorithms
-\newpage
-
-\setstretch{1.15}
-\pagenumbering{arabic}
-
+% Seminar 4 version (short report): pipeline description and first (v0) results. Later stages appear only as the
+% TODO box in the last chapter. The long version is kept outside the repository.
 \input{sections/team.tex}
 \input{sections/introduction.tex}
 \input{sections/problem.tex}
 \input{sections/related.tex}
 \input{sections/approach.tex}
-\input{sections/experiments.tex}
-\input{sections/governance.tex}
-\input{sections/swot.tex}
 \input{sections/conclusions.tex}
 
+{\small\setlength{\bibsep}{2pt}
 \bibliographystyle{plainnat}
-\bibliography{refs}
+\bibliography{refs}}
 
 \end{document}
